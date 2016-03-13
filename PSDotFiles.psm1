@@ -84,16 +84,14 @@ Function Get-DotFilesComponent {
     $ScriptPath   = Join-Path $script:DotFilesMetadataPath $ScriptName
 
     $Description  = ""
-    $Availability = "No Logic"
+    $Availability = [PSDotFiles]::NoLogic
     $Installed    = "Unknown"
 
     if (Test-Path -Path $ScriptPath -PathType Leaf) {
         . $ScriptPath
-
-        if (Test-Path Function:\Test-DotFilesComponent) {
-            $Availability = Test-DotFilesComponent
-        }
     }
+
+    $Availability = Test-DotfilesComponentAvailability -Name $Name
 
     return [PSCustomObject]@{
         Name         = $Name
@@ -146,6 +144,19 @@ Function Get-InstalledPrograms {
            ($_.UninstallString -or $_.NoRemove) }
 
     return $InstalledPrograms
+}
+
+Function Test-DotfilesComponentAvailability {
+    Param(
+        [Parameter(Mandatory=$true)]
+            [String]$Name
+    )
+
+    $Component = $script:InstalledPrograms | ? { $_.DisplayName -like "*$Name*" }
+    if ($Component) {
+        return [PSDotFiles]::Available
+    }
+    return [PSDotFiles]::Unavailable
 }
 
 Function Test-DotFilesPath {
