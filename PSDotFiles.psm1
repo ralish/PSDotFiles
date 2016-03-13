@@ -19,6 +19,11 @@ Function Get-DotFiles {
     )
 
     Get-DotFilesSettings
+
+    $Components = Get-ChildItem -Path $script:DotFilesPath -Directory
+    foreach ($Component in $Components) {
+        Get-DotFilesComponent -Component $Component
+    }
 }
 
 Function Install-DotFiles {
@@ -67,6 +72,36 @@ Function Remove-DotFiles {
     Get-DotFilesSettings
 }
 
+Function Get-DotFilesComponent {
+    Param(
+        [Parameter(Mandatory=$true)]
+            [System.IO.DirectoryInfo]$Component
+    )
+
+    $Name         = $Component.Name
+    $ScriptName   = $Name + ".ps1"
+    $ScriptPath   = Join-Path $script:DotFilesMetadataPath $ScriptName
+
+    $Description  = ""
+    $Availability = "No Logic"
+    $Installed    = "Unknown"
+
+    if (Test-Path -Path $ScriptPath -PathType Leaf) {
+        . $ScriptPath
+
+        if (Test-Path Function:\Test-DotFilesComponent) {
+            $Availability = Test-DotFilesComponent
+        }
+    }
+
+    return [PSCustomObject]@{
+        Name         = $Name
+        Description  = $Description
+        Availability = $Availability
+        Installed    = $Installed
+    }
+}
+
 Function Get-DotFilesSettings {
     if ($Path) {
         $script:DotFilesPath = Test-DotFilesPath -Path $Path
@@ -82,6 +117,9 @@ Function Get-DotFilesSettings {
         throw "No dotfiles path was provided and the default dotfiles path (`$DotFilesPath) has not been configured."
     }
     Write-Debug "Using dotfiles directory: $script:DotFilesPath"
+
+    $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath "metadata"
+    Write-Debug "Using metadata directory: $script:DotFilesMetadataPath"
 }
 
 Function Test-DotFilesPath {
