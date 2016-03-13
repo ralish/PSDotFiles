@@ -179,7 +179,8 @@ Enum PSDotFiles {
     Available            = 0
     # A failure occurred during component detection
     DetectionFailure     = 1
-    # The component is configured to be ignored
+    # The component will be ignored. This is distinct from *Unavailable*
+    # as it indicates the component is not available for the platform.
     Ignored              = 10
     # The component will always be installed
     AlwaysInstall        = 11
