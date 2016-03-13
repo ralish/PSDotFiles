@@ -19,6 +19,7 @@ Function Get-DotFiles {
     )
 
     Get-DotFilesSettings
+    $script:InstalledPrograms = Get-InstalledPrograms
 
     $Components = Get-ChildItem -Path $script:DotFilesPath -Directory
     foreach ($Component in $Components) {
@@ -120,6 +121,31 @@ Function Get-DotFilesSettings {
 
     $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath "metadata"
     Write-Debug "Using metadata directory: $script:DotFilesMetadataPath"
+}
+
+Function Get-InstalledPrograms {
+    $NativeRegPath = "\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+    $Wow6432RegPath = "\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+
+    $InstalledPrograms = @(
+        # Native applications installed system wide
+        Get-ChildItem "HKLM:$NativeRegPath"
+        # Native applications installed under the current user
+        Get-ChildItem "HKCU:$NativeRegPath"
+        # 32-bit applications installed system wide on 64-bit Windows
+        if (Test-Path -Path "HKLM:$Wow6432RegPath") { Get-ChildItem "HKLM:$Wow6432RegPath" }
+        # 32-bit applications installed under the current user on 64-bit Windows
+        if (Test-Path -Path "HKCU:$Wow6432RegPath") { Get-ChildItem "HKCU:$Wow6432RegPath" }
+    ) | # Get the properties of each uninstall key
+        % { Get-ItemProperty $_.PSPath } |
+        # Filter out all of the uninteresting entries
+        ? { $_.DisplayName -and
+           !$_.SystemComponent -and
+           !$_.ReleaseType -and
+           !$_.ParentKeyName -and
+           ($_.UninstallString -or $_.NoRemove) }
+
+    return $InstalledPrograms
 }
 
 Function Test-DotFilesPath {
