@@ -148,21 +148,17 @@ Function Get-DotFilesComponent {
     $GlobalScriptPath = Join-Path $script:GlobalMetadataPath $ScriptName
     $CustomScriptPath = Join-Path $script:DotFilesMetadataPath $ScriptName
 
-    if (Test-Path -Path $GlobalScriptPath -PathType Leaf) {
-        Write-Debug "Loading global metadata for component: $Name"
-        . $GlobalScriptPath
-        $MetadataPresent = $true
-    }
-
     if (Test-Path -Path $CustomScriptPath -PathType Leaf) {
         Write-Debug "Loading custom metadata for component: $Name"
-        . $CustomScriptPath
-        $MetadataPresent = $true
-    }
-
-    if ($script:DotFilesAutodetect -or $MetadataPresent) {
+        $ComponentData = . $CustomScriptPath
+    } elseif (Test-Path -Path $GlobalScriptPath -PathType Leaf) {
+        Write-Debug "Loading global metadata for component: $Name"
+        $ComponentData = . $GlobalScriptPath
+    } elseif ($script:DotFilesAutodetect) {
+        Write-Debug "Running automatic detection for component: $Name"
         $ComponentData = Get-DotFilesComponentData -Name $Name
     } else {
+        Write-Debug "No metadata & automatic detection disabled for: $Name"
         $ComponentData = [Component]::new($Name, [Availability]::NoLogic)
     }
     $ComponentData.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
