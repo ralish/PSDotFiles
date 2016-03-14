@@ -4,7 +4,13 @@ Function Get-DotFiles {
         Enumerates the available dotfiles components
         .DESCRIPTION
         .PARAMETER Path
-        Use the specified directory as the dotfiles directory instead of $DotFilesPath.
+        Use the specified directory as the dotfiles directory.
+
+        This overrides any default specified in $DotFilesPath.
+        .PARAMETER Autodetect
+        Toggles automatic detection of enumerated components without any metadata.
+
+        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is True.
         .EXAMPLE
         .INPUTS
         .OUTPUTS
@@ -15,10 +21,12 @@ Function Get-DotFiles {
     [CmdletBinding()]
     Param(
         [Parameter(Position=0,Mandatory=$false)]
-            [String]$Path
+            [String]$Path,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Autodetect
     )
 
-    Get-DotFilesSettings
+    Get-DotFilesSettings @PSBoundParameters
     $script:InstalledPrograms = Get-InstalledPrograms
 
     $Components = Get-ChildItem -Path $script:DotFilesPath -Directory
@@ -33,7 +41,13 @@ Function Install-DotFiles {
         Installs the selected dotfiles components
         .DESCRIPTION
         .PARAMETER Path
-        Use the specified directory as the dotfiles directory instead of $DotFilesPath.
+        Use the specified directory as the dotfiles directory.
+
+        This overrides any default specified in $DotFilesPath.
+        .PARAMETER Autodetect
+        Toggles automatic detection of enumerated components without any metadata.
+
+        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is True.
         .EXAMPLE
         .INPUTS
         .OUTPUTS
@@ -44,10 +58,12 @@ Function Install-DotFiles {
     [CmdletBinding()]
     Param(
         [Parameter(Position=0,Mandatory=$false)]
-            [String]$Path
+            [String]$Path,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Autodetect
     )
 
-    Get-DotFilesSettings
+    Get-DotFilesSettings @PSBoundParameters
 }
 
 Function Remove-DotFiles {
@@ -56,7 +72,13 @@ Function Remove-DotFiles {
         Removes the selected dotfiles components
         .DESCRIPTION
         .PARAMETER Path
-        Use the specified directory as the dotfiles directory instead of $DotFilesPath.
+        Use the specified directory as the dotfiles directory.
+
+        This overrides any default specified in $DotFilesPath.
+        .PARAMETER Autodetect
+        Toggles automatic detection of enumerated components without any metadata.
+
+        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is True.
         .EXAMPLE
         .INPUTS
         .OUTPUTS
@@ -67,10 +89,12 @@ Function Remove-DotFiles {
     [CmdletBinding()]
     Param(
         [Parameter(Position=0,Mandatory=$false)]
-            [String]$Path
+            [String]$Path,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Autodetect
     )
 
-    Get-DotFilesSettings
+    Get-DotFilesSettings @PSBoundParameters
 }
 
 Function Get-DotFilesComponent {
@@ -92,14 +116,18 @@ Function Get-DotFilesComponent {
     if (Test-Path -Path $GlobalScriptPath -PathType Leaf) {
         Write-Debug "Loading global metadata for component: $Name"
         . $GlobalScriptPath
+        $MetadataPresent = $true
     }
 
     if (Test-Path -Path $CustomScriptPath -PathType Leaf) {
         Write-Debug "Loading custom metadata for component: $Name"
         . $CustomScriptPath
+        $MetadataPresent = $true
     }
 
-    $Availability = Test-DotfilesComponentAvailability -Name $Name
+    if ($script:DotFilesAutodetect -or $MetadataPresent) {
+        $Availability = Test-DotfilesComponentAvailability -Name $Name
+    }
 
     return [PSCustomObject]@{
         Name         = $Name
@@ -111,7 +139,12 @@ Function Get-DotFilesComponent {
 
 Function Get-DotFilesSettings {
     [CmdletBinding()]
-    Param()
+    Param(
+        [Parameter(Position=0,Mandatory=$false)]
+            [String]$Path,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Autodetect
+    )
 
     if ($Path) {
         $script:DotFilesPath = Test-DotFilesPath -Path $Path
@@ -133,6 +166,15 @@ Function Get-DotFilesSettings {
 
     $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath "metadata"
     Write-Debug "Using dotfiles metadata directory: $script:DotFilesMetadataPath"
+
+    if ($PSBoundParameters.ContainsKey('Autodetect')) {
+        $script:DotFilesAutoDetect = $Autodetect
+    } elseif (Test-Path -Path Variable:\DotFilesAutodetect) {
+        $script:DotFilesAutoDetect = $global:DotFilesAutodetect
+    } else {
+        $script:DotFilesAutoDetect = $true
+    }
+    Write-Debug "Automatic component detection state: $script:DotFilesAutoDetect"
 }
 
 Function Get-InstalledPrograms {
