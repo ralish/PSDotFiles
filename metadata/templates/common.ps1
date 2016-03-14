@@ -1,3 +1,7 @@
+if(!$script:PSDotFiles) {
+    Write-Warning "You appear to be running a PSDotFiles template script directly instead of via the PSDotFiles module."
+}
+
 Enum PSDotFiles {
     # The component was detected
     Available
