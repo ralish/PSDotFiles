@@ -30,9 +30,11 @@ Function Get-DotFiles {
     $script:InstalledPrograms = Get-InstalledPrograms
 
     $Components = Get-ChildItem -Path $script:DotFilesPath -Directory
+    $ComponentData = @()
     foreach ($Component in $Components) {
-        Get-DotFilesComponent -Component $Component
+        $ComponentData += Get-DotFilesComponent -Component $Component
     }
+    return $ComponentData
 }
 
 Function Install-DotFiles {
@@ -109,6 +111,7 @@ Function Get-DotFilesComponent {
     $GlobalScriptPath = Join-Path $script:GlobalMetadataPath $ScriptName
     $CustomScriptPath = Join-Path $script:DotFilesMetadataPath $ScriptName
 
+    $FriendlyName     = ""
     $Description      = ""
     $Availability     = [PSDotFiles]::NoLogic
     $Installed        = "Unknown"
@@ -129,12 +132,15 @@ Function Get-DotFilesComponent {
         $Availability = Test-DotfilesComponentAvailability -Name $Name
     }
 
-    return [PSCustomObject]@{
+    $ComponentData = [PSCustomObject]@{
         Name         = $Name
+        FriendlyName = $FriendlyName
         Description  = $Description
         Availability = $Availability
         Installed    = $Installed
     }
+    $ComponentData.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
+    return $ComponentData
 }
 
 Function Get-DotFilesSettings {
@@ -167,7 +173,7 @@ Function Get-DotFilesSettings {
     $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath "metadata"
     Write-Debug "Using dotfiles metadata directory: $script:DotFilesMetadataPath"
 
-    if ($PSBoundParameters.ContainsKey('Autodetect')) {
+    if ($PSBoundParameters.ContainsKey("Autodetect")) {
         $script:DotFilesAutoDetect = $Autodetect
     } elseif (Test-Path -Path Variable:\DotFilesAutodetect) {
         $script:DotFilesAutoDetect = $global:DotFilesAutodetect
