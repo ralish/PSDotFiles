@@ -5,7 +5,6 @@ if(!$script:PSDotFiles) {
 Class Component {
     [String]$Name
     [String]$FriendlyName = ""
-    [String]$Description = ""
     [Availability]$Availability
     [String]$Installed = ""
 

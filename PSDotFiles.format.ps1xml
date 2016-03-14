@@ -57,9 +57,6 @@
                                 <PropertyName>FriendlyName</PropertyName>
                             </ListItem>
                             <ListItem>
-                                <PropertyName>Description</PropertyName>
-                            </ListItem>
-                            <ListItem>
                                 <PropertyName>Availability</PropertyName>
                             </ListItem>
                             <ListItem>
