@@ -10,7 +10,7 @@ Function Get-DotFiles {
         .PARAMETER Autodetect
         Toggles automatic detection of enumerated components without any metadata.
 
-        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is True.
+        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled ($false).
         .EXAMPLE
         .INPUTS
         .OUTPUTS
@@ -47,7 +47,7 @@ Function Install-DotFiles {
         .PARAMETER Autodetect
         Toggles automatic detection of enumerated components without any metadata.
 
-        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is True.
+        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled ($false).
         .EXAMPLE
         .INPUTS
         .OUTPUTS
@@ -78,7 +78,7 @@ Function Remove-DotFiles {
         .PARAMETER Autodetect
         Toggles automatic detection of enumerated components without any metadata.
 
-        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is True.
+        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled ($false).
         .EXAMPLE
         .INPUTS
         .OUTPUTS
@@ -172,7 +172,7 @@ Function Get-DotFilesSettings {
     } elseif (Test-Path -Path Variable:\DotFilesAutodetect) {
         $script:DotFilesAutoDetect = $global:DotFilesAutodetect
     } else {
-        $script:DotFilesAutoDetect = $true
+        $script:DotFilesAutoDetect = $false
     }
     Write-Debug "Automatic component detection state: $script:DotFilesAutoDetect"
 }
