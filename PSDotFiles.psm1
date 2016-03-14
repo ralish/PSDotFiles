@@ -79,16 +79,23 @@ Function Get-DotFilesComponent {
             [System.IO.DirectoryInfo]$Component
     )
 
-    $Name         = $Component.Name
-    $ScriptName   = $Name + ".ps1"
-    $ScriptPath   = Join-Path $script:DotFilesMetadataPath $ScriptName
+    $Name             = $Component.Name
+    $ScriptName       = $Name + ".ps1"
+    $GlobalScriptPath = Join-Path $script:GlobalMetadataPath $ScriptName
+    $CustomScriptPath = Join-Path $script:DotFilesMetadataPath $ScriptName
 
-    $Description  = ""
-    $Availability = [PSDotFiles]::NoLogic
-    $Installed    = "Unknown"
+    $Description      = ""
+    $Availability     = [PSDotFiles]::NoLogic
+    $Installed        = "Unknown"
 
-    if (Test-Path -Path $ScriptPath -PathType Leaf) {
-        . $ScriptPath
+    if (Test-Path -Path $GlobalScriptPath -PathType Leaf) {
+        Write-Debug "Loading global metadata for component: $Name"
+        . $GlobalScriptPath
+    }
+
+    if (Test-Path -Path $CustomScriptPath -PathType Leaf) {
+        Write-Debug "Loading custom metadata for component: $Name"
+        . $CustomScriptPath
     }
 
     $Availability = Test-DotfilesComponentAvailability -Name $Name
@@ -115,10 +122,13 @@ Function Get-DotFilesSettings {
     } else {
         throw "No dotfiles path was provided and the default dotfiles path (`$DotFilesPath) has not been configured."
     }
-    Write-Debug "Using dotfiles directory: $script:DotFilesPath"
+    Write-Verbose "Using dotfiles directory: $script:DotFilesPath"
+
+    $script:GlobalMetadataPath = Join-Path $PSScriptRoot "metadata"
+    Write-Debug "Using global metadata directory: $script:GlobalMetadataPath"
 
     $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath "metadata"
-    Write-Debug "Using metadata directory: $script:DotFilesMetadataPath"
+    Write-Debug "Using dotfiles metadata directory: $script:DotFilesMetadataPath"
 }
 
 Function Get-InstalledPrograms {
