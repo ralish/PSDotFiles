@@ -123,9 +123,6 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose "Using dotfiles directory: $script:DotFilesPath"
 
-    $script:GlobalMetadataPath = Join-Path $PSScriptRoot "metadata"
-    Write-Debug "Using global metadata directory: $script:GlobalMetadataPath"
-
     $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath "metadata"
     Write-Debug "Using dotfiles metadata directory: $script:DotFilesMetadataPath"
 
@@ -241,20 +238,8 @@ Function Test-DotFilesPath {
     return $false
 }
 
-Enum PSDotFiles {
-    # The component was successfully detected
-    Available            = 0
-    # A failure occurred during component detection
-    DetectionFailure     = 1
-    # The component will be ignored. This is distinct from *Unavailable*
-    # as it indicates the component is not available for the platform.
-    Ignored              = 10
-    # The component will always be installed
-    AlwaysInstall        = 11
-    # The component will never be installed
-    NeverInstall         = 12
-    # The component was not detected
-    Unavailable          = 13
-    # No detection logic was available
-    NoLogic              = 20
-}
+$script:PSDotFiles = $true
+
+$script:GlobalMetadataPath = Join-Path $PSScriptRoot "metadata"
+Write-Debug "Using global metadata directory: $script:GlobalMetadataPath"
+. (Join-Path $script:GlobalMetadataPath "templates\common.ps1")
