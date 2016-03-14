@@ -74,6 +74,7 @@ Function Remove-DotFiles {
 }
 
 Function Get-DotFilesComponent {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
             [System.IO.DirectoryInfo]$Component
@@ -109,6 +110,9 @@ Function Get-DotFilesComponent {
 }
 
 Function Get-DotFilesSettings {
+    [CmdletBinding()]
+    Param()
+
     if ($Path) {
         $script:DotFilesPath = Test-DotFilesPath -Path $Path
         if (!$script:DotFilesPath) {
@@ -132,6 +136,9 @@ Function Get-DotFilesSettings {
 }
 
 Function Get-InstalledPrograms {
+    [CmdletBinding()]
+    Param()
+
     $NativeRegPath = "\Software\Microsoft\Windows\CurrentVersion\Uninstall"
     $Wow6432RegPath = "\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
 
@@ -157,6 +164,7 @@ Function Get-InstalledPrograms {
 }
 
 Function Test-DotfilesComponentAvailability {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
             [String]$Name
@@ -170,6 +178,7 @@ Function Test-DotfilesComponentAvailability {
 }
 
 Function Test-DotFilesPath {
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
             [String]$Path
