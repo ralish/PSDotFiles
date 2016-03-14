@@ -26,7 +26,7 @@ Function Get-DotFiles {
             [Switch]$Autodetect
     )
 
-    Get-DotFilesSettings @PSBoundParameters
+    Initialize-PSDotFiles @PSBoundParameters
     $script:InstalledPrograms = Get-InstalledPrograms
 
     $Components = Get-ChildItem -Path $script:DotFilesPath -Directory
@@ -65,7 +65,7 @@ Function Install-DotFiles {
             [Switch]$Autodetect
     )
 
-    Get-DotFilesSettings @PSBoundParameters
+    Initialize-PSDotFiles @PSBoundParameters
 }
 
 Function Remove-DotFiles {
@@ -96,7 +96,47 @@ Function Remove-DotFiles {
             [Switch]$Autodetect
     )
 
-    Get-DotFilesSettings @PSBoundParameters
+    Initialize-PSDotFiles @PSBoundParameters
+}
+
+Function Initialize-PSDotFiles {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position=0,Mandatory=$false)]
+            [String]$Path,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Autodetect
+    )
+
+    if ($Path) {
+        $script:DotFilesPath = Test-DotFilesPath -Path $Path
+        if (!$script:DotFilesPath) {
+            throw "The provided dotfiles path is either not a directory or it can't be accessed."
+        }
+    } elseif ($global:DotFilesPath) {
+        $script:DotFilesPath = Test-DotFilesPath -Path $global:DotFilesPath
+        if (!$script:DotFilesPath) {
+            throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
+        }
+    } else {
+        throw "No dotfiles path was provided and the default dotfiles path (`$DotFilesPath) has not been configured."
+    }
+    Write-Verbose "Using dotfiles directory: $script:DotFilesPath"
+
+    $script:GlobalMetadataPath = Join-Path $PSScriptRoot "metadata"
+    Write-Debug "Using global metadata directory: $script:GlobalMetadataPath"
+
+    $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath "metadata"
+    Write-Debug "Using dotfiles metadata directory: $script:DotFilesMetadataPath"
+
+    if ($PSBoundParameters.ContainsKey("Autodetect")) {
+        $script:DotFilesAutoDetect = $Autodetect
+    } elseif (Test-Path -Path Variable:\DotFilesAutodetect) {
+        $script:DotFilesAutoDetect = $global:DotFilesAutodetect
+    } else {
+        $script:DotFilesAutoDetect = $false
+    }
+    Write-Debug "Automatic component detection state: $script:DotFilesAutoDetect"
 }
 
 Function Get-DotFilesComponent {
@@ -141,46 +181,6 @@ Function Get-DotFilesComponent {
     }
     $ComponentData.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
     return $ComponentData
-}
-
-Function Get-DotFilesSettings {
-    [CmdletBinding()]
-    Param(
-        [Parameter(Position=0,Mandatory=$false)]
-            [String]$Path,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Autodetect
-    )
-
-    if ($Path) {
-        $script:DotFilesPath = Test-DotFilesPath -Path $Path
-        if (!$script:DotFilesPath) {
-            throw "The provided dotfiles path is either not a directory or it can't be accessed."
-        }
-    } elseif ($global:DotFilesPath) {
-        $script:DotFilesPath = Test-DotFilesPath -Path $global:DotFilesPath
-        if (!$script:DotFilesPath) {
-            throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
-        }
-    } else {
-        throw "No dotfiles path was provided and the default dotfiles path (`$DotFilesPath) has not been configured."
-    }
-    Write-Verbose "Using dotfiles directory: $script:DotFilesPath"
-
-    $script:GlobalMetadataPath = Join-Path $PSScriptRoot "metadata"
-    Write-Debug "Using global metadata directory: $script:GlobalMetadataPath"
-
-    $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath "metadata"
-    Write-Debug "Using dotfiles metadata directory: $script:DotFilesMetadataPath"
-
-    if ($PSBoundParameters.ContainsKey("Autodetect")) {
-        $script:DotFilesAutoDetect = $Autodetect
-    } elseif (Test-Path -Path Variable:\DotFilesAutodetect) {
-        $script:DotFilesAutoDetect = $global:DotFilesAutodetect
-    } else {
-        $script:DotFilesAutoDetect = $false
-    }
-    Write-Debug "Automatic component detection state: $script:DotFilesAutoDetect"
 }
 
 Function Get-InstalledPrograms {
