@@ -148,11 +148,6 @@ Function Get-DotFilesComponent {
     $GlobalScriptPath = Join-Path $script:GlobalMetadataPath $ScriptName
     $CustomScriptPath = Join-Path $script:DotFilesMetadataPath $ScriptName
 
-    $FriendlyName     = ""
-    $Description      = ""
-    $Availability     = [PSDotFiles]::NoLogic
-    $Installed        = "Unknown"
-
     if (Test-Path -Path $GlobalScriptPath -PathType Leaf) {
         Write-Debug "Loading global metadata for component: $Name"
         . $GlobalScriptPath
@@ -166,18 +161,27 @@ Function Get-DotFilesComponent {
     }
 
     if ($script:DotFilesAutodetect -or $MetadataPresent) {
-        $Availability = Test-DotfilesComponentAvailability -Name $Name
-    }
-
-    $ComponentData = [PSCustomObject]@{
-        Name         = $Name
-        FriendlyName = $FriendlyName
-        Description  = $Description
-        Availability = $Availability
-        Installed    = $Installed
+        $ComponentData = Get-DotFilesComponentData -Name $Name
+    } else {
+        $ComponentData = [Component]::new($Name, [Availability]::NoLogic)
     }
     $ComponentData.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
     return $ComponentData
+}
+
+Function Get-DotFilesComponentData {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true)]
+            [String]$Name
+    )
+
+    $MatchingPrograms = $script:InstalledPrograms | ? { $_.DisplayName -like "*$Name*" }
+
+    if ($MatchingPrograms) {
+        return [Component]::new($Name, [Availability]::Available)
+    }
+    return [Component]::new($Name, [Availability]::Unavailable)
 }
 
 Function Get-InstalledPrograms {
@@ -206,20 +210,6 @@ Function Get-InstalledPrograms {
            ($_.UninstallString -or $_.NoRemove) }
 
     return $InstalledPrograms
-}
-
-Function Test-DotfilesComponentAvailability {
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory=$true)]
-            [String]$Name
-    )
-
-    $Component = $script:InstalledPrograms | ? { $_.DisplayName -like "*$Name*" }
-    if ($Component) {
-        return [PSDotFiles]::Available
-    }
-    return [PSDotFiles]::Unavailable
 }
 
 Function Test-DotFilesPath {

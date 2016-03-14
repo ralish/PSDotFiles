@@ -2,7 +2,20 @@ if(!$script:PSDotFiles) {
     Write-Warning "You appear to be running a PSDotFiles template script directly instead of via the PSDotFiles module."
 }
 
-Enum PSDotFiles {
+Class Component {
+    [String]$Name
+    [String]$FriendlyName = ""
+    [String]$Description = ""
+    [Availability]$Availability
+    [String]$Installed = ""
+
+    Component([String]$Name, [Availability]$Availability) {
+        $this.Name = $Name
+        $this.Availability = $Availability
+    }
+}
+
+Enum Availability {
     # The component was detected
     Available
     # The component was not detected
