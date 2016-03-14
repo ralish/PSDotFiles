@@ -127,13 +127,13 @@ Function Initialize-PSDotFiles {
     Write-Debug "Using dotfiles metadata directory: $script:DotFilesMetadataPath"
 
     if ($PSBoundParameters.ContainsKey("Autodetect")) {
-        $script:DotFilesAutoDetect = $Autodetect
-    } elseif (Test-Path -Path Variable:\DotFilesAutodetect) {
-        $script:DotFilesAutoDetect = $global:DotFilesAutodetect
+        $script:DotFilesAutodetect = $Autodetect
+    } elseif (Get-Variable -Name DotFilesAutodetect -Scope Global -ErrorAction SilentlyContinue | Out-Null) {
+        $script:DotFilesAutodetect = $global:DotFilesAutodetect
     } else {
-        $script:DotFilesAutoDetect = $false
+        $script:DotFilesAutodetect = $false
     }
-    Write-Debug "Automatic component detection state: $script:DotFilesAutoDetect"
+    Write-Debug "Automatic component detection state: $script:DotFilesAutodetect"
 }
 
 Function Get-DotFilesComponent {
