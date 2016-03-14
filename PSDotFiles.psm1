@@ -14,7 +14,7 @@ Function Get-DotFiles {
     #>
     [CmdletBinding()]
     Param(
-        [Parameter(Position=1,Mandatory=$false)]
+        [Parameter(Position=0,Mandatory=$false)]
             [String]$Path
     )
 
@@ -43,7 +43,7 @@ Function Install-DotFiles {
     #>
     [CmdletBinding()]
     Param(
-        [Parameter(Position=1,Mandatory=$false)]
+        [Parameter(Position=0,Mandatory=$false)]
             [String]$Path
     )
 
@@ -66,7 +66,7 @@ Function Remove-DotFiles {
     #>
     [CmdletBinding()]
     Param(
-        [Parameter(Position=1,Mandatory=$false)]
+        [Parameter(Position=0,Mandatory=$false)]
             [String]$Path
     )
 
