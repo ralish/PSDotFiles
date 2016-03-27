@@ -175,7 +175,11 @@ Function Get-DotFilesComponentData {
     $MatchingPrograms = $script:InstalledPrograms | ? { $_.DisplayName -like "*$Name*" }
 
     if ($MatchingPrograms) {
-        return [Component]::new($Name, [Availability]::Available)
+        $ComponentData = [Component]::new($Name, [Availability]::Available)
+        if ($MatchingPrograms.DisplayName) {
+            $ComponentData.FriendlyName = $MatchingPrograms.DisplayName
+        }
+        return $ComponentData
     }
     return [Component]::new($Name, [Availability]::Unavailable)
 }
