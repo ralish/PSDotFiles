@@ -21,9 +21,13 @@ Enum Availability {
 }
 
 Class Component {
+    # REQUIRED: This should match the corresponding dotfiles directory
     [String]$Name
+    # OPTIONAL: Friendly name if one was provided or could be located
     [String]$FriendlyName = ""
+    # REQUIRED: The availability state per the Availability enumeration
     [Availability]$Availability = [Availability]::DetectionFailure
+    # IGNORE: This will be set automatically during later install detection
     [String]$Installed = ""
 
     Component([String]$Name, [Availability]$Availability) {
