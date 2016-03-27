@@ -2,18 +2,6 @@ if(!$script:PSDotFiles) {
     Write-Warning "You appear to be running a PSDotFiles template script directly instead of via the PSDotFiles module."
 }
 
-Class Component {
-    [String]$Name
-    [String]$FriendlyName = ""
-    [Availability]$Availability
-    [String]$Installed = ""
-
-    Component([String]$Name, [Availability]$Availability) {
-        $this.Name = $Name
-        $this.Availability = $Availability
-    }
-}
-
 Enum Availability {
     # The component was detected
     Available
@@ -30,4 +18,16 @@ Enum Availability {
     DetectionFailure
     # No detection logic was available
     NoLogic
+}
+
+Class Component {
+    [String]$Name
+    [String]$FriendlyName = ""
+    [Availability]$Availability = [Availability]::DetectionFailure
+    [String]$Installed = ""
+
+    Component([String]$Name, [Availability]$Availability) {
+        $this.Name = $Name
+        $this.Availability = $Availability
+    }
 }
