@@ -209,10 +209,12 @@ Function Find-DotFilesComponent {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
-            [String]$Name
+            [String]$Name,
+        [Parameter(Mandatory=$false)]
+            [String]$Pattern = $Name
     )
 
-    $MatchingPrograms = $script:InstalledPrograms | ? { $_.DisplayName -like "*$Name*" }
+    $MatchingPrograms = $script:InstalledPrograms | ? { $_.DisplayName -like "*$Pattern*" }
 
     if ($MatchingPrograms) {
         $Component = [Component]::new($Name, [Availability]::Available)
