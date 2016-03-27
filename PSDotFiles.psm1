@@ -99,12 +99,16 @@ Function Remove-DotFiles {
 }
 
 Function Initialize-PSDotFiles {
-    [CmdletBinding()]
+    # This function is intentionally *not* an advanced function so that unknown
+    # parameters passed into it via @PSBoundParameters won't cause it to fail.
+    # Do not insert a CmdletBinding() or any Parameter[] attributes or it will
+    # be designated an advanced function (implicitly in the latter case). The
+    # only alternative is to explicitly define all possible parameters which
+    # could be passed into this function via @PSBoundParameters, most of which
+    # won't ever actually be used here.
     Param(
-        [Parameter(Position=0,Mandatory=$false)]
-            [String]$Path,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Autodetect
+        [Switch]$Autodetect,
+        [String]$Path
     )
 
     if ($Path) {
