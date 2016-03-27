@@ -196,7 +196,7 @@ Function Get-DotFilesComponent {
         $ComponentData = . $GlobalScriptPath
     } elseif ($script:DotFilesAutodetect) {
         Write-Debug "Running automatic detection for component: $Name"
-        $ComponentData = Get-DotFilesComponentData -Name $Name
+        $ComponentData = Find-DotFilesComponent -Name $Name
     } else {
         Write-Debug "No metadata & automatic detection disabled for: $Name"
         $ComponentData = [Component]::new($Name, [Availability]::NoLogic)
@@ -205,7 +205,7 @@ Function Get-DotFilesComponent {
     return $ComponentData
 }
 
-Function Get-DotFilesComponentData {
+Function Find-DotFilesComponent {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
