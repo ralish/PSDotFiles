@@ -2,7 +2,7 @@ if(!$script:PSDotFiles) {
     . (Join-Path $PSScriptRoot 'templates\common.ps1')
 }
 
-$ComponentData = [Component]::new("posh", [Availability]::AlwaysInstall)
-$ComponentData.FriendlyName = "Windows PowerShell"
+$Component = [Component]::new("posh", [Availability]::AlwaysInstall)
+$Component.FriendlyName = "Windows PowerShell"
 
-return $ComponentData
+return $Component

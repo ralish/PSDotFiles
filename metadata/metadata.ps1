@@ -2,7 +2,7 @@ if(!$script:PSDotFiles) {
     . (Join-Path $PSScriptRoot 'templates\common.ps1')
 }
 
-$ComponentData = [Component]::new("metadata", [Availability]::NeverInstall)
-$ComponentData.FriendlyName = "Dotfiles metadata"
+$Component = [Component]::new("metadata", [Availability]::NeverInstall)
+$Component.FriendlyName = "Dotfiles metadata"
 
-return $ComponentData
+return $Component

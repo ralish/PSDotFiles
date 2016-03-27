@@ -32,10 +32,10 @@ Function Get-DotFiles {
 
     Initialize-PSDotFiles @PSBoundParameters
 
-    $Components = Get-ChildItem -Path $script:DotFilesPath -Directory
-    $ComponentData = @()
-    foreach ($Component in $Components) {
-        $ComponentData += Get-DotFilesComponent -Component $Component
+    $DotFiles = Get-ChildItem -Path $script:DotFilesPath -Directory
+    $Components = @()
+    foreach ($Component in $DotFiles) {
+        $Components += Get-DotFilesComponent -Directory $Component
     }
 
     if ($Summary) {
@@ -49,7 +49,7 @@ Function Get-DotFiles {
             NoLogic = @()
         }
 
-        foreach ($Component in $ComponentData) {
+        foreach ($Component in $Components) {
             switch ($Component.Availability) {
                 "Available"             { $ComponentSummary.Available += $Component }
                 "Unavailable"           { $ComponentSummary.Unavailable += $Component }
@@ -64,7 +64,7 @@ Function Get-DotFiles {
 
         return $ComponentSummary
     } else {
-        return $ComponentData
+        return $Components
     }
 }
 
@@ -180,29 +180,29 @@ Function Get-DotFilesComponent {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
-            [System.IO.DirectoryInfo]$Component
+            [System.IO.DirectoryInfo]$Directory
     )
 
-    $Name             = $Component.Name
+    $Name             = $Directory.Name
     $ScriptName       = $Name + ".ps1"
     $GlobalScriptPath = Join-Path $script:GlobalMetadataPath $ScriptName
     $CustomScriptPath = Join-Path $script:DotFilesMetadataPath $ScriptName
 
     if (Test-Path -Path $CustomScriptPath -PathType Leaf) {
         Write-Debug "Loading custom metadata for component: $Name"
-        $ComponentData = . $CustomScriptPath
+        $Component = . $CustomScriptPath
     } elseif (Test-Path -Path $GlobalScriptPath -PathType Leaf) {
         Write-Debug "Loading global metadata for component: $Name"
-        $ComponentData = . $GlobalScriptPath
+        $Component = . $GlobalScriptPath
     } elseif ($script:DotFilesAutodetect) {
         Write-Debug "Running automatic detection for component: $Name"
-        $ComponentData = Find-DotFilesComponent -Name $Name
+        $Component = Find-DotFilesComponent -Name $Name
     } else {
         Write-Debug "No metadata & automatic detection disabled for: $Name"
-        $ComponentData = [Component]::new($Name, [Availability]::NoLogic)
+        $Component = [Component]::new($Name, [Availability]::NoLogic)
     }
-    $ComponentData.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
-    return $ComponentData
+    $Component.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
+    return $Component
 }
 
 Function Find-DotFilesComponent {
@@ -215,11 +215,11 @@ Function Find-DotFilesComponent {
     $MatchingPrograms = $script:InstalledPrograms | ? { $_.DisplayName -like "*$Name*" }
 
     if ($MatchingPrograms) {
-        $ComponentData = [Component]::new($Name, [Availability]::Available)
+        $Component = [Component]::new($Name, [Availability]::Available)
         if ($MatchingPrograms.DisplayName) {
-            $ComponentData.FriendlyName = $MatchingPrograms.DisplayName
+            $Component.FriendlyName = $MatchingPrograms.DisplayName
         }
-        return $ComponentData
+        return $Component
     }
     return [Component]::new($Name, [Availability]::Unavailable)
 }
