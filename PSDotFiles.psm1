@@ -211,11 +211,25 @@ Function Find-DotFilesComponent {
         [Parameter(Mandatory=$true)]
             [String]$Name,
         [Parameter(Mandatory=$false)]
-            [String]$Pattern = $Name
+            [String]$Pattern = "*$Name*",
+        [Parameter(Mandatory=$false)]
+            [Switch]$CaseSensitive,
+        [Parameter(Mandatory=$false)]
+            [Switch]$RegularExpression
     )
 
-    $MatchingPrograms = $script:InstalledPrograms | ? { $_.DisplayName -like "*$Pattern*" }
+    $MatchingParameters = @{'Property'='DisplayName';'Value'=$Pattern}
+    if (!$CaseSensitive -and !$RegularExpression) {
+        $MatchingParameters += @{'ILike'=$true}
+    } elseif (!$CaseSensitive -and $RegularExpression) {
+        $MatchingParameters += @{'IMatch'=$true}
+    } elseif ($CaseSensitive -and !$RegularExpression) {
+        $MatchingParameters += @{'CLike'=$true}
+    } else {
+        $MatchingParameters += @{'CMatch'=$true}
+    }
 
+    $MatchingPrograms = $script:InstalledPrograms | Where-Object @MatchingParameters
     if ($MatchingPrograms) {
         $Component = [Component]::new($Name, [Availability]::Available)
         if ($MatchingPrograms.DisplayName) {
