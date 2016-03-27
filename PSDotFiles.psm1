@@ -170,9 +170,7 @@ Function Initialize-PSDotFiles {
     }
     Write-Debug "Automatic component detection state: $script:DotFilesAutodetect"
 
-    if ($script:DotFilesAutodetect) {
-        $script:InstalledPrograms = Get-InstalledPrograms
-    }
+    $script:InstalledPrograms = Get-InstalledPrograms
     Write-Debug "Refreshing cache of installed programs..."
 }
 
