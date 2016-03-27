@@ -232,6 +232,7 @@ Function Find-DotFilesComponent {
         $Component = [Component]::new($Name, [Availability]::Available)
         if ($MatchingPrograms.DisplayName) {
             $Component.FriendlyName = $MatchingPrograms.DisplayName
+            $Component.UninstallKey = $MatchingPrograms.PSPath
         }
         return $Component
     }

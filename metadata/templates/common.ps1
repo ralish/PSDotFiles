@@ -29,6 +29,8 @@ Class Component {
     [Availability]$Availability = [Availability]::DetectionFailure
     # IGNORE: This will be set automatically during later install detection
     [String]$Installed = ""
+    # OPTIONAL: Uninstall Registry key (typically set by Find-DotFilesComponent)
+    [String]$UninstallKey
 
     Component([String]$Name, [Availability]$Availability) {
         $this.Name = $Name
