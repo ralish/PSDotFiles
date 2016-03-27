@@ -27,7 +27,6 @@ Function Get-DotFiles {
     )
 
     Initialize-PSDotFiles @PSBoundParameters
-    $script:InstalledPrograms = Get-InstalledPrograms
 
     $Components = Get-ChildItem -Path $script:DotFilesPath -Directory
     $ComponentData = @()
@@ -134,6 +133,11 @@ Function Initialize-PSDotFiles {
         $script:DotFilesAutodetect = $false
     }
     Write-Debug "Automatic component detection state: $script:DotFilesAutodetect"
+
+    if ($script:DotFilesAutodetect) {
+        $script:InstalledPrograms = Get-InstalledPrograms
+    }
+    Write-Debug "Refreshing cache of installed programs..."
 }
 
 Function Get-DotFilesComponent {
