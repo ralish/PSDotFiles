@@ -3,14 +3,16 @@ Function Get-DotFiles {
         .SYNOPSIS
         Enumerates the available dotfiles components
         .DESCRIPTION
-        .PARAMETER Path
-        Use the specified directory as the dotfiles directory.
-
-        This overrides any default specified in $DotFilesPath.
         .PARAMETER Autodetect
         Toggles automatic detection of enumerated components without any metadata.
 
         This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled ($false).
+        .PARAMETER Path
+        Use the specified directory as the dotfiles directory.
+
+        This overrides any default specified in $DotFilesPath.
+        .PARAMETER Summary
+        Return the results of the detection in summary form.
         .EXAMPLE
         .INPUTS
         .OUTPUTS
@@ -23,7 +25,9 @@ Function Get-DotFiles {
         [Parameter(Position=0,Mandatory=$false)]
             [String]$Path,
         [Parameter(Mandatory=$false)]
-            [Switch]$Autodetect
+            [Switch]$Autodetect,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Summary
     )
 
     Initialize-PSDotFiles @PSBoundParameters
@@ -33,7 +37,35 @@ Function Get-DotFiles {
     foreach ($Component in $Components) {
         $ComponentData += Get-DotFilesComponent -Component $Component
     }
-    return $ComponentData
+
+    if ($Summary) {
+        $ComponentSummary = [PSCustomObject]@{
+            Available = @()
+            Unavailable = @()
+            Ignored = @()
+            AlwaysInstall = @()
+            NeverInstall = @()
+            DetectionFailure = @()
+            NoLogic = @()
+        }
+
+        foreach ($Component in $ComponentData) {
+            switch ($Component.Availability) {
+                "Available"             { $ComponentSummary.Available += $Component }
+                "Unavailable"           { $ComponentSummary.Unavailable += $Component }
+                "Ignored"               { $ComponentSummary.Ignored += $Component }
+                "AlwaysInstall"         { $ComponentSummary.AlwaysInstall += $Component }
+                "NeverInstall"          { $ComponentSummary.NeverInstall += $Component }
+                "DetectionFailure"      { $ComponentSummary.DetectionFailure += $Component }
+                "NoLogic"               { $ComponentSummary.NoLogic += $Component }
+                default                 { Write-Error ("Unknown availability state `"" + $Component.Availability + "`" in component: " + $Component.Name) }
+            }
+        }
+
+        return $ComponentSummary
+    } else {
+        return $ComponentData
+    }
 }
 
 Function Install-DotFiles {
