@@ -179,35 +179,6 @@ Function Initialize-PSDotFiles {
     $script:InstalledPrograms = Get-InstalledPrograms
 }
 
-Function Get-DotFilesComponent {
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory=$true)]
-            [System.IO.DirectoryInfo]$Directory
-    )
-
-    $Name             = $Directory.Name
-    $ScriptName       = $Name + ".ps1"
-    $GlobalScriptPath = Join-Path $script:GlobalMetadataPath $ScriptName
-    $CustomScriptPath = Join-Path $script:DotFilesMetadataPath $ScriptName
-
-    if (Test-Path -Path $CustomScriptPath -PathType Leaf) {
-        Write-Debug "Loading custom metadata for component: $Name"
-        $Component = . $CustomScriptPath
-    } elseif (Test-Path -Path $GlobalScriptPath -PathType Leaf) {
-        Write-Debug "Loading global metadata for component: $Name"
-        $Component = . $GlobalScriptPath
-    } elseif ($script:DotFilesAutodetect) {
-        Write-Debug "Running automatic detection for component: $Name"
-        $Component = Find-DotFilesComponent -Name $Name
-    } else {
-        Write-Debug "No metadata & automatic detection disabled for: $Name"
-        $Component = [Component]::new($Name, [Availability]::NoLogic)
-    }
-    $Component.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
-    return $Component
-}
-
 Function Find-DotFilesComponent {
     [CmdletBinding()]
     Param(
@@ -244,6 +215,35 @@ Function Find-DotFilesComponent {
     return [Component]::new($Name, [Availability]::Unavailable)
 }
 
+Function Get-DotFilesComponent {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true)]
+            [System.IO.DirectoryInfo]$Directory
+    )
+
+    $Name             = $Directory.Name
+    $ScriptName       = $Name + ".ps1"
+    $GlobalScriptPath = Join-Path $script:GlobalMetadataPath $ScriptName
+    $CustomScriptPath = Join-Path $script:DotFilesMetadataPath $ScriptName
+
+    if (Test-Path -Path $CustomScriptPath -PathType Leaf) {
+        Write-Debug "Loading custom metadata for component: $Name"
+        $Component = . $CustomScriptPath
+    } elseif (Test-Path -Path $GlobalScriptPath -PathType Leaf) {
+        Write-Debug "Loading global metadata for component: $Name"
+        $Component = . $GlobalScriptPath
+    } elseif ($script:DotFilesAutodetect) {
+        Write-Debug "Running automatic detection for component: $Name"
+        $Component = Find-DotFilesComponent -Name $Name
+    } else {
+        Write-Debug "No metadata & automatic detection disabled for: $Name"
+        $Component = [Component]::new($Name, [Availability]::NoLogic)
+    }
+    $Component.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
+    return $Component
+}
+
 Function Get-InstalledPrograms {
     [CmdletBinding()]
     Param()
@@ -270,22 +270,6 @@ Function Get-InstalledPrograms {
            ($_.UninstallString -or $_.NoRemove) }
 
     return $InstalledPrograms
-}
-
-Function Test-DotFilesPath {
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory=$true)]
-            [String]$Path
-    )
-
-    if (Test-Path -Path $Path) {
-        $PathItem = Get-Item -Path $Path
-        if ($PathItem -is [System.IO.DirectoryInfo]) {
-            return $PathItem.FullName
-        }
-    }
-    return $false
 }
 
 Function Install-DotFilesComponent {
@@ -327,6 +311,22 @@ Function Install-DotFilesComponent {
             Install-DotFilesComponent -ComponentName $ComponentName -BaseDirectory $BaseDirectory -Directories $NextDirectories -Files $NextFiles
         }
     }
+}
+
+Function Test-DotFilesPath {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true)]
+            [String]$Path
+    )
+
+    if (Test-Path -Path $Path) {
+        $PathItem = Get-Item -Path $Path
+        if ($PathItem -is [System.IO.DirectoryInfo]) {
+            return $PathItem.FullName
+        }
+    }
+    return $false
 }
 
 $script:PSDotFiles = $true
