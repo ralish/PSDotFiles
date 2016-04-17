@@ -228,16 +228,16 @@ Function Get-DotFilesComponent {
     $CustomScriptPath = Join-Path $script:DotFilesMetadataPath $ScriptName
 
     if (Test-Path -Path $CustomScriptPath -PathType Leaf) {
-        Write-Debug "Loading custom metadata for component: $Name"
+        Write-Debug "[$Name] Loading custom metadata for component..."
         $Component = . $CustomScriptPath
     } elseif (Test-Path -Path $GlobalScriptPath -PathType Leaf) {
-        Write-Debug "Loading global metadata for component: $Name"
+        Write-Debug "[$Name] Loading global metadata for component..."
         $Component = . $GlobalScriptPath
     } elseif ($script:DotFilesAutodetect) {
-        Write-Debug "Running automatic detection for component: $Name"
+        Write-Debug "[$Name] Running automatic detection for component..."
         $Component = Find-DotFilesComponent -Name $Name
     } else {
-        Write-Debug "No metadata & automatic detection disabled for: $Name"
+        Write-Debug "[$Name] No metadata & automatic detection disabled."
         $Component = [Component]::new($Name, [Availability]::NoLogic)
     }
     $Component.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
@@ -291,7 +291,7 @@ Function Install-DotFilesComponent {
 
     if ($PSCmdlet.ParameterSetName -eq "Component") {
         $BaseDirectory = Join-Path $script:DotFilesPath $Component.Name
-        Write-Debug ($Component.Name + " -> Base directory is: $BaseDirectory")
+        Write-Debug ("[" + $Component.Name + "] Base directory is: $BaseDirectory")
 
         $Directories = Get-ChildItem $BaseDirectory -Directory
         $Files = Get-ChildItem $BaseDirectory -File
@@ -299,12 +299,12 @@ Function Install-DotFilesComponent {
     } else {
         foreach ($File in $Files) {
             $TargetFile = Join-Path $HOME $File.FullName.Substring($BaseDirectory.Length + 1)
-            Write-Debug ("$ComponentName -> Linking file: `"$TargetFile`" -> `"" + $File.FullName + "`"")
+            Write-Debug ("[$ComponentName] Linking file: `"$TargetFile`" -> `"" + $File.FullName + "`"")
         }
 
         foreach ($Directory in $Directories) {
             $TargetDirectory = Join-Path $HOME $Directory.FullName.Substring($BaseDirectory.Length + 1)
-            Write-Debug "$ComponentName -> Creating directory: `"$TargetDirectory`""
+            Write-Debug "[$ComponentName] Creating directory: `"$TargetDirectory`""
 
             $NextDirectories = Get-ChildItem $Directory.FullName -Directory
             $NextFiles = Get-ChildItem $Directory.FullName -File
