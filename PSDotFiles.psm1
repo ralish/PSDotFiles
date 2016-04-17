@@ -304,10 +304,10 @@ Function Install-DotFilesComponent {
             if (Test-Path $TargetFile) {
                 $ExistingTarget = Get-Item $TargetFile -Force
                 if ($ExistingTarget.LinkType -ne "SymbolicLink") {
-                    Write-Error "[$ComponentName] Unable to create symlink as the file already exists: $TargetFile"
+                    Write-Error "[$ComponentName] Unable to create symlink as a file or directory with the same name already exists: $TargetFile"
                 } else {
-                    $TargetDirectory = Split-Path $TargetFile -Parent
-                    $ResolvedTarget = (Resolve-Path (Join-Path $TargetDirectory $ExistingTarget.Target[0])).Path
+                    $ParentDirectory = Split-Path $TargetFile -Parent
+                    $ResolvedTarget = (Resolve-Path (Join-Path $ParentDirectory $ExistingTarget.Target[0])).Path
                     if (!($File.FullName -eq $ResolvedTarget)) {
                         Write-Error "[$ComponentName] Symlink already exists but points to unexpected target: `"$TargetFile`" -> `"$ResolvedTarget`""
                     } else {
@@ -322,11 +322,29 @@ Function Install-DotFilesComponent {
         foreach ($Directory in $Directories) {
             $RelativeDirectory = $Directory.FullName.Substring($BaseDirectory.Length + 1)
             $TargetDirectory = Join-Path $HOME $RelativeDirectory
-            Write-Debug "[$ComponentName] Creating directory: $TargetDirectory"
 
-            $NextDirectories = Get-ChildItem $Directory.FullName -Directory -Force
-            $NextFiles = Get-ChildItem $Directory.FullName -File -Force
-            Install-DotFilesComponent -ComponentName $ComponentName -BaseDirectory $BaseDirectory -Directories $NextDirectories -Files $NextFiles
+            if (Test-Path $TargetDirectory) {
+                $ExistingTarget = Get-Item $TargetDirectory -Force
+                if ($ExistingTarget.LinkType -ne "SymbolicLink") {
+                    if ($ExistingTarget -isnot [System.IO.DirectoryInfo]) {
+                        Write-Error "[$ComponentName] Expected a directory but found a file with the same name: $TargetDirectory"
+                    } else {
+                        $NextDirectories = Get-ChildItem $Directory.FullName -Directory -Force
+                        $NextFiles = Get-ChildItem $Directory.FullName -File -Force
+                        Install-DotFilesComponent -ComponentName $ComponentName -BaseDirectory $BaseDirectory -Directories $NextDirectories -Files $NextFiles
+                    }
+                } else {
+                    $ParentDirectory = Split-Path $TargetDirectory -Parent
+                    $ResolvedTarget = (Resolve-Path (Join-Path $ParentDirectory $ExistingTarget.Target[0])).Path
+                    if (!($Directory.FullName -eq $ResolvedTarget)) {
+                        Write-Error "[$ComponentName] Symlink already exists but points to unexpected target: `"$TargetDirectory`" -> `"$ResolvedTarget`""
+                    } else {
+                        Write-Debug "[$ComponentName] Symlink already exists and points to expected target: `"$TargetDirectory`" -> `"$ResolvedTarget`""
+                    }
+                }
+            } else {
+                Write-Debug ("[$ComponentName] Linking directory: `"$TargetDirectory`" -> `"" + $Directory.FullName + "`"")
+            }
         }
     }
 }
