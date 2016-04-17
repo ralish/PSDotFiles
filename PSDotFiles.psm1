@@ -97,6 +97,12 @@ Function Install-DotFiles {
     )
 
     Initialize-PSDotFiles @PSBoundParameters
+    $Components = Get-DotFiles @PSBoundParameters | ? { $_.Availability -in ("Available", "AlwaysInstall") }
+
+    foreach ($Component in $Components) {
+        Write-Verbose ("Installing component: " + $Component.Name)
+        Install-DotFilesComponent -Component $Component
+    }
 }
 
 Function Remove-DotFiles {
@@ -170,8 +176,8 @@ Function Initialize-PSDotFiles {
     }
     Write-Debug "Automatic component detection state: $script:DotFilesAutodetect"
 
-    $script:InstalledPrograms = Get-InstalledPrograms
     Write-Debug "Refreshing cache of installed programs..."
+    $script:InstalledPrograms = Get-InstalledPrograms
 }
 
 Function Get-DotFilesComponent {
@@ -281,6 +287,47 @@ Function Test-DotFilesPath {
         }
     }
     return $false
+}
+
+Function Install-DotFilesComponent {
+    [CmdletBinding()]
+    Param(
+        [Parameter(ParameterSetName='Component',Mandatory=$true)]
+            [Component]$Component,
+        [Parameter(ParameterSetName='Recursive',Mandatory=$true)]
+            [String]$ComponentName,
+        [Parameter(ParameterSetName='Recursive',Mandatory=$true)]
+            [String]$BaseDirectory,
+        [Parameter(ParameterSetName='Recursive',Mandatory=$true)]
+        [AllowNull()]
+            [System.IO.DirectoryInfo[]]$Directories,
+        [Parameter(ParameterSetName='Recursive',Mandatory=$true)]
+        [AllowNull()]
+            [System.IO.FileInfo[]]$Files
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq "Component") {
+        $BaseDirectory = Join-Path $script:DotFilesPath $Component.Name
+        Write-Debug ($Component.Name + " -> Base directory is: $BaseDirectory")
+
+        $Directories = Get-ChildItem $BaseDirectory -Directory
+        $Files = Get-ChildItem $BaseDirectory -File
+        Install-DotFilesComponent -ComponentName $Component.Name -BaseDirectory $BaseDirectory -Directories $Directories -Files $Files
+    } else {
+        foreach ($File in $Files) {
+            $TargetFile = Join-Path $HOME $File.FullName.Substring($BaseDirectory.Length + 1)
+            Write-Debug ("$ComponentName -> Linking file: `"$TargetFile`" -> `"" + $File.FullName + "`"")
+        }
+
+        foreach ($Directory in $Directories) {
+            $TargetDirectory = Join-Path $HOME $Directory.FullName.Substring($BaseDirectory.Length + 1)
+            Write-Debug "$ComponentName -> Creating directory: `"$TargetDirectory`""
+
+            $NextDirectories = Get-ChildItem $Directory.FullName -Directory
+            $NextFiles = Get-ChildItem $Directory.FullName -File
+            Install-DotFilesComponent -ComponentName $ComponentName -BaseDirectory $BaseDirectory -Directories $NextDirectories -Files $NextFiles
+        }
+    }
 }
 
 $script:PSDotFiles = $true
