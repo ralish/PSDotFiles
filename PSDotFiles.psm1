@@ -293,21 +293,39 @@ Function Install-DotFilesComponent {
         $BaseDirectory = Join-Path $script:DotFilesPath $Component.Name
         Write-Debug ("[" + $Component.Name + "] Base directory is: $BaseDirectory")
 
-        $Directories = Get-ChildItem $BaseDirectory -Directory
-        $Files = Get-ChildItem $BaseDirectory -File
+        $Directories = Get-ChildItem $BaseDirectory -Directory -Force
+        $Files = Get-ChildItem $BaseDirectory -File -Force
         Install-DotFilesComponent -ComponentName $Component.Name -BaseDirectory $BaseDirectory -Directories $Directories -Files $Files
     } else {
         foreach ($File in $Files) {
-            $TargetFile = Join-Path $HOME $File.FullName.Substring($BaseDirectory.Length + 1)
-            Write-Debug ("[$ComponentName] Linking file: `"$TargetFile`" -> `"" + $File.FullName + "`"")
+            $RelativeFile = $File.FullName.Substring($BaseDirectory.Length + 1)
+            $TargetFile = Join-Path $HOME $RelativeFile
+
+            if (Test-Path $TargetFile) {
+                $ExistingTarget = Get-Item $TargetFile -Force
+                if ($ExistingTarget.LinkType -ne "SymbolicLink") {
+                    Write-Error "[$ComponentName] Unable to create symlink as the file already exists: $TargetFile"
+                } else {
+                    $TargetDirectory = Split-Path $TargetFile -Parent
+                    $ResolvedTarget = (Resolve-Path (Join-Path $TargetDirectory $ExistingTarget.Target[0])).Path
+                    if (!($File.FullName -eq $ResolvedTarget)) {
+                        Write-Error "[$ComponentName] Symlink already exists but points to unexpected target: `"$TargetFile`" -> `"$ResolvedTarget`""
+                    } else {
+                        Write-Debug "[$ComponentName] Symlink already exists and points to expected target: `"$TargetFile`" -> `"$ResolvedTarget`""
+                    }
+                }
+            } else {
+                Write-Debug ("[$ComponentName] Linking file: `"$TargetFile`" -> `"" + $File.FullName + "`"")
+            }
         }
 
         foreach ($Directory in $Directories) {
-            $TargetDirectory = Join-Path $HOME $Directory.FullName.Substring($BaseDirectory.Length + 1)
-            Write-Debug "[$ComponentName] Creating directory: `"$TargetDirectory`""
+            $RelativeDirectory = $Directory.FullName.Substring($BaseDirectory.Length + 1)
+            $TargetDirectory = Join-Path $HOME $RelativeDirectory
+            Write-Debug "[$ComponentName] Creating directory: $TargetDirectory"
 
-            $NextDirectories = Get-ChildItem $Directory.FullName -Directory
-            $NextFiles = Get-ChildItem $Directory.FullName -File
+            $NextDirectories = Get-ChildItem $Directory.FullName -Directory -Force
+            $NextFiles = Get-ChildItem $Directory.FullName -File -Force
             Install-DotFilesComponent -ComponentName $ComponentName -BaseDirectory $BaseDirectory -Directories $NextDirectories -Files $NextFiles
         }
     }
