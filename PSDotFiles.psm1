@@ -96,7 +96,6 @@ Function Install-DotFiles {
             [Switch]$Autodetect
     )
 
-    Initialize-PSDotFiles @PSBoundParameters
     $Components = Get-DotFiles @PSBoundParameters | ? { $_.Availability -in ("Available", "AlwaysInstall") }
 
     foreach ($Component in $Components) {
