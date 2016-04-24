@@ -343,6 +343,40 @@ Function Initialize-DotFilesComponent {
         Write-Error ("[$Name] Invalid component detection method specified: " + $Metadata.Component.Detection.Method)
     }
 
+    # If the component isn't available don't both determining the install path
+    if ($Component.Availability -notin ("Available", "AlwaysInstall")) {
+        return $Component
+    }
+
+    # Configure component installation path
+    if (!$Metadata.Component.InstallPath) {
+        $Component.InstallPath = [Environment]::GetFolderPath("UserProfile")
+    } else {
+        $SpecialFolder = $Metadata.Component.InstallPath.SpecialFolder
+        $Destination = $Metadata.Component.InstallPath.Destination
+
+        if (!$SpecialFolder -and !$Destination) {
+            $Component.InstallPath = [Environment]::GetFolderPath("UserProfile")
+        } elseif (!$SpecialFolder -and $Destination) {
+            # TODO: Check $Destination is an absolute path
+            if (Test-Path -Path $Destination -PathType Container -IsValid) {
+                $Component.InstallPath = $Destination
+            } else {
+                Write-Error "[$Name] The destination path for symlinking is invalid: $Destination"
+            }
+        } elseif ($SpecialFolder -and !$Destination) {
+            $Component.InstallPath = [Environment]::GetFolderPath($SpecialFolder)
+        } else {
+            # TODO: Check $Destination is a relative path
+            $InstallPath = Join-Path ([Environment]::GetFolderPath($SpecialFolder)) $Destination
+            if (Test-Path -Path $InstallPath -PathType Container -IsValid) {
+                $Component.InstallPath = $InstallPath
+            } else {
+                Write-Error "[$Name] The destination path for symlinking is invalid: $InstallPath"
+            }
+        }
+    }
+
     return $Component
 }
 

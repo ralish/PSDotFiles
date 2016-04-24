@@ -31,6 +31,8 @@ Class Component {
 
     # IGNORE: Uninstall Registry key (populated by Find-DotFilesComponent)
     [String]$UninstallKey = ""
+    # IGNORE: Determined by the <SpecialFolder> and <Destination> elements
+    [String]$InstallPath = ""
     # IGNORE: This will be set automatically during later install detection
     [String]$Installed = ""
 

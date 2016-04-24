@@ -45,4 +45,36 @@
         -->
         <Availability></Availability>
     </Detection>
+
+    <!-- Optional configuration to customise component installation path -->
+    <InstallPath>
+        <!--
+            Specifies a special folder from the Environment.SpecialFolder enumeration
+
+            This setting can be used in two ways to modify the destination for symlinking:
+             - If no <Destination> is specified the component will be symlinked directly into the
+               specified special folder.
+             - If a <Destination> is specified it will be used as a *suffix* to the nominated
+               special folder. That is, the <Destination> path is relative to the special folder.
+
+            The default behaviour is particularly important to note:
+             - If not specified the default is to use the "UserProfile" special folder ($HOME).
+             - If a <Destination> folder is specified without a <SpecialFolder> then *no* special
+               folder is used and <Destination> is considered to be an absolute path.
+
+            See: https://msdn.microsoft.com/en-us/library/system.environment.specialfolder.aspx
+        -->
+        <SpecialFolder></SpecialFolder>
+
+        <!--
+            Specifies an absolute or relative destination path subject to <SpecialFolder>
+
+            This setting specifies an absolute or relative filesystem path as the destination for
+            component symlinking. The path is considered absolute *only if* no <SpecialFolder> is
+            specified. Otherwise, this path is considered to be relative to the special folder.
+
+            If no <Destination> is specified then only the <SpecialFolder> path will be used.
+        -->
+        <Destination></Destination>
+    </InstallPath>
 </Component>
