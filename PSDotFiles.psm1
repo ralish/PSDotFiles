@@ -163,6 +163,9 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose "Using dotfiles directory: $script:DotFilesPath"
 
+    $script:GlobalMetadataPath = Join-Path $PSScriptRoot "metadata"
+    Write-Debug "Using global metadata directory: $script:GlobalMetadataPath"
+
     $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath "metadata"
     Write-Debug "Using dotfiles metadata directory: $script:DotFilesMetadataPath"
 
@@ -474,8 +477,41 @@ Function Test-DotFilesPath {
     return $false
 }
 
-$script:PSDotFiles = $true
+Enum Availability {
+    # The component was detected
+    Available
+    # The component was not detected
+    Unavailable
+    # The component will be ignored. This is distinct from "Unavailable"
+    # as it indicates the component is not available for the platform.
+    Ignored
+    # The component will always be installed
+    AlwaysInstall
+    # The component will never be installed
+    NeverInstall
+    # A failure occurred during component detection
+    DetectionFailure
+    # No detection logic was available
+    NoLogic
+}
 
-$script:GlobalMetadataPath = Join-Path $PSScriptRoot "metadata"
-Write-Debug "Using global metadata directory: $script:GlobalMetadataPath"
-. (Join-Path $script:GlobalMetadataPath "templates\common.ps1")
+Class Component {
+    # REQUIRED: This should match the corresponding dotfiles directory
+    [String]$Name
+    # REQUIRED: The availability state per the Availability enumeration
+    [Availability]$Availability = [Availability]::DetectionFailure
+
+    # OPTIONAL: Friendly name if one was provided or could be located
+    [String]$FriendlyName
+
+    # INTERNAL: Determined by the <SpecialFolder> and <Destination> elements
+    [String]$InstallPath
+    # INTERNAL: Uninstall Registry key (populated by Find-DotFilesComponent)
+    [String]$UninstallKey
+    # INTERNAL: This will be set automatically during later install detection
+    [String]$Installed
+
+    Component([String]$Name) {
+        $this.Name = $Name
+    }
+}
