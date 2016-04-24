@@ -394,21 +394,27 @@ Function Initialize-DotFilesComponent {
         if (!$SpecialFolder -and !$Destination) {
             $Component.InstallPath = [Environment]::GetFolderPath("UserProfile")
         } elseif (!$SpecialFolder -and $Destination) {
-            # TODO: Check $Destination is an absolute path
-            if (Test-Path -Path $Destination -PathType Container -IsValid) {
-                $Component.InstallPath = $Destination
+            if ([System.IO.Path]::IsPathRooted($Destination)) {
+                if (Test-Path -Path $Destination -PathType Container -IsValid) {
+                    $Component.InstallPath = $Destination
+                } else {
+                    Write-Error "[$Name] The destination path for symlinking is invalid: $Destination"
+                }
             } else {
-                Write-Error "[$Name] The destination path for symlinking is invalid: $Destination"
+                Write-Error "[$Name] The destination path for symlinking is not an absolute path: $Destination"
             }
         } elseif ($SpecialFolder -and !$Destination) {
             $Component.InstallPath = [Environment]::GetFolderPath($SpecialFolder)
         } else {
-            # TODO: Check $Destination is a relative path
-            $InstallPath = Join-Path ([Environment]::GetFolderPath($SpecialFolder)) $Destination
-            if (Test-Path -Path $InstallPath -PathType Container -IsValid) {
-                $Component.InstallPath = $InstallPath
+            if (!([System.IO.Path]::IsPathRooted($Destination))) {
+                $InstallPath = Join-Path ([Environment]::GetFolderPath($SpecialFolder)) $Destination
+                if (Test-Path -Path $InstallPath -PathType Container -IsValid) {
+                    $Component.InstallPath = $InstallPath
+                } else {
+                    Write-Error "[$Name] The destination path for symlinking is invalid: $InstallPath"
+                }
             } else {
-                Write-Error "[$Name] The destination path for symlinking is invalid: $InstallPath"
+                Write-Error "[$Name] The destination path for symlinking is not a relative path: $Destination"
             }
         }
     }
