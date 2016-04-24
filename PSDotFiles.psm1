@@ -3,14 +3,14 @@ Function Get-DotFiles {
         .SYNOPSIS
         Enumerates the available dotfiles components
         .DESCRIPTION
-        .PARAMETER Autodetect
-        Toggles automatic detection of enumerated components without any metadata.
-
-        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled ($false).
         .PARAMETER Path
         Use the specified directory as the dotfiles directory.
 
         This overrides any default specified in $DotFilesPath.
+        .PARAMETER Autodetect
+        Toggles automatic detection of enumerated components without any metadata.
+
+        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled ($false).
         .PARAMETER Summary
         Return the results of the detection in summary form.
         .EXAMPLE
@@ -237,6 +237,7 @@ Function Get-DotFilesComponent {
         Write-Debug "[$Name] No metadata & automatic detection disabled."
         $Component = [Component]::new($Name, [Availability]::NoLogic)
     }
+
     $Component.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
     return $Component
 }
@@ -272,9 +273,9 @@ Function Get-InstalledPrograms {
 Function Initialize-DotFilesComponent {
     [CmdletBinding()]
     Param(
-        [Parameter(Position=0,Mandatory=$true)]
+        [Parameter(Mandatory=$true)]
             [String]$Name,
-        [Parameter(Position=1,Mandatory=$false)]
+        [Parameter(Mandatory=$false)]
             [Xml]$Metadata
     )
 
@@ -287,10 +288,12 @@ Function Initialize-DotFilesComponent {
 
     $Component = [Component]::new($Name)
 
+    # Set the friendly name if provided
     if ($Metadata.Component.FriendlyName) {
         $Component.FriendlyName = $Metadata.Component.Friendlyname
     }
 
+    # Configure and perform component detection
     if (!$Metadata.Component.Detection.Method -or
          $Metadata.Component.Detection.Method -eq "Automatic") {
         $Parameters = @{'Name'=$Name}

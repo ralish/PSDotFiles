@@ -25,12 +25,14 @@ Class Component {
     [String]$Name
     # OPTIONAL: Friendly name if one was provided or could be located
     [String]$FriendlyName = ""
+
     # REQUIRED: The availability state per the Availability enumeration
     [Availability]$Availability = [Availability]::DetectionFailure
+
+    # IGNORE: Uninstall Registry key (populated by Find-DotFilesComponent)
+    [String]$UninstallKey = ""
     # IGNORE: This will be set automatically during later install detection
     [String]$Installed = ""
-    # OPTIONAL: Uninstall Registry key (typically set by Find-DotFilesComponent)
-    [String]$UninstallKey
 
     Component([String]$Name) {
         $this.Name = $Name
