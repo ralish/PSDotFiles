@@ -278,6 +278,34 @@ Function Get-InstalledPrograms {
     return $InstalledPrograms
 }
 
+Function Get-SymlinkTarget {
+    [CmdletBinding()]
+    Param(
+        [Parameter(ParameterSetName='Directory',Mandatory=$true)]
+            [System.IO.DirectoryInfo]$Directory,
+        [Parameter(ParameterSetName='File',Mandatory=$true)]
+            [System.IO.FileInfo]$File
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq 'Directory') {
+        $Symlink = $Directory
+    } else {
+        $Symlink = $File
+    }
+
+    if ($Symlink.LinkType -ne "SymbolicLink") {
+        return $false
+    }
+
+    $Absolute = [System.IO.Path]::IsPathRooted($Symlink.Target[0])
+    if ($Absolute) {
+        return $Symlink.Target[0]
+    } else {
+        return (Resolve-Path (Join-Path (Split-Path $Symlink -Parent) $Symlink.Target[0])).Path
+    }
+
+}
+
 Function Initialize-DotFilesComponent {
     [CmdletBinding()]
     Param(
@@ -414,15 +442,7 @@ Function Install-DotFilesComponentDirectory {
             if ($ExistingTarget -isnot [System.IO.DirectoryInfo]) {
                 Write-Error "[$Name] Expected a directory but found a file with the same name: $TargetDirectory"
             } elseif ($ExistingTarget.LinkType -eq "SymbolicLink") {
-                $SymlinkIsAbsolute = [System.IO.Path]::IsPathRooted($ExistingTarget.Target[0])
-
-                if ($SymlinkIsAbsolute) {
-                    $SymlinkTarget = $ExistingTarget.Target[0]
-                } else {
-                    $SymlinkParent = Split-Path $TargetDirectory -Parent
-                    $SymlinkJoined = Join-Path $SymlinkParent $ExistingTarget.Target[0]
-                    $SymlinkTarget = (Resolve-Path $SymlinkJoined).Path
-                }
+                $SymlinkTarget = Get-SymlinkTarget -Directory $ExistingTarget
 
                 if (!($Directory.FullName -eq $SymlinkTarget)) {
                     Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetDirectory`" -> `"$SymlinkTarget`""
@@ -470,15 +490,7 @@ Function Install-DotFilesComponentFile {
             } elseif ($ExistingTarget.LinkType -ne "SymbolicLink") {
                 Write-Error "[$Name] Unable to create symlink as a file with the same name already exists: $TargetFile"
             } else {
-                $SymlinkIsAbsolute = [System.IO.Path]::IsPathRooted($ExistingTarget.Target[0])
-
-                if ($SymlinkIsAbsolute) {
-                    $SymlinkTarget = $ExistingTarget.Target[0]
-                } else {
-                    $SymlinkParent = Split-Path $TargetFile -Parent
-                    $SymlinkJoined = Join-Path $SymlinkParent $ExistingTarget.Target[0]
-                    $SymlinkTarget = (Resolve-Path $SymlinkJoined).Path
-                }
+                $SymlinkTarget = Get-SymlinkTarget -File $ExistingTarget
 
                 if (!($File.FullName -eq $SymlinkTarget)) {
                     Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetFile`" -> `"$SymlinkTarget`""
