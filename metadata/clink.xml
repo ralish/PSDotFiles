@@ -1,0 +1,7 @@
+<Component>
+    <FriendlyName>Clink</FriendlyName>
+    <InstallPath>
+        <SpecialFolder>LocalApplicationData</SpecialFolder>
+        <Destination>Clink</Destination>
+    </InstallPath>
+</Component>

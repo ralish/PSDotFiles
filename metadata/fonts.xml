@@ -1,0 +1,7 @@
+<Component>
+    <FriendlyName>Dotfiles fonts</FriendlyName>
+    <Detection>
+        <Method>Static</Method>
+        <Availability>NeverInstall</Availability>
+    </Detection>
+</Component>

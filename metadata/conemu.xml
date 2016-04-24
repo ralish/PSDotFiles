@@ -1,0 +1,6 @@
+<Component>
+    <FriendlyName>ConEmu</FriendlyName>
+    <InstallPath>
+        <SpecialFolder>ApplicationData</SpecialFolder>
+    </InstallPath>
+</Component>
