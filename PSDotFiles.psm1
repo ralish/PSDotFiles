@@ -235,7 +235,8 @@ Function Get-DotFilesComponent {
         $Component = Initialize-DotFilesComponent -Name $Name
     } else {
         Write-Debug "[$Name] No metadata & automatic detection disabled."
-        $Component = [Component]::new($Name, [Availability]::NoLogic)
+        $Component = [Component]::new($Name)
+        $Component.Availability = [Availability]::NoLogic
     }
 
     $Component.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
