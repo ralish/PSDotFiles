@@ -4,4 +4,8 @@
         <Method>Static</Method>
         <Availability>AlwaysInstall</Availability>
     </Detection>
+    <InstallPath>
+        <SpecialFolder>Personal</SpecialFolder>
+        <Destination>WindowsPowerShell</Destination>
+    </InstallPath>
 </Component>
