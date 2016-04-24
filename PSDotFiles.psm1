@@ -238,7 +238,7 @@ Function Get-DotFilesComponent {
         $Component = Initialize-DotFilesComponent -Name $Name
     } else {
         Write-Debug "[$Name] No metadata & automatic detection disabled."
-        $Component = [Component]::new($Name)
+        $Component = [Component]::new($Name, $script:DotFilesPath)
         $Component.Availability = [Availability]::NoLogic
     }
 
@@ -290,7 +290,7 @@ Function Initialize-DotFilesComponent {
         }
     }
 
-    $Component = [Component]::new($Name)
+    $Component = [Component]::new($Name, $script:DotFilesPath)
 
     # Set the friendly name if provided
     if ($Metadata.Component.FriendlyName) {
@@ -471,7 +471,7 @@ Function Test-DotFilesPath {
     if (Test-Path -Path $Path) {
         $PathItem = Get-Item -Path $Path
         if ($PathItem -is [System.IO.DirectoryInfo]) {
-            return $PathItem.FullName
+            return $PathItem
         }
     }
     return $false
@@ -504,6 +504,8 @@ Class Component {
     # OPTIONAL: Friendly name if one was provided or could be located
     [String]$FriendlyName
 
+    # INTERNAL: This will be set automatically based on the component name
+    [System.IO.DirectoryInfo]$SourcePath
     # INTERNAL: Determined by the <SpecialFolder> and <Destination> elements
     [String]$InstallPath
     # INTERNAL: Uninstall Registry key (populated by Find-DotFilesComponent)
@@ -511,7 +513,8 @@ Class Component {
     # INTERNAL: This will be set automatically during later install detection
     [String]$Installed
 
-    Component([String]$Name) {
+    Component([String]$Name, [System.IO.DirectoryInfo]$DotFilesPath) {
         $this.Name = $Name
+        $this.SourcePath = (Get-Item (Resolve-Path (Join-Path $DotFilesPath $Name)))
     }
 }
