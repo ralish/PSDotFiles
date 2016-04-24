@@ -58,7 +58,7 @@ Function Get-DotFiles {
                 "NeverInstall"          { $ComponentSummary.NeverInstall += $Component }
                 "DetectionFailure"      { $ComponentSummary.DetectionFailure += $Component }
                 "NoLogic"               { $ComponentSummary.NoLogic += $Component }
-                default                 { Write-Error ("Unknown availability state `"" + $Component.Availability + "`" in component: " + $Component.Name) }
+                default                 { Write-Error ("[" + $Component.Name + "] Unknown availability state: " + $Component.Availability) }
             }
         }
 
@@ -205,14 +205,9 @@ Function Find-DotFilesComponent {
 
     $MatchingPrograms = $script:InstalledPrograms | Where-Object @MatchingParameters
     if ($MatchingPrograms) {
-        $Component = [Component]::new($Name, [Availability]::Available)
-        if ($MatchingPrograms.DisplayName) {
-            $Component.FriendlyName = $MatchingPrograms.DisplayName
-            $Component.UninstallKey = $MatchingPrograms.PSPath
-        }
-        return $Component
+        return $MatchingPrograms
     }
-    return [Component]::new($Name, [Availability]::Unavailable)
+    return $false
 }
 
 Function Get-DotFilesComponent {
@@ -222,20 +217,22 @@ Function Get-DotFilesComponent {
             [System.IO.DirectoryInfo]$Directory
     )
 
-    $Name             = $Directory.Name
-    $ScriptName       = $Name + ".ps1"
-    $GlobalScriptPath = Join-Path $script:GlobalMetadataPath $ScriptName
-    $CustomScriptPath = Join-Path $script:DotFilesMetadataPath $ScriptName
+    $Name               = $Directory.Name
+    $MetadataFile       = $Name + ".xml"
+    $GlobalMetadataFile = Join-Path $script:GlobalMetadataPath $MetadataFile
+    $CustomMetadataFile = Join-Path $script:DotFilesMetadataPath $MetadataFile
 
-    if (Test-Path -Path $CustomScriptPath -PathType Leaf) {
+    if (Test-Path -Path $CustomMetadataFile -PathType Leaf) {
         Write-Debug "[$Name] Loading custom metadata for component..."
-        $Component = . $CustomScriptPath
-    } elseif (Test-Path -Path $GlobalScriptPath -PathType Leaf) {
+        $Metadata = [Xml](Get-Content $CustomMetadataFile)
+        $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
+    } elseif (Test-Path -Path $GlobalMetadataFile -PathType Leaf) {
         Write-Debug "[$Name] Loading global metadata for component..."
-        $Component = . $GlobalScriptPath
+        $Metadata = [Xml](Get-Content $GlobalMetadataFile)
+        $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
     } elseif ($script:DotFilesAutodetect) {
         Write-Debug "[$Name] Running automatic detection for component..."
-        $Component = Find-DotFilesComponent -Name $Name
+        $Component = Initialize-DotFilesComponent -Name $Name
     } else {
         Write-Debug "[$Name] No metadata & automatic detection disabled."
         $Component = [Component]::new($Name, [Availability]::NoLogic)
@@ -270,6 +267,80 @@ Function Get-InstalledPrograms {
            ($_.UninstallString -or $_.NoRemove) }
 
     return $InstalledPrograms
+}
+
+Function Initialize-DotFilesComponent {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Position=0,Mandatory=$true)]
+            [String]$Name,
+        [Parameter(Position=1,Mandatory=$false)]
+            [Xml]$Metadata
+    )
+
+    if ($PSBoundParameters.ContainsKey("Metadata")) {
+        if (!$Metadata.Component) {
+            Write-Error "[$Name] No <Component> element in metadata file."
+            return
+        }
+    }
+
+    $Component = [Component]::new($Name)
+
+    if ($Metadata.Component.FriendlyName) {
+        $Component.FriendlyName = $Metadata.Component.Friendlyname
+    }
+
+    if (!$Metadata.Component.Detection.Method -or
+         $Metadata.Component.Detection.Method -eq "Automatic") {
+        $Parameters = @{'Name'=$Name}
+
+        if (!$Metadata.Component.Detection.MatchRegEx -or
+             $Metadata.Component.Detection.MatchRegEx -eq "False") {
+            $Parameters += @{'RegularExpression'=$false}
+        } elseif ($Metadata.Component.Detection.MatchRegEx -eq "True") {
+            $Parameters += @{'RegularExpression'=$true}
+        } else {
+            Write-Error ("[$Name] Invalid MatchRegEx setting for automatic component detection: " + $Metadata.Component.Detection.MatchRegEx)
+        }
+
+        if (!$Metadata.Component.Detection.MatchCase -or
+             $Metadata.Component.Detection.MatchCase -eq "False") {
+            $Parameters += @{'CaseSensitive'=$false}
+        } elseif ($Metadata.Component.Detection.MatchCase -eq "True") {
+            $Parameters += @{'CaseSensitive'=$true}
+        } else {
+            Write-Error ("[$Name] Invalid MatchCase setting for automatic component detection: " + $Metadata.Component.Detection.MatchCase)
+        }
+
+        if ($Metadata.Component.Detection.MatchPattern) {
+            $MatchPattern = $Metadata.Component.Detection.MatchPattern
+            $Parameters += @{'Pattern'=$MatchPattern}
+        }
+
+        $MatchingPrograms = Find-DotFilesComponent @Parameters
+        if ($MatchingPrograms) {
+            $Component.Availability = [Availability]::Available
+            $Component.UninstallKey = $MatchingPrograms.PSPath
+            if (!$Component.FriendlyName -and
+                 $MatchingPrograms.DisplayName) {
+                $Component.FriendlyName = $MatchingPrograms.DisplayName
+            }
+        } else {
+            $Component.Availability = [Availability]::Unavailable
+        }
+    } elseif ($Metadata.Component.Detection.Method -eq "Static") {
+        if ($Metadata.Component.Detection.Availability) {
+            $Availability = $Metadata.Component.Detection.Availability
+            $Component.Availability = [Availability]::$Availability
+        } else {
+            Write-Error "[$Name] No component availability state specified for static detection."
+        }
+    } else {
+        Write-Error ("[$Name] Invalid component detection method specified: " + $Metadata.Component.Detection.Method)
+    }
+
+    return $Component
 }
 
 Function Install-DotFilesComponent {

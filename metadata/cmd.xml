@@ -1,0 +1,7 @@
+<Component>
+    <FriendlyName>Command Prompt</FriendlyName>
+    <Detection>
+        <Method>Static</Method>
+        <Availability>AlwaysInstall</Availability>
+    </Detection>
+</Component>

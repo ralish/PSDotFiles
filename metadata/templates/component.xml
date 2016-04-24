@@ -1,0 +1,48 @@
+<Component>
+    <!-- An optional friendly name for the component -->
+    <FriendlyName></FriendlyName>
+
+    <!-- Optional configuration to customise component detection -->
+    <Detection>
+        <!--
+            Specifies the method used to detect the availability of the component
+
+            Can be one of:
+             - Automatic:   The default method when none is specified. Attempts to automatically
+                            detect the component by retrieving the list of installed programs from
+                            the Windows Registry and searching for a case insensitive wildcard match
+                            against the component name. The matching logic can be customised via the
+                            optional MatchRegEx, MatchCase and MatchPattern elements.
+             - Static:      Always use the availability state provided in the Availability element.
+        -->
+        <Method></Method>
+
+        <!-- Selects either wildcard (default) or regular expression matching -->
+        <MatchRegEx>False</MatchRegEx>
+
+        <!-- Selects either case insensitive (default) or case sensitive matching -->
+        <MatchCase>False</MatchCase>
+
+        <!--
+            The pattern used for matching against the Windows Registry keys. If undefined or blank
+            we'll match against any Registry key where the component name is a substring of the key.
+        -->
+        <MatchPattern></MatchPattern>
+
+        <!--
+            Only used when the detection method is "Static" in which case this is required
+
+            Can be one of:
+             - Available:           The component was detected
+             - Unavailable:         The component was not detected
+             - Ignored:             The component will be ignored. This is distinct from the
+                                    "Unavailable" state as it indicates the component is not
+                                    available for the platform.
+             - AlwaysInstall:       The component will always be installed
+             - NeverInstall:        The component will never be installed
+             - DetectionFailure:    A failure occurred during component detection
+             - NoLogic:             No detection logic was available
+        -->
+        <Availability></Availability>
+    </Detection>
+</Component>

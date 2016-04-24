@@ -1,0 +1,7 @@
+<Component>
+    <FriendlyName>Dotfiles metadata</FriendlyName>
+    <Detection>
+        <Method>Static</Method>
+        <Availability>NeverInstall</Availability>
+    </Detection>
+</Component>

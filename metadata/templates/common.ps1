@@ -32,6 +32,10 @@ Class Component {
     # OPTIONAL: Uninstall Registry key (typically set by Find-DotFilesComponent)
     [String]$UninstallKey
 
+    Component([String]$Name) {
+        $this.Name = $Name
+    }
+
     Component([String]$Name, [Availability]$Availability) {
         $this.Name = $Name
         $this.Availability = $Availability
