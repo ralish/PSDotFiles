@@ -18,7 +18,7 @@
                         <Label>Availability</Label>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Label>Installed</Label>
+                        <Label>State</Label>
                     </TableColumnHeader>
                 </TableHeaders>
                 <TableRowEntries>
@@ -34,7 +34,7 @@
                                 <PropertyName>Availability</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>Installed</PropertyName>
+                                <PropertyName>State</PropertyName>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
@@ -60,7 +60,7 @@
                                 <PropertyName>Availability</PropertyName>
                             </ListItem>
                             <ListItem>
-                                <PropertyName>Installed</PropertyName>
+                                <PropertyName>State</PropertyName>
                             </ListItem>
                         </ListItems>
                     </ListEntry>

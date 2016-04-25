@@ -28,10 +28,18 @@ Function Get-DotFiles {
 
     Initialize-PSDotFiles @PSBoundParameters
 
-    $DotFiles = Get-ChildItem $script:DotFilesPath -Directory
     $Components = @()
-    foreach ($Component in $DotFiles) {
-        $Components += Get-DotFilesComponent -Directory $Component
+    $Directories = Get-ChildItem $script:DotFilesPath -Directory
+
+    foreach ($Directory in $Directories) {
+        $Component = Get-DotFilesComponent -Directory $Directory
+
+        if ($Component.Availability -in ('Available', 'AlwaysInstall')) {
+            $Results = Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly -Silent
+            $Component.State = Get-ComponentInstallResult $Results
+        }
+
+        $Components += $Component
     }
 
     return $Components
@@ -79,11 +87,14 @@ Function Install-DotFiles {
         Write-Verbose ("[$Name] Installing...")
         Write-Debug ("[$Name] Source directory is: " + $Component.SourcePath)
         Write-Debug ("[$Name] Installation path is: " + $Component.InstallPath)
+
         if ($PSCmdlet.ShouldProcess($Name, 'Install-DotFilesComponent')) {
-            Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
+            $Results = Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
         } else {
-            Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
+            $Results = Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
         }
+
+        $Component.State = Get-ComponentInstallResult $Results
     }
 
     return $Components
@@ -199,6 +210,30 @@ Function Find-DotFilesComponent {
         return $MatchingPrograms
     }
     return $false
+}
+
+Function Get-ComponentInstallResult {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true)]
+        [AllowNull()]
+            [Boolean[]]$Results
+    )
+
+    if ($Results) {
+        $TotalResults = ($Results | measure).Count
+        $SuccessCount = ($Results | ? { $_ -eq $true  } | measure).Count
+        $FailureCount = ($Results | ? { $_ -eq $false } | measure).Count
+
+        if ($SuccessCount -eq $TotalResults) {
+            return [InstallState]::Installed
+        } elseif ($FailureCount -eq $TotalResults) {
+            return [InstallState]::NotInstalled
+        } else {
+            return [InstallState]::PartialInstall
+        }
+    }
+    return [InstallState]::Unknown
 }
 
 Function Get-DotFilesComponent {
@@ -430,12 +465,15 @@ Function Install-DotFilesComponentDirectory {
         [Parameter(Mandatory=$true)]
             [System.IO.DirectoryInfo[]]$Directories,
         [Parameter(Mandatory=$false)]
-            [Switch]$TestOnly
+            [Switch]$TestOnly,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Silent
     )
 
     $Name = $Component.Name
     $SourcePath = $Component.SourcePath
     $InstallPath = $Component.InstallPath
+    [Boolean[]]$Results = @()
 
     foreach ($Directory in $Directories) {
         if ($Directory.FullName -eq $SourcePath.FullName) {
@@ -444,7 +482,9 @@ Function Install-DotFilesComponentDirectory {
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
             $TargetDirectory = Join-Path $InstallPath $SourceDirectoryRelative
             if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
-                Write-Verbose "[$Name] Ignoring directory path: $SourceDirectoryRelative"
+                if (!$Silent) {
+                    Write-Verbose "[$Name] Ignoring directory path: $SourceDirectoryRelative"
+                }
                 continue
             }
         }
@@ -452,35 +492,65 @@ Function Install-DotFilesComponentDirectory {
         if (Test-Path $TargetDirectory) {
             $ExistingTarget = Get-Item $TargetDirectory -Force
             if ($ExistingTarget -isnot [System.IO.DirectoryInfo]) {
-                Write-Error "[$Name] Expected a directory but found a file with the same name: $TargetDirectory"
+                if (!$Silent) {
+                    Write-Error "[$Name] Expected a directory but found a file with the same name: $TargetDirectory"
+                }
+                $Results += $false
             } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
                 $SymlinkTarget = Get-SymlinkTarget -Directory $ExistingTarget
 
                 if (!($Directory.FullName -eq $SymlinkTarget)) {
-                    Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetDirectory`" -> `"$SymlinkTarget`""
+                    if (!$Silent) {
+                        Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetDirectory`" -> `"$SymlinkTarget`""
+                    }
+                    $Results += $false
                 } else {
-                    Write-Debug "[$Name] Symlink already exists and points to expected target: `"$TargetDirectory`" -> `"$SymlinkTarget`""
+                    if (!$Silent) {
+                        Write-Debug "[$Name] Symlink already exists and points to expected target: `"$TargetDirectory`" -> `"$SymlinkTarget`""
+                    }
+                    $Results += $true
                 }
             } else {
                 $NextFiles = Get-ChildItem $Directory.FullName -File -Force
                 if ($NextFiles) {
-                    Install-DotFilesComponentFile -Component $Component -Files $NextFiles
+                    if (!$TestOnly -and !$Silent) {
+                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles
+                    } elseif (!$TestOnly -and $Silent) {
+                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Silent
+                    } elseif ($TestOnly -and !$Silent) {
+                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -TestOnly
+                    } else {
+                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -TestOnly -Silent
+                    }
                 }
 
                 $NextDirectories = Get-ChildItem $Directory.FullName -Directory -Force
                 if ($NextDirectories) {
-                    Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
+                    if (!$TestOnly -and !$Silent) {
+                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
+                    } elseif (!$TestOnly -and $Silent) {
+                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Silent
+                    } elseif ($TestOnly -and !$Silent) {
+                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -TestOnly
+                    } else {
+                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -TestOnly -Silent
+                    }
                 }
             }
         } else {
-            Write-Verbose ("[$Name] Linking directory: `"$TargetDirectory`" -> `"" + $Directory.FullName + "`"")
+            if (!$Silent) {
+                Write-Verbose ("[$Name] Linking directory: `"$TargetDirectory`" -> `"" + $Directory.FullName + "`"")
+            }
             if ($TestOnly) {
                 New-Item -ItemType SymbolicLink -Name $TargetDirectory -Target $Directory.FullName -WhatIf
             } else {
                 New-Item -ItemType SymbolicLink -Name $TargetDirectory -Target $Directory.FullName
             }
+            $Results += $true
         }
     }
+
+    return $Results
 }
 
 Function Install-DotFilesComponentFile {
@@ -491,46 +561,68 @@ Function Install-DotFilesComponentFile {
         [Parameter(Mandatory=$true)]
             [System.IO.FileInfo[]]$Files,
         [Parameter(Mandatory=$false)]
-            [Switch]$TestOnly
+            [Switch]$TestOnly,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Silent
     )
 
     $Name = $Component.Name
     $SourcePath = $Component.SourcePath
     $InstallPath = $Component.InstallPath
+    [Boolean[]]$Results = @()
 
     foreach ($File in $Files) {
         $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
         $TargetFile = Join-Path $Component.InstallPath $SourceFileRelative
 
         if ($SourceFileRelative -in $Component.IgnorePaths) {
-            Write-Verbose "[$Name] Ignoring file path: $SourceFileRelative"
+            if (!$Silent) {
+                Write-Verbose "[$Name] Ignoring file path: $SourceFileRelative"
+            }
             continue
         }
 
         if (Test-Path $TargetFile) {
             $ExistingTarget = Get-Item $TargetFile -Force
             if ($ExistingTarget -isnot [System.IO.FileInfo]) {
-                Write-Error "[$Name] Expected a file but found a directory with the same name: $TargetFile"
+                if (!$Silent) {
+                    Write-Error "[$Name] Expected a file but found a directory with the same name: $TargetFile"
+                }
+                $Results += $false
             } elseif ($ExistingTarget.LinkType -ne 'SymbolicLink') {
-                Write-Error "[$Name] Unable to create symlink as a file with the same name already exists: $TargetFile"
+                if (!$Silent) {
+                    Write-Error "[$Name] Unable to create symlink as a file with the same name already exists: $TargetFile"
+                }
+                $Results += $false
             } else {
                 $SymlinkTarget = Get-SymlinkTarget -File $ExistingTarget
 
                 if (!($File.FullName -eq $SymlinkTarget)) {
-                    Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetFile`" -> `"$SymlinkTarget`""
+                    if (!$Silent) {
+                        Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetFile`" -> `"$SymlinkTarget`""
+                    }
+                    $Results += $false
                 } else {
-                    Write-Debug "[$Name] Symlink already exists and points to expected target: `"$TargetFile`" -> `"$SymlinkTarget`""
+                    if (!$Silent) {
+                        Write-Debug "[$Name] Symlink already exists and points to expected target: `"$TargetFile`" -> `"$SymlinkTarget`""
+                    }
+                    $Results += $true
                 }
             }
         } else {
-            Write-Verbose ("[$Name] Linking file: `"$TargetFile`" -> `"" + $File.FullName  + "`"")
+            if (!$Silent) {
+                Write-Verbose ("[$Name] Linking file: `"$TargetFile`" -> `"" + $File.FullName  + "`"")
+            }
             if ($TestOnly) {
                 New-Item -ItemType SymbolicLink -Name $TargetFile -Target $File.FullName -WhatIf
             } else {
                 New-Item -ItemType SymbolicLink -Name $TargetFile -Target $File.FullName
             }
+            $Results += $true
         }
     }
+
+    return $Results
 }
 
 Function Test-DotFilesPath {
@@ -554,8 +646,10 @@ Enum Availability {
     Available
     # The component was not detected
     Unavailable
-    # The component will be ignored. This is distinct from "Unavailable"
-    # as it indicates the component is not available for the platform.
+    # The component will be ignored
+    #
+    # This is distinct from "Unavailable" as it indicates the component is not
+    # available on the underlying platform.
     Ignored
     # The component will always be installed
     AlwaysInstall
@@ -565,6 +659,29 @@ Enum Availability {
     DetectionFailure
     # No detection logic was available
     NoLogic
+}
+
+Enum InstallState {
+    # The component is installed
+    Installed
+    # The component is not installed
+    NotInstalled
+    # The component is partially installed
+    #
+    # After Get-DotFiles this typically means either:
+    #  - Additional files have been added since it was last installed
+    #  - A previous installation attempt was only partially successful
+    #
+    # After Install-DotFiles this typically means errors were encountered during
+    # the installation (or a simulated one). Consult the console error output.
+    PartialInstall
+    # The install state of the component can't be determined
+    #
+    # This can occur when attempting to install a component that has no files or
+    # folders (because they're all ignored via the metadata or there are none).
+    Unknown
+    # The install state of the component has yet to be determined
+    NotEvaluated
 }
 
 Class Component {
@@ -584,8 +701,8 @@ Class Component {
     [String]$InstallPath
     # INTERNAL: Automatically set based on the <Path> elements in <IgnorePaths>
     [String[]]$IgnorePaths
-    # INTERNAL: This will be set automatically during later install detection
-    [String]$Installed
+    # INTERNAL: This will be set automatically during detection and installation
+    [InstallState]$State = [InstallState]::NotEvaluated
 
     Component([String]$Name, [System.IO.DirectoryInfo]$DotFilesPath) {
         $this.Name = $Name
