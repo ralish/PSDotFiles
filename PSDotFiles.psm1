@@ -316,15 +316,16 @@ Function Initialize-DotFilesComponent {
             [Xml]$Metadata
     )
 
+    $Component = [Component]::new($Name, $script:DotFilesPath)
+
+    # Minimal check for sane XML file
     if ($PSBoundParameters.ContainsKey('Metadata')) {
         if (!$Metadata.Component) {
-            # TODO: This should be a detection failure
+            $Component.Availability = [Availability]::DetectionFailure
             Write-Error "[$Name] No <Component> element in metadata file."
-            return
+            return $Component
         }
     }
-
-    $Component = [Component]::new($Name, $script:DotFilesPath)
 
     # Set the friendly name if provided
     if ($Metadata.Component.FriendlyName) {
