@@ -130,7 +130,29 @@ Function Remove-DotFiles {
             [Component[]]$Components
     )
 
-    Initialize-PSDotFiles @PSBoundParameters
+    if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
+        $Components = Get-DotFiles @PSBoundParameters | ? { $_.State -in ('Installed', 'PartialInstall') }
+    } else {
+        $UnfilteredComponents = $Components
+        $Components = $UnfilteredComponents | ? { $_.State -in ('Installed', 'PartialInstall') }
+    }
+
+    foreach ($Component in $Components) {
+        $Name = $Component.Name
+        Write-Verbose ("[$Name] Removing...")
+        Write-Debug ("[$Name] Source directory is: " + $Component.SourcePath)
+        Write-Debug ("[$Name] Installation path is: " + $Component.InstallPath)
+
+        if ($PSCmdlet.ShouldProcess($Name, 'Remove-DotFilesComponent')) {
+            $Results = Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
+        } else {
+            $Results = Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
+        }
+
+        $Component.State = Get-ComponentInstallResult $Results -Removal
+    }
+
+    return $Components
 }
 
 Function Initialize-PSDotFiles {
@@ -217,7 +239,9 @@ Function Get-ComponentInstallResult {
     Param(
         [Parameter(Mandatory=$true)]
         [AllowNull()]
-            [Boolean[]]$Results
+            [Boolean[]]$Results,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Removal
     )
 
     if ($Results) {
@@ -226,9 +250,17 @@ Function Get-ComponentInstallResult {
         $FailureCount = ($Results | ? { $_ -eq $false } | measure).Count
 
         if ($SuccessCount -eq $TotalResults) {
-            return [InstallState]::Installed
+            if (!$Removal) {
+                return [InstallState]::Installed
+            } else {
+                return [InstallState]::NotInstalled
+            }
         } elseif ($FailureCount -eq $TotalResults) {
-            return [InstallState]::NotInstalled
+            if (!$Removal) {
+                return [InstallState]::NotInstalled
+            } else {
+                return [InstallState]::Installed
+            }
         } else {
             return [InstallState]::PartialInstall
         }
@@ -619,6 +651,171 @@ Function Install-DotFilesComponentFile {
                 }
             }
             $Results += $true
+        }
+    }
+
+    return $Results
+}
+
+Function Remove-DotFilesComponentDirectory {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true)]
+            [Component]$Component,
+        [Parameter(Mandatory=$true)]
+            [System.IO.DirectoryInfo[]]$Directories,
+        [Parameter(Mandatory=$false)]
+            [Switch]$TestOnly,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Silent
+    )
+
+    $Name = $Component.Name
+    $SourcePath = $Component.SourcePath
+    $InstallPath = $Component.InstallPath
+    [Boolean[]]$Results = @()
+
+    foreach ($Directory in $Directories) {
+        if ($Directory.FullName -eq $SourcePath.FullName) {
+            $TargetDirectory = $InstallPath
+        } else {
+            $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
+            $TargetDirectory = Join-Path $InstallPath $SourceDirectoryRelative
+            if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
+                if (!$Silent) {
+                    Write-Verbose "[$Name] Ignoring directory path: $SourceDirectoryRelative"
+                }
+                continue
+            }
+        }
+
+        if (Test-Path $TargetDirectory) {
+            $ExistingTarget = Get-Item $TargetDirectory -Force
+            if ($ExistingTarget -isnot [System.IO.DirectoryInfo]) {
+                if (!$Silent) {
+                    Write-Warning "[$Name] Expected a directory but found a file with the same name: $TargetDirectory"
+                }
+            } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
+                $SymlinkTarget = Get-SymlinkTarget -Directory $ExistingTarget
+
+                if (!($Directory.FullName -eq $SymlinkTarget)) {
+                    if (!$Silent) {
+                        Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetDirectory`" -> `"$SymlinkTarget`""
+                    }
+                    $Results += $false
+                } else {
+                    if (!$Silent) {
+                        Write-Verbose ("[$Name] Removing directory symlink: `"$TargetDirectory`" -> `"" + $Directory.FullName  + "`"")
+                        if ($TestOnly) {
+                            Write-Warning "Will remove directory symlink using native rmdir: $TargetDirectory"
+                        } else {
+                            # Apparently despite PowerShell 5.0's new symlink support you can't
+                            # remove a directory symlink without recursively deleting its contents!
+                            cmd /c "rmdir `"$TargetDirectory`""
+                        }
+                    }
+                    $Results += $true
+                }
+            } else {
+                $NextFiles = Get-ChildItem $Directory.FullName -File -Force
+                if ($NextFiles) {
+                    if (!$TestOnly -and !$Silent) {
+                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles
+                    } elseif (!$TestOnly -and $Silent) {
+                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -Silent
+                    } elseif ($TestOnly -and !$Silent) {
+                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -TestOnly
+                    } else {
+                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -TestOnly -Silent
+                    }
+                }
+
+                $NextDirectories = Get-ChildItem $Directory.FullName -Directory -Force
+                if ($NextDirectories) {
+                    if (!$TestOnly -and !$Silent) {
+                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
+                    } elseif (!$TestOnly -and $Silent) {
+                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Silent
+                    } elseif ($TestOnly -and !$Silent) {
+                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -TestOnly
+                    } else {
+                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -TestOnly -Silent
+                    }
+                }
+            }
+        } else {
+            if (!$Silent) {
+                Write-Warning "[$Name] Expected a directory but found nothing: $TargetDirectory"
+            }
+        }
+    }
+
+    return $Results
+}
+
+Function Remove-DotFilesComponentFile {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true)]
+            [Component]$Component,
+        [Parameter(Mandatory=$true)]
+            [System.IO.FileInfo[]]$Files,
+        [Parameter(Mandatory=$false)]
+            [Switch]$TestOnly,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Silent
+    )
+
+    $Name = $Component.Name
+    $SourcePath = $Component.SourcePath
+    $InstallPath = $Component.InstallPath
+    [Boolean[]]$Results = @()
+
+    foreach ($File in $Files) {
+        $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
+        $TargetFile = Join-Path $Component.InstallPath $SourceFileRelative
+
+        if ($SourceFileRelative -in $Component.IgnorePaths) {
+            if (!$Silent) {
+                Write-Verbose "[$Name] Ignoring file path: $SourceFileRelative"
+            }
+            continue
+        }
+
+        if (Test-Path $TargetFile) {
+            $ExistingTarget = Get-Item $TargetFile -Force
+            if ($ExistingTarget -isnot [System.IO.FileInfo]) {
+                if (!$Silent) {
+                    Write-Warning "[$Name] Expected a file but found a directory with the same name: $TargetFile"
+                }
+            } elseif ($ExistingTarget.LinkType -ne 'SymbolicLink') {
+                if (!$Silent) {
+                    Write-Warning "[$Name] Found a file instead of a symbolic link so not removing: $TargetFile"
+                }
+            } else {
+                $SymlinkTarget = Get-SymlinkTarget -File $ExistingTarget
+
+                if (!($File.FullName -eq $SymlinkTarget)) {
+                    if (!$Silent) {
+                        Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetFile`" -> `"$SymlinkTarget`""
+                    }
+                    $Results += $false
+                } else {
+                    if (!$Silent) {
+                        Write-Verbose ("[$Name] Removing file symlink: `"$TargetFile`" -> `"" + $File.FullName  + "`"")
+                        if ($TestOnly){
+                            Remove-Item $TargetFile -WhatIf
+                        } else {
+                            Remove-Item $TargetFile
+                        }
+                    }
+                    $Results += $true
+                }
+            }
+        } else {
+            if (!$Silent) {
+                Write-Warning "[$Name] Expected a file but found nothing: $TargetFile"
+            }
         }
     }
 
