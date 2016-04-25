@@ -334,11 +334,16 @@ Function Initialize-DotFilesComponent {
 
         $MatchingPrograms = Find-DotFilesComponent @Parameters
         if ($MatchingPrograms) {
-            $Component.Availability = [Availability]::Available
-            $Component.UninstallKey = $MatchingPrograms.PSPath
-            if (!$Component.FriendlyName -and
-                 $MatchingPrograms.DisplayName) {
-                $Component.FriendlyName = $MatchingPrograms.DisplayName
+            $NumMatchingPrograms = ($MatchingPrograms | measure).Count
+            if ($NumMatchingPrograms -eq 1) {
+                $Component.Availability = [Availability]::Available
+                $Component.UninstallKey = $MatchingPrograms.PSPath
+                if (!$Component.FriendlyName -and
+                     $MatchingPrograms.DisplayName) {
+                    $Component.FriendlyName = $MatchingPrograms.DisplayName
+                }
+            } elseif ($NumMatchingPrograms -gt 1) {
+                Write-Error "[$Name] Automatic detection found $NumMatchingPrograms matching programs."
             }
         } else {
             $Component.Availability = [Availability]::Unavailable
