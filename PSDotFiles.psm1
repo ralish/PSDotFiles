@@ -411,7 +411,7 @@ Function Install-DotFilesComponentDirectory {
     $InstallPath = $Component.InstallPath
 
     foreach ($Directory in $Directories) {
-        if ($Directory.FullName -eq $SourcePath) {
+        if ($Directory.FullName -eq $SourcePath.FullName) {
             $TargetDirectory = $InstallPath
         } else {
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
