@@ -69,12 +69,13 @@ Function Install-DotFiles {
 
     foreach ($Component in $Components) {
         $Name = $Component.Name
-
         Write-Verbose ("[$Name] Installing...")
         Write-Debug ("[$Name] Source directory is: " + $Component.SourcePath)
         Write-Debug ("[$Name] Installation path is: " + $Component.InstallPath)
         Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
     }
+
+    return $Components
 }
 
 Function Remove-DotFiles {
