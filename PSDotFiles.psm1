@@ -57,7 +57,7 @@ Function Install-DotFiles {
         .LINK
         https://github.com/ralish/PSDotFiles
     #>
-    [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Low')]
+    [CmdletBinding(DefaultParameterSetName='Retrieve',SupportsShouldProcess=$true,ConfirmImpact='Low')]
     Param(
         [Parameter(ParameterSetName='Retrieve',Position=0,Mandatory=$false)]
             [String]$Path,
@@ -109,7 +109,7 @@ Function Remove-DotFiles {
         .LINK
         https://github.com/ralish/PSDotFiles
     #>
-    [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Low')]
+    [CmdletBinding(DefaultParameterSetName='Retrieve',SupportsShouldProcess=$true,ConfirmImpact='Low')]
     Param(
         [Parameter(ParameterSetName='Retrieve',Position=0,Mandatory=$false)]
             [String]$Path,
