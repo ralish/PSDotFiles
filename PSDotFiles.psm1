@@ -246,6 +246,8 @@ Function Get-InstalledPrograms {
            !$_.ParentKeyName -and
            ($_.UninstallString -or $_.NoRemove) }
 
+    Write-Debug ("Registry scan found " + ($InstalledPrograms | measure).Count + " installed programs.")
+
     return $InstalledPrograms
 }
 
