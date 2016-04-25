@@ -84,11 +84,18 @@ Function Install-DotFiles {
 
     foreach ($Component in $Components) {
         $Name = $Component.Name
-        Write-Verbose ("[$Name] Installing...")
+
+        if ($PSCmdlet.ShouldProcess($Name, 'Install-DotFilesComponent')) {
+            Write-Verbose ("[$Name] Installing...")
+        } else {
+            Write-Verbose ("[$Name] Simulating install...")
+            $Simulate = $true
+        }
+
         Write-Debug ("[$Name] Source directory is: " + $Component.SourcePath)
         Write-Debug ("[$Name] Installation path is: " + $Component.InstallPath)
 
-        if ($PSCmdlet.ShouldProcess($Name, 'Install-DotFilesComponent')) {
+        if (!$Simulate) {
             $Results = Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
         } else {
             $Results = Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
@@ -139,11 +146,18 @@ Function Remove-DotFiles {
 
     foreach ($Component in $Components) {
         $Name = $Component.Name
-        Write-Verbose ("[$Name] Removing...")
+
+        if ($PSCmdlet.ShouldProcess($Name, 'Remove-DotFilesComponent')) {
+            Write-Verbose ("[$Name] Removing...")
+        } else {
+            Write-Verbose ("[$Name] Simulating removal...")
+            $Simulate = $true
+        }
+
         Write-Debug ("[$Name] Source directory is: " + $Component.SourcePath)
         Write-Debug ("[$Name] Installation path is: " + $Component.InstallPath)
 
-        if ($PSCmdlet.ShouldProcess($Name, 'Remove-DotFilesComponent')) {
+        if (!$Simulate) {
             $Results = Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
         } else {
             $Results = Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
