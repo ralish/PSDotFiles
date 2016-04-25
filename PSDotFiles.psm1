@@ -11,8 +11,6 @@ Function Get-DotFiles {
         Toggles automatic detection of enumerated components without any metadata.
 
         This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled ($false).
-        .PARAMETER Summary
-        Return the results of the detection in summary form.
         .EXAMPLE
         .INPUTS
         .OUTPUTS
@@ -25,9 +23,7 @@ Function Get-DotFiles {
         [Parameter(Position=0,Mandatory=$false)]
             [String]$Path,
         [Parameter(Mandatory=$false)]
-            [Switch]$Autodetect,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Summary
+            [Switch]$Autodetect
     )
 
     Initialize-PSDotFiles @PSBoundParameters
@@ -36,33 +32,6 @@ Function Get-DotFiles {
     $Components = @()
     foreach ($Component in $DotFiles) {
         $Components += Get-DotFilesComponent -Directory $Component
-    }
-
-    if ($Summary) {
-        $ComponentSummary = [PSCustomObject]@{
-            Available = @()
-            Unavailable = @()
-            Ignored = @()
-            AlwaysInstall = @()
-            NeverInstall = @()
-            DetectionFailure = @()
-            NoLogic = @()
-        }
-
-        foreach ($Component in $Components) {
-            switch ($Component.Availability) {
-                "Available"             { $ComponentSummary.Available += $Component }
-                "Unavailable"           { $ComponentSummary.Unavailable += $Component }
-                "Ignored"               { $ComponentSummary.Ignored += $Component }
-                "AlwaysInstall"         { $ComponentSummary.AlwaysInstall += $Component }
-                "NeverInstall"          { $ComponentSummary.NeverInstall += $Component }
-                "DetectionFailure"      { $ComponentSummary.DetectionFailure += $Component }
-                "NoLogic"               { $ComponentSummary.NoLogic += $Component }
-                default                 { Write-Error ("[" + $Component.Name + "] Unknown availability state: " + $Component.Availability) }
-            }
-        }
-
-        return $ComponentSummary
     }
 
     return $Components
