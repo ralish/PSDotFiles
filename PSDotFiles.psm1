@@ -447,7 +447,8 @@ Function Install-DotFilesComponentDirectory {
                 }
             }
         } else {
-            Write-Debug ("[$Name] Linking directory: `"$TargetDirectory`" -> `"" + $Directory.FullName + "`"")
+            Write-Verbose ("[$Name] Linking directory: `"$TargetDirectory`" -> `"" + $Directory.FullName + "`"")
+            New-Item -ItemType SymbolicLink -Name $TargetDirectory -Target $Directory.FullName
         }
     }
 }
@@ -485,7 +486,8 @@ Function Install-DotFilesComponentFile {
                 }
             }
         } else {
-            Write-Debug ("[$Name] Linking file: `"$TargetFile`" -> `"" + $File.FullName  + "`"")
+            Write-Verbose ("[$Name] Linking file: `"$TargetFile`" -> `"" + $File.FullName  + "`"")
+            New-Item -ItemType SymbolicLink -Name $TargetFile -Target $File.FullName
         }
     }
 }
