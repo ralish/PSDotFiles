@@ -1,7 +1,0 @@
-<Component>
-    <FriendlyName>Dotfiles scripts</FriendlyName>
-    <Detection>
-        <Method>Static</Method>
-        <Availability>Ignored</Availability>
-    </Detection>
-</Component>

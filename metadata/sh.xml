@@ -1,7 +1,0 @@
-<Component>
-    <FriendlyName>Bourne shell</FriendlyName>
-    <Detection>
-        <Method>Static</Method>
-        <Availability>NeverInstall</Availability>
-    </Detection>
-</Component>
