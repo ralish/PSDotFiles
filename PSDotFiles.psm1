@@ -412,6 +412,13 @@ Function Initialize-DotFilesComponent {
         }
     }
 
+    # Configure component ignore paths
+    if ($Metadata.Component.IgnorePaths.Path) {
+        foreach ($Path in $Metadata.Component.IgnorePaths.Path) {
+            $Component.IgnorePaths += $Path
+        }
+    }
+
     return $Component
 }
 
@@ -436,6 +443,10 @@ Function Install-DotFilesComponentDirectory {
         } else {
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
             $TargetDirectory = Join-Path $InstallPath $SourceDirectoryRelative
+            if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
+                Write-Verbose "[$Name] Ignoring directory path: $SourceDirectoryRelative"
+                continue
+            }
         }
 
         if (Test-Path $TargetDirectory) {
@@ -490,6 +501,11 @@ Function Install-DotFilesComponentFile {
     foreach ($File in $Files) {
         $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
         $TargetFile = Join-Path $Component.InstallPath $SourceFileRelative
+
+        if ($SourceFileRelative -in $Component.IgnorePaths) {
+            Write-Verbose "[$Name] Ignoring file path: $SourceFileRelative"
+            continue
+        }
 
         if (Test-Path $TargetFile) {
             $ExistingTarget = Get-Item $TargetFile -Force
@@ -562,10 +578,12 @@ Class Component {
 
     # INTERNAL: This will be set automatically based on the component name
     [System.IO.DirectoryInfo]$SourcePath
-    # INTERNAL: Determined by the <SpecialFolder> and <Destination> elements
-    [String]$InstallPath
     # INTERNAL: Uninstall Registry key (populated by Find-DotFilesComponent)
     [String]$UninstallKey
+    # INTERNAL: Determined by the <SpecialFolder> and <Destination> elements
+    [String]$InstallPath
+    # INTERNAL: Automatically set based on the <Path> elements in <IgnorePaths>
+    [String[]]$IgnorePaths
     # INTERNAL: This will be set automatically during later install detection
     [String]$Installed
 

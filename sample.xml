@@ -77,4 +77,10 @@
         -->
         <Destination></Destination>
     </InstallPath>
+
+    <!-- Optional configuration of relative paths which should be ignored -->
+    <IgnorePaths>
+        <!-- Each relative path to ignore should be placed in a <Path> element -->
+        <Path></Path>
+    </IgnorePaths>
 </Component>
