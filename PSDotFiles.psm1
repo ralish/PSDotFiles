@@ -589,7 +589,7 @@ Function Install-DotFilesComponentDirectory {
                 if ($TestOnly) {
                     New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName -WhatIf
                 } else {
-                    New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName
+                    New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName | Out-Null
                 }
             }
             $Results += $true
@@ -661,7 +661,7 @@ Function Install-DotFilesComponentFile {
                 if ($TestOnly) {
                     New-Item -ItemType SymbolicLink -Path $TargetFile -value $File.FullName -WhatIf
                 } else {
-                    New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName
+                    New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName | Out-Null
                 }
             }
             $Results += $true
