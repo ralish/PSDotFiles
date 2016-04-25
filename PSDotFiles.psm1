@@ -725,7 +725,7 @@ Function Remove-DotFilesComponentDirectory {
                         } else {
                             # Apparently despite PowerShell 5.0's new symlink support you can't
                             # remove a directory symlink without recursively deleting its contents!
-                            cmd /c "rmdir `"$TargetDirectory`""
+                            cmd /c "rmdir `"$TargetDirectory`"" | Out-Null
                         }
                     }
                     $Results += $true
