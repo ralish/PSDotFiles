@@ -32,7 +32,7 @@ Function Get-DotFiles {
 
     Initialize-PSDotFiles @PSBoundParameters
 
-    $DotFiles = Get-ChildItem -Path $script:DotFilesPath -Directory
+    $DotFiles = Get-ChildItem $script:DotFilesPath -Directory
     $Components = @()
     foreach ($Component in $DotFiles) {
         $Components += Get-DotFilesComponent -Directory $Component
@@ -63,9 +63,9 @@ Function Get-DotFiles {
         }
 
         return $ComponentSummary
-    } else {
-        return $Components
     }
+
+    return $Components
 }
 
 Function Install-DotFiles {
@@ -96,7 +96,7 @@ Function Install-DotFiles {
             [Switch]$Autodetect
     )
 
-    $Components = Get-DotFiles @PSBoundParameters | ? { $_.Availability -in ("Available", "AlwaysInstall") }
+    $Components = Get-DotFiles @PSBoundParameters | ? { $_.Availability -in ('Available', 'AlwaysInstall') }
 
     foreach ($Component in $Components) {
         $Name = $Component.Name
@@ -153,12 +153,12 @@ Function Initialize-PSDotFiles {
     )
 
     if ($Path) {
-        $script:DotFilesPath = Test-DotFilesPath -Path $Path
+        $script:DotFilesPath = Test-DotFilesPath $Path
         if (!$script:DotFilesPath) {
             throw "The provided dotfiles path is either not a directory or it can't be accessed."
         }
     } elseif ($global:DotFilesPath) {
-        $script:DotFilesPath = Test-DotFilesPath -Path $global:DotFilesPath
+        $script:DotFilesPath = Test-DotFilesPath $global:DotFilesPath
         if (!$script:DotFilesPath) {
             throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
         }
@@ -167,13 +167,13 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose "Using dotfiles directory: $script:DotFilesPath"
 
-    $script:GlobalMetadataPath = Join-Path $PSScriptRoot "metadata"
+    $script:GlobalMetadataPath = Join-Path $PSScriptRoot 'metadata'
     Write-Debug "Using global metadata directory: $script:GlobalMetadataPath"
 
-    $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath "metadata"
+    $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath 'metadata'
     Write-Debug "Using dotfiles metadata directory: $script:DotFilesMetadataPath"
 
-    if ($PSBoundParameters.ContainsKey("Autodetect")) {
+    if ($PSBoundParameters.ContainsKey('Autodetect')) {
         $script:DotFilesAutodetect = $Autodetect
     } elseif (Get-Variable -Name DotFilesAutodetect -Scope Global -ErrorAction SilentlyContinue | Out-Null) {
         $script:DotFilesAutodetect = $global:DotFilesAutodetect
@@ -199,7 +199,8 @@ Function Find-DotFilesComponent {
             [Switch]$RegularExpression
     )
 
-    $MatchingParameters = @{'Property'='DisplayName';'Value'=$Pattern}
+    $MatchingParameters = @{'Property'='DisplayName';
+                            'Value'=$Pattern}
     if (!$CaseSensitive -and !$RegularExpression) {
         $MatchingParameters += @{'ILike'=$true}
     } elseif (!$CaseSensitive -and $RegularExpression) {
@@ -225,15 +226,15 @@ Function Get-DotFilesComponent {
     )
 
     $Name               = $Directory.Name
-    $MetadataFile       = $Name + ".xml"
+    $MetadataFile       = $Name + '.xml'
     $GlobalMetadataFile = Join-Path $script:GlobalMetadataPath $MetadataFile
     $CustomMetadataFile = Join-Path $script:DotFilesMetadataPath $MetadataFile
 
-    if (Test-Path -Path $CustomMetadataFile -PathType Leaf) {
+    if (Test-Path $CustomMetadataFile -PathType Leaf) {
         Write-Debug "[$Name] Loading custom metadata for component..."
         $Metadata = [Xml](Get-Content $CustomMetadataFile)
         $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
-    } elseif (Test-Path -Path $GlobalMetadataFile -PathType Leaf) {
+    } elseif (Test-Path $GlobalMetadataFile -PathType Leaf) {
         Write-Debug "[$Name] Loading global metadata for component..."
         $Metadata = [Xml](Get-Content $GlobalMetadataFile)
         $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
@@ -246,7 +247,7 @@ Function Get-DotFilesComponent {
         $Component.Availability = [Availability]::NoLogic
     }
 
-    $Component.PSObject.TypeNames.Insert(0, "PSDotFiles.Component")
+    $Component.PSObject.TypeNames.Insert(0, 'PSDotFiles.Component')
     return $Component
 }
 
@@ -254,8 +255,8 @@ Function Get-InstalledPrograms {
     [CmdletBinding()]
     Param()
 
-    $NativeRegPath = "\Software\Microsoft\Windows\CurrentVersion\Uninstall"
-    $Wow6432RegPath = "\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+    $NativeRegPath = '\Software\Microsoft\Windows\CurrentVersion\Uninstall'
+    $Wow6432RegPath = '\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
 
     $InstalledPrograms = @(
         # Native applications installed system wide
@@ -263,12 +264,12 @@ Function Get-InstalledPrograms {
         # Native applications installed under the current user
         Get-ChildItem "HKCU:$NativeRegPath"
         # 32-bit applications installed system wide on 64-bit Windows
-        if (Test-Path -Path "HKLM:$Wow6432RegPath") { Get-ChildItem "HKLM:$Wow6432RegPath" }
+        if (Test-Path "HKLM:$Wow6432RegPath") { Get-ChildItem "HKLM:$Wow6432RegPath" }
         # 32-bit applications installed under the current user on 64-bit Windows
-        if (Test-Path -Path "HKCU:$Wow6432RegPath") { Get-ChildItem "HKCU:$Wow6432RegPath" }
+        if (Test-Path "HKCU:$Wow6432RegPath") { Get-ChildItem "HKCU:$Wow6432RegPath" }
     ) | # Get the properties of each uninstall key
         % { Get-ItemProperty $_.PSPath } |
-        # Filter out all of the uninteresting entries
+        # Filter out all the uninteresting entries
         ? { $_.DisplayName -and
            !$_.SystemComponent -and
            !$_.ReleaseType -and
@@ -293,7 +294,7 @@ Function Get-SymlinkTarget {
         $Symlink = $File
     }
 
-    if ($Symlink.LinkType -ne "SymbolicLink") {
+    if ($Symlink.LinkType -ne 'SymbolicLink') {
         return $false
     }
 
@@ -315,8 +316,9 @@ Function Initialize-DotFilesComponent {
             [Xml]$Metadata
     )
 
-    if ($PSBoundParameters.ContainsKey("Metadata")) {
+    if ($PSBoundParameters.ContainsKey('Metadata')) {
         if (!$Metadata.Component) {
+            # TODO: This should be a detection failure
             Write-Error "[$Name] No <Component> element in metadata file."
             return
         }
@@ -331,22 +333,22 @@ Function Initialize-DotFilesComponent {
 
     # Configure and perform component detection
     if (!$Metadata.Component.Detection.Method -or
-         $Metadata.Component.Detection.Method -eq "Automatic") {
+         $Metadata.Component.Detection.Method -eq 'Automatic') {
         $Parameters = @{'Name'=$Name}
 
         if (!$Metadata.Component.Detection.MatchRegEx -or
-             $Metadata.Component.Detection.MatchRegEx -eq "False") {
+             $Metadata.Component.Detection.MatchRegEx -eq 'False') {
             $Parameters += @{'RegularExpression'=$false}
-        } elseif ($Metadata.Component.Detection.MatchRegEx -eq "True") {
+        } elseif ($Metadata.Component.Detection.MatchRegEx -eq 'True') {
             $Parameters += @{'RegularExpression'=$true}
         } else {
             Write-Error ("[$Name] Invalid MatchRegEx setting for automatic component detection: " + $Metadata.Component.Detection.MatchRegEx)
         }
 
         if (!$Metadata.Component.Detection.MatchCase -or
-             $Metadata.Component.Detection.MatchCase -eq "False") {
+             $Metadata.Component.Detection.MatchCase -eq 'False') {
             $Parameters += @{'CaseSensitive'=$false}
-        } elseif ($Metadata.Component.Detection.MatchCase -eq "True") {
+        } elseif ($Metadata.Component.Detection.MatchCase -eq 'True') {
             $Parameters += @{'CaseSensitive'=$true}
         } else {
             Write-Error ("[$Name] Invalid MatchCase setting for automatic component detection: " + $Metadata.Component.Detection.MatchCase)
@@ -368,7 +370,7 @@ Function Initialize-DotFilesComponent {
         } else {
             $Component.Availability = [Availability]::Unavailable
         }
-    } elseif ($Metadata.Component.Detection.Method -eq "Static") {
+    } elseif ($Metadata.Component.Detection.Method -eq 'Static') {
         if ($Metadata.Component.Detection.Availability) {
             $Availability = $Metadata.Component.Detection.Availability
             $Component.Availability = [Availability]::$Availability
@@ -380,22 +382,22 @@ Function Initialize-DotFilesComponent {
     }
 
     # If the component isn't available don't both determining the install path
-    if ($Component.Availability -notin ("Available", "AlwaysInstall")) {
+    if ($Component.Availability -notin ('Available', 'AlwaysInstall')) {
         return $Component
     }
 
     # Configure component installation path
     if (!$Metadata.Component.InstallPath) {
-        $Component.InstallPath = [Environment]::GetFolderPath("UserProfile")
+        $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
     } else {
         $SpecialFolder = $Metadata.Component.InstallPath.SpecialFolder
         $Destination = $Metadata.Component.InstallPath.Destination
 
         if (!$SpecialFolder -and !$Destination) {
-            $Component.InstallPath = [Environment]::GetFolderPath("UserProfile")
+            $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
         } elseif (!$SpecialFolder -and $Destination) {
             if ([System.IO.Path]::IsPathRooted($Destination)) {
-                if (Test-Path -Path $Destination -PathType Container -IsValid) {
+                if (Test-Path $Destination -PathType Container -IsValid) {
                     $Component.InstallPath = $Destination
                 } else {
                     Write-Error "[$Name] The destination path for symlinking is invalid: $Destination"
@@ -408,7 +410,7 @@ Function Initialize-DotFilesComponent {
         } else {
             if (!([System.IO.Path]::IsPathRooted($Destination))) {
                 $InstallPath = Join-Path ([Environment]::GetFolderPath($SpecialFolder)) $Destination
-                if (Test-Path -Path $InstallPath -PathType Container -IsValid) {
+                if (Test-Path $InstallPath -PathType Container -IsValid) {
                     $Component.InstallPath = $InstallPath
                 } else {
                     Write-Error "[$Name] The destination path for symlinking is invalid: $InstallPath"
@@ -447,7 +449,7 @@ Function Install-DotFilesComponentDirectory {
             $ExistingTarget = Get-Item $TargetDirectory -Force
             if ($ExistingTarget -isnot [System.IO.DirectoryInfo]) {
                 Write-Error "[$Name] Expected a directory but found a file with the same name: $TargetDirectory"
-            } elseif ($ExistingTarget.LinkType -eq "SymbolicLink") {
+            } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
                 $SymlinkTarget = Get-SymlinkTarget -Directory $ExistingTarget
 
                 if (!($Directory.FullName -eq $SymlinkTarget)) {
@@ -493,7 +495,7 @@ Function Install-DotFilesComponentFile {
             $ExistingTarget = Get-Item $TargetFile -Force
             if ($ExistingTarget -isnot [System.IO.FileInfo]) {
                 Write-Error "[$Name] Expected a file but found a directory with the same name: $TargetFile"
-            } elseif ($ExistingTarget.LinkType -ne "SymbolicLink") {
+            } elseif ($ExistingTarget.LinkType -ne 'SymbolicLink') {
                 Write-Error "[$Name] Unable to create symlink as a file with the same name already exists: $TargetFile"
             } else {
                 $SymlinkTarget = Get-SymlinkTarget -File $ExistingTarget
@@ -517,8 +519,8 @@ Function Test-DotFilesPath {
             [String]$Path
     )
 
-    if (Test-Path -Path $Path) {
-        $PathItem = Get-Item -Path $Path
+    if (Test-Path $Path) {
+        $PathItem = Get-Item $Path
         if ($PathItem -is [System.IO.DirectoryInfo]) {
             return $PathItem
         }
