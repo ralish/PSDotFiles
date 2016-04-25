@@ -542,9 +542,9 @@ Function Install-DotFilesComponentDirectory {
                 Write-Verbose ("[$Name] Linking directory: `"$TargetDirectory`" -> `"" + $Directory.FullName + "`"")
             }
             if ($TestOnly) {
-                New-Item -ItemType SymbolicLink -Name $TargetDirectory -Target $Directory.FullName -WhatIf
+                New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName -WhatIf
             } else {
-                New-Item -ItemType SymbolicLink -Name $TargetDirectory -Target $Directory.FullName
+                New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName
             }
             $Results += $true
         }
@@ -614,9 +614,9 @@ Function Install-DotFilesComponentFile {
                 Write-Verbose ("[$Name] Linking file: `"$TargetFile`" -> `"" + $File.FullName  + "`"")
             }
             if ($TestOnly) {
-                New-Item -ItemType SymbolicLink -Name $TargetFile -Target $File.FullName -WhatIf
+                New-Item -ItemType SymbolicLink -Path $TargetFile -value $File.FullName -WhatIf
             } else {
-                New-Item -ItemType SymbolicLink -Name $TargetFile -Target $File.FullName
+                New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName
             }
             $Results += $true
         }
