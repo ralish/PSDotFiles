@@ -59,13 +59,20 @@ Function Install-DotFiles {
     #>
     [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Low')]
     Param(
-        [Parameter(Position=0,Mandatory=$false)]
+        [Parameter(ParameterSetName='Retrieve',Position=0,Mandatory=$false)]
             [String]$Path,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Autodetect
+        [Parameter(ParameterSetName='Retrieve',Mandatory=$false)]
+            [Switch]$Autodetect,
+        [Parameter(ParameterSetName='Provided',Position=0,Mandatory=$false)]
+            [Component[]]$Components
     )
 
-    $Components = Get-DotFiles @PSBoundParameters | ? { $_.Availability -in ('Available', 'AlwaysInstall') }
+    if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
+        $Components = Get-DotFiles @PSBoundParameters | ? { $_.Availability -in ('Available', 'AlwaysInstall') }
+    } else {
+        $UnfilteredComponents = $Components
+        $Components = $UnfilteredComponents | ? { $_.Availability -in ('Available', 'AlwaysInstall') }
+    }
 
     foreach ($Component in $Components) {
         $Name = $Component.Name
@@ -104,10 +111,12 @@ Function Remove-DotFiles {
     #>
     [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Low')]
     Param(
-        [Parameter(Position=0,Mandatory=$false)]
+        [Parameter(ParameterSetName='Retrieve',Position=0,Mandatory=$false)]
             [String]$Path,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Autodetect
+        [Parameter(ParameterSetName='Retrieve',Mandatory=$false)]
+            [Switch]$Autodetect,
+        [Parameter(ParameterSetName='Provided',Position=0,Mandatory=$false)]
+            [Component[]]$Components
     )
 
     Initialize-PSDotFiles @PSBoundParameters
