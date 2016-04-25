@@ -18,7 +18,7 @@ Function Get-DotFiles {
         .LINK
         https://github.com/ralish/PSDotFiles
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Low')]
     Param(
         [Parameter(Position=0,Mandatory=$false)]
             [String]$Path,
@@ -57,7 +57,7 @@ Function Install-DotFiles {
         .LINK
         https://github.com/ralish/PSDotFiles
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Low')]
     Param(
         [Parameter(Position=0,Mandatory=$false)]
             [String]$Path,
@@ -72,7 +72,11 @@ Function Install-DotFiles {
         Write-Verbose ("[$Name] Installing...")
         Write-Debug ("[$Name] Source directory is: " + $Component.SourcePath)
         Write-Debug ("[$Name] Installation path is: " + $Component.InstallPath)
-        Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
+        if ($PSCmdlet.ShouldProcess($Name, 'Install-DotFilesComponent')) {
+            Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
+        } else {
+            Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
+        }
     }
 
     return $Components
@@ -98,7 +102,7 @@ Function Remove-DotFiles {
         .LINK
         https://github.com/ralish/PSDotFiles
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Low')]
     Param(
         [Parameter(Position=0,Mandatory=$false)]
             [String]$Path,
@@ -408,7 +412,9 @@ Function Install-DotFilesComponentDirectory {
         [Parameter(Mandatory=$true)]
             [Component]$Component,
         [Parameter(Mandatory=$true)]
-            [System.IO.DirectoryInfo[]]$Directories
+            [System.IO.DirectoryInfo[]]$Directories,
+        [Parameter(Mandatory=$false)]
+            [Switch]$TestOnly
     )
 
     $Name = $Component.Name
@@ -448,7 +454,11 @@ Function Install-DotFilesComponentDirectory {
             }
         } else {
             Write-Verbose ("[$Name] Linking directory: `"$TargetDirectory`" -> `"" + $Directory.FullName + "`"")
-            New-Item -ItemType SymbolicLink -Name $TargetDirectory -Target $Directory.FullName
+            if ($TestOnly) {
+                New-Item -ItemType SymbolicLink -Name $TargetDirectory -Target $Directory.FullName -WhatIf
+            } else {
+                New-Item -ItemType SymbolicLink -Name $TargetDirectory -Target $Directory.FullName
+            }
         }
     }
 }
@@ -459,7 +469,9 @@ Function Install-DotFilesComponentFile {
         [Parameter(Mandatory=$true)]
             [Component]$Component,
         [Parameter(Mandatory=$true)]
-            [System.IO.FileInfo[]]$Files
+            [System.IO.FileInfo[]]$Files,
+        [Parameter(Mandatory=$false)]
+            [Switch]$TestOnly
     )
 
     $Name = $Component.Name
@@ -487,7 +499,11 @@ Function Install-DotFilesComponentFile {
             }
         } else {
             Write-Verbose ("[$Name] Linking file: `"$TargetFile`" -> `"" + $File.FullName  + "`"")
-            New-Item -ItemType SymbolicLink -Name $TargetFile -Target $File.FullName
+            if ($TestOnly) {
+                New-Item -ItemType SymbolicLink -Name $TargetFile -Target $File.FullName -WhatIf
+            } else {
+                New-Item -ItemType SymbolicLink -Name $TargetFile -Target $File.FullName
+            }
         }
     }
 }
