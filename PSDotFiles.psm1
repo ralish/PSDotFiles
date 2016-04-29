@@ -324,7 +324,7 @@ Function Get-InstalledPrograms {
 
     $InstalledPrograms = @(
         # Native applications installed system wide
-        Get-ChildItem "HKLM:$NativeRegPath"
+        if (Test-Path "HKLM:$NativeRegPath") { Get-ChildItem "HKLM:$NativeRegPath" }
         # Native applications installed under the current user
         if (Test-Path "HKCU:$NativeRegPath") { Get-ChildItem "HKCU:$NativeRegPath" }
         # 32-bit applications installed system wide on 64-bit Windows
