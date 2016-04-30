@@ -48,14 +48,31 @@ dotfiles
 
 ## Installing
 
+### PowerShellGet
+
+The latest release of the module is published to the [PowerShell Gallery](https://www.powershellgallery.com/) for installation via the [PowerShellGet module](https://www.powershellgallery.com/GettingStarted):
+
+```posh
+Install-Module -Name PSDotFiles
+```
+
+You can find the module listing [here](https://www.powershellgallery.com/packages/PSDotFiles).
+
+### ZIP File
+
 Download the [ZIP file](https://github.com/ralish/PSDotFiles/archive/master.zip) of the latest release and unpack it to one of the following locations:
 
 - Current user: `C:\Users\<your.account>\Documents\WindowsPowerShell\Modules\PSDotFiles`
 - All users: `C:\Program Files\WindowsPowerShell\Modules\PSDotFiles`
 
+### Git Clone
+
 You can also clone the repository into one of the above locations if you'd like the ability to easily update it via Git.
 
-Finally, check that PowerShell is able to locate the module by running the following at a PowerShell prompt:
+### Did it work?
+
+You can check that PowerShell is able to locate the module by running the following at a PowerShell prompt:
+
 ```posh
 Get-Module PSDotFiles -ListAvailable
 ```
