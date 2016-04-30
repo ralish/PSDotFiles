@@ -60,7 +60,7 @@ You can find the module listing [here](https://www.powershellgallery.com/package
 
 ### ZIP File
 
-Download the [ZIP file](https://github.com/ralish/PSDotFiles/archive/master.zip) of the latest release and unpack it to one of the following locations:
+Download the [ZIP file](https://github.com/ralish/PSDotFiles/archive/stable.zip) of the latest release and unpack it to one of the following locations:
 
 - Current user: `C:\Users\<your.account>\Documents\WindowsPowerShell\Modules\PSDotFiles`
 - All users: `C:\Program Files\WindowsPowerShell\Modules\PSDotFiles`
