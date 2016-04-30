@@ -23,7 +23,7 @@ Author = 'Samuel Leslie'
 Copyright = '(c) 2016 Samuel Leslie. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Bringing the simplicity of dotfiles to Windows'
+Description = 'Bringing simple dotfiles management to Windows'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '5.0'
