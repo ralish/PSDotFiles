@@ -294,14 +294,26 @@ Function Get-DotFilesComponent {
     $GlobalMetadataFile = Join-Path $script:GlobalMetadataPath $MetadataFile
     $CustomMetadataFile = Join-Path $script:DotFilesMetadataPath $MetadataFile
 
-    if (Test-Path $CustomMetadataFile -PathType Leaf) {
-        Write-Debug "[$Name] Loading custom metadata for component..."
-        $Metadata = [Xml](Get-Content $CustomMetadataFile)
-        $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
-    } elseif (Test-Path $GlobalMetadataFile -PathType Leaf) {
-        Write-Debug "[$Name] Loading global metadata for component..."
-        $Metadata = [Xml](Get-Content $GlobalMetadataFile)
-        $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
+    $GlobalMetadataPresent = Test-Path $GlobalMetadataFile -PathType Leaf
+    $CustomMetadataPresent = Test-Path $CustomMetadataFile -PathType Leaf
+
+    if ($GlobalMetadataPresent -or $CustomMetadataPresent) {
+        if ($GlobalMetadataPresent) {
+            Write-Debug "[$Name] Loading global metadata for component..."
+            $Metadata = [Xml](Get-Content $GlobalMetadataFile)
+            $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
+        }
+
+        if ($CustomMetadataPresent) {
+            $Metadata = [Xml](Get-Content $CustomMetadataFile)
+            if ($GlobalMetadataPresent) {
+                Write-Debug "[$Name] Loading custom metadata overrides for component..."
+                $Component = Initialize-DotFilesComponent -Component $Component -Metadata $Metadata
+            } else {
+                Write-Debug "[$Name] Loading custom metadata for component..."
+                $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
+            }
+        }
     } elseif ($script:DotFilesAutodetect) {
         Write-Debug "[$Name] Running automatic detection for component..."
         $Component = Initialize-DotFilesComponent -Name $Name
@@ -348,17 +360,9 @@ Function Get-InstalledPrograms {
 Function Get-SymlinkTarget {
     [CmdletBinding()]
     Param(
-        [Parameter(ParameterSetName='Directory',Mandatory=$true)]
-            [System.IO.DirectoryInfo]$Directory,
-        [Parameter(ParameterSetName='File',Mandatory=$true)]
-            [System.IO.FileInfo]$File
+        [Parameter(Mandatory=$true)]
+            [System.IO.FileSystemInfo]$Symlink
     )
-
-    if ($PSCmdlet.ParameterSetName -eq 'Directory') {
-        $Symlink = $Directory
-    } else {
-        $Symlink = $File
-    }
 
     if ($Symlink.LinkType -ne 'SymbolicLink') {
         return $false
@@ -375,13 +379,20 @@ Function Get-SymlinkTarget {
 Function Initialize-DotFilesComponent {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName='New',Mandatory=$true)]
             [String]$Name,
-        [Parameter(Mandatory=$false)]
+        [Parameter(ParameterSetName='Override',Mandatory=$true)]
+            [Component]$Component,
+        [Parameter(ParameterSetName='New',Mandatory=$false)]
+        [Parameter(ParameterSetName='Override',Mandatory=$true)]
             [Xml]$Metadata
     )
 
-    $Component = [Component]::new($Name, $script:DotFilesPath)
+    if ($PSCmdlet.ParameterSetName -eq 'New') {
+        $Component = [Component]::new($Name, $script:DotFilesPath)
+    } else {
+        $Name = $Component.Name
+    }
 
     # Minimal check for sane XML file
     if ($PSBoundParameters.ContainsKey('Metadata')) {
@@ -398,8 +409,8 @@ Function Initialize-DotFilesComponent {
     }
 
     # Configure and perform component detection
-    if (!$Metadata.Component.Detection.Method -or
-         $Metadata.Component.Detection.Method -eq 'Automatic') {
+    if ($Metadata.Component.Detection.Method -eq 'Automatic' -or
+        ($PSCmdlet.ParameterSetName -eq 'New' -and !$Metadata.Component.Detection.Method)) {
         $Parameters = @{'Name'=$Name}
 
         if (!$Metadata.Component.Detection.MatchRegEx -or
@@ -448,22 +459,25 @@ Function Initialize-DotFilesComponent {
         } else {
             Write-Error "[$Name] No component availability state specified for static detection."
         }
-    } else {
+    } elseif ($Metadata.Component.Detection.Method -and
+              $Metadata.Component.Detection.Method -notin ('Automatic', 'Static')) {
         Write-Error ("[$Name] Invalid component detection method specified: " + $Metadata.Component.Detection.Method)
     }
 
-    # If the component isn't available don't both determining the install path
+    # If the component isn't available don't bother determining the install path
     if ($Component.Availability -notin ('Available', 'AlwaysInstall')) {
         return $Component
     }
 
-    # Configure component installation settings
-    if (!$Metadata.Component.InstallPath) {
+    # Configure component installation path
+    if ($PSCmdlet.ParameterSetName -eq 'New' -and
+        !$Metadata.Component.InstallPath.SpecialFolder -and
+        !$Metadata.Component.InstallPath.Destination) {
         $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
-    } else {
+    } elseif ($Metadata.Component.InstallPath.SpecialFolder -or
+              $Metadata.Component.InstallPath.Destination) {
         $SpecialFolder = $Metadata.Component.InstallPath.SpecialFolder
         $Destination = $Metadata.Component.InstallPath.Destination
-        $HideSymlinks = $Metadata.Component.InstallPath.HideSymlinks
 
         if (!$SpecialFolder -and !$Destination) {
             $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
@@ -491,13 +505,15 @@ Function Initialize-DotFilesComponent {
                 Write-Error "[$Name] The destination path for symlinking is not a relative path: $Destination"
             }
         }
+    }
 
-        if ($HideSymlinks) {
-            if ($HideSymlinks -eq 'True') {
-                $Component.HideSymlinks = $true
-            } elseif ($HideSymlinks -notin ('True', 'False')) {
-                Write-Error "[$Name] Invalid HideSymlinks setting: $HideSymlinks"
-            }
+    # Configure component symlink hiding
+    if ($Metadata.Component.InstallPath.HideSymlinks) {
+        $HideSymlinks = $Metadata.Component.InstallPath.HideSymlinks
+        if ($HideSymlinks -eq 'True') {
+            $Component.HideSymlinks = $true
+        } elseif ($HideSymlinks -notin ('True', 'False')) {
+            Write-Error "[$Name] Invalid HideSymlinks setting: $HideSymlinks"
         }
     }
 
@@ -551,7 +567,7 @@ Function Install-DotFilesComponentDirectory {
                 }
                 $Results += $false
             } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
-                $SymlinkTarget = Get-SymlinkTarget -Directory $ExistingTarget
+                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
                 if (!($Directory.FullName -eq $SymlinkTarget)) {
                     if (!$Silent) {
@@ -602,7 +618,7 @@ Function Install-DotFilesComponentDirectory {
                         if (!$Silent) {
                             Write-Debug "[$Name] Setting attributes to hide directory symlink: `"$TargetDirectory`""
                         }
-                        $Attributes = Set-SymlinkAttributes -Directory $Symlink
+                        $Attributes = Set-SymlinkAttributes -Symlink $Symlink
                         if (!$Attributes) {
                             Write-Error "[$Name] Unable to set Hidden and System attributes on directory symlink: `"$TargetDirectory`""
                         }
@@ -658,7 +674,7 @@ Function Install-DotFilesComponentFile {
                 }
                 $Results += $false
             } else {
-                $SymlinkTarget = Get-SymlinkTarget -File $ExistingTarget
+                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
                 if (!($File.FullName -eq $SymlinkTarget)) {
                     if (!$Silent) {
@@ -683,7 +699,7 @@ Function Install-DotFilesComponentFile {
                         if (!$Silent) {
                             Write-Debug "[$Name] Setting attributes to hide file symlink: `"$TargetFile`""
                         }
-                        $Attributes = Set-SymlinkAttributes -File $Symlink
+                        $Attributes = Set-SymlinkAttributes -Symlink $Symlink
                         if (!$Attributes) {
                             Write-Error "[$Name] Unable to set Hidden and System attributes on file symlink: `"$TargetFile`""
                         }
@@ -736,7 +752,7 @@ Function Remove-DotFilesComponentDirectory {
                     Write-Warning "[$Name] Expected a directory but found a file with the same name: $TargetDirectory"
                 }
             } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
-                $SymlinkTarget = Get-SymlinkTarget -Directory $ExistingTarget
+                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
                 if (!($Directory.FullName -eq $SymlinkTarget)) {
                     if (!$Silent) {
@@ -749,7 +765,7 @@ Function Remove-DotFilesComponentDirectory {
                         if ($TestOnly) {
                             Write-Warning "Will remove directory symlink using native rmdir: $TargetDirectory"
                         } else {
-                            $Attributes = Set-SymlinkAttributes -Directory $TargetDirectory -Remove
+                            $Attributes = Set-SymlinkAttributes -Symlink $ExistingTarget -Remove
                             if (!$Attributes) {
                                 Write-Error "[$Name] Unable to remove Hidden and System attributes on directory symlink: `"$TargetDirectory`""
                             }
@@ -838,7 +854,7 @@ Function Remove-DotFilesComponentFile {
                     Write-Warning "[$Name] Found a file instead of a symbolic link so not removing: $TargetFile"
                 }
             } else {
-                $SymlinkTarget = Get-SymlinkTarget -File $ExistingTarget
+                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
                 if (!($File.FullName -eq $SymlinkTarget)) {
                     if (!$Silent) {
@@ -870,20 +886,11 @@ Function Remove-DotFilesComponentFile {
 Function Set-SymlinkAttributes {
     [CmdletBinding()]
     Param(
-        [Parameter(ParameterSetName='Directory',Mandatory=$true)]
-            [System.IO.DirectoryInfo]$Directory,
-        [Parameter(ParameterSetName='File',Mandatory=$true)]
-            [System.IO.FileInfo]$File,
-        [Parameter(ParameterSetName='Directory',Mandatory=$false)]
-        [Parameter(ParameterSetName='File',Mandatory=$false)]
+        [Parameter(Mandatory=$true)]
+            [System.IO.FileSystemInfo]$Symlink,
+        [Parameter(Mandatory=$false)]
             [Switch]$Remove
     )
-
-    if ($PSCmdlet.ParameterSetName -eq 'Directory') {
-        $Symlink = $Directory
-    } else {
-        $Symlink = $File
-    }
 
     if ($Symlink.LinkType -ne 'SymbolicLink') {
         return $false
