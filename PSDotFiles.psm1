@@ -370,7 +370,6 @@ Function Get-SymlinkTarget {
     } else {
         return (Resolve-Path (Join-Path (Split-Path $Symlink -Parent) $Symlink.Target[0])).Path
     }
-
 }
 
 Function Initialize-DotFilesComponent {
@@ -458,12 +457,13 @@ Function Initialize-DotFilesComponent {
         return $Component
     }
 
-    # Configure component installation path
+    # Configure component installation settings
     if (!$Metadata.Component.InstallPath) {
         $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
     } else {
         $SpecialFolder = $Metadata.Component.InstallPath.SpecialFolder
         $Destination = $Metadata.Component.InstallPath.Destination
+        $HideSymlinks = $Metadata.Component.InstallPath.HideSymlinks
 
         if (!$SpecialFolder -and !$Destination) {
             $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
@@ -489,6 +489,14 @@ Function Initialize-DotFilesComponent {
                 }
             } else {
                 Write-Error "[$Name] The destination path for symlinking is not a relative path: $Destination"
+            }
+        }
+
+        if ($HideSymlinks) {
+            if ($HideSymlinks -eq 'True') {
+                $Component.HideSymlinks = $true
+            } elseif ($HideSymlinks -notin ('True', 'False')) {
+                Write-Error "[$Name] Invalid HideSymlinks setting: $HideSymlinks"
             }
         }
     }
@@ -589,7 +597,16 @@ Function Install-DotFilesComponentDirectory {
                 if ($TestOnly) {
                     New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName -WhatIf
                 } else {
-                    New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName | Out-Null
+                    $Symlink = New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName
+                    if ($Component.HideSymlinks) {
+                        if (!$Silent) {
+                            Write-Debug "[$Name] Setting attributes to hide directory symlink: `"$TargetDirectory`""
+                        }
+                        $Attributes = Set-SymlinkAttributes -Directory $Symlink
+                        if (!$Attributes) {
+                            Write-Error "[$Name] Unable to set Hidden and System attributes on directory symlink: `"$TargetDirectory`""
+                        }
+                    }
                 }
             }
             $Results += $true
@@ -661,7 +678,16 @@ Function Install-DotFilesComponentFile {
                 if ($TestOnly) {
                     New-Item -ItemType SymbolicLink -Path $TargetFile -value $File.FullName -WhatIf
                 } else {
-                    New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName | Out-Null
+                    $Symlink = New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName
+                    if ($Component.HideSymlinks) {
+                        if (!$Silent) {
+                            Write-Debug "[$Name] Setting attributes to hide file symlink: `"$TargetFile`""
+                        }
+                        $Attributes = Set-SymlinkAttributes -File $Symlink
+                        if (!$Attributes) {
+                            Write-Error "[$Name] Unable to set Hidden and System attributes on file symlink: `"$TargetFile`""
+                        }
+                    }
                 }
             }
             $Results += $true
@@ -723,6 +749,11 @@ Function Remove-DotFilesComponentDirectory {
                         if ($TestOnly) {
                             Write-Warning "Will remove directory symlink using native rmdir: $TargetDirectory"
                         } else {
+                            $Attributes = Set-SymlinkAttributes -Directory $TargetDirectory -Remove
+                            if (!$Attributes) {
+                                Write-Error "[$Name] Unable to remove Hidden and System attributes on directory symlink: `"$TargetDirectory`""
+                            }
+
                             # Apparently despite PowerShell 5.0's new symlink support you can't
                             # remove a directory symlink without recursively deleting its contents!
                             cmd /c "rmdir `"$TargetDirectory`"" | Out-Null
@@ -820,7 +851,7 @@ Function Remove-DotFilesComponentFile {
                         if ($TestOnly){
                             Remove-Item $TargetFile -WhatIf
                         } else {
-                            Remove-Item $TargetFile
+                            Remove-Item $TargetFile -Force
                         }
                     }
                     $Results += $true
@@ -834,6 +865,46 @@ Function Remove-DotFilesComponentFile {
     }
 
     return $Results
+}
+
+Function Set-SymlinkAttributes {
+    [CmdletBinding()]
+    Param(
+        [Parameter(ParameterSetName='Directory',Mandatory=$true)]
+            [System.IO.DirectoryInfo]$Directory,
+        [Parameter(ParameterSetName='File',Mandatory=$true)]
+            [System.IO.FileInfo]$File,
+        [Parameter(ParameterSetName='Directory',Mandatory=$false)]
+        [Parameter(ParameterSetName='File',Mandatory=$false)]
+            [Switch]$Remove
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq 'Directory') {
+        $Symlink = $Directory
+    } else {
+        $Symlink = $File
+    }
+
+    if ($Symlink.LinkType -ne 'SymbolicLink') {
+        return $false
+    }
+
+    $HiddenAttribute   = [System.IO.FileAttributes]::Hidden
+    $SystemAttribute   = [System.IO.FileAttributes]::System
+
+    if (!$Remove) {
+        $Symlink.Attributes = ($Symlink.Attributes -bor $HiddenAttribute)
+        $Symlink.Attributes = ($Symlink.Attributes -bor $SystemAttribute)
+    } else {
+        if ($CurrentAttributes -band $SystemAttribute) {
+            $Symlink.Attributes = ($CurrentAttributes -bxor $SystemAttribute)
+        }
+        if ($CurrentAttributes -band $HiddenAttribute) {
+            $Symlink.Attributes = ($CurrentAttributes -bxor $HiddenAttribute)
+        }
+    }
+
+    return $true
 }
 
 Function Test-DotFilesPath {
@@ -903,6 +974,8 @@ Class Component {
 
     # OPTIONAL: Friendly name if one was provided or could be located
     [String]$FriendlyName
+    # OPTIONAL: Hides newly created symlinks per the <HideSymlinks> element
+    [Boolean]$HideSymlinks
 
     # INTERNAL: This will be set automatically based on the component name
     [System.IO.DirectoryInfo]$SourcePath

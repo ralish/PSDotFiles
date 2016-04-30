@@ -76,6 +76,12 @@
             If no <Destination> is specified then only the <SpecialFolder> path will be used.
         -->
         <Destination></Destination>
+
+        <!--
+            Specifies whether component symlinks should be hidden by setting the "Hidden" and
+            "System" file attributes. The default is not to hide newly created symbolic links.
+        -->
+        <HideSymlinks>False</HideSymlinks>
     </InstallPath>
 
     <!-- Optional configuration of relative paths which should be ignored -->
