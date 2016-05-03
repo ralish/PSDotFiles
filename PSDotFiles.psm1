@@ -108,6 +108,14 @@ Function Install-DotFiles {
             [Component[]]$Components
     )
 
+    if (!(Test-IsAdministrator)) {
+        if ($PSBoundParameters.ContainsKey('WhatIf')) {
+            Write-Warning "Not running with Administrator privileges but ignoring due to -WhatIf."
+        } else {
+            throw "Unable to run Install-DotFiles as not running with Administrator privileges."
+        }
+    }
+
     if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
         $Components = Get-DotFiles @PSBoundParameters | ? { $_.Availability -in ('Available', 'AlwaysInstall') }
     } else {
@@ -980,6 +988,17 @@ Function Test-DotFilesPath {
         if ($PathItem -is [System.IO.DirectoryInfo]) {
             return $PathItem
         }
+    }
+    return $false
+}
+
+Function Test-IsAdministrator {
+    [CmdletBinding()]
+    Param()
+
+    $User = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
+    if ($User.IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
+        return $true
     }
     return $false
 }
