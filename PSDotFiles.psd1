@@ -8,7 +8,7 @@
 RootModule = 'PSDotFiles.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.4'
+ModuleVersion = '0.4.1'
 
 # ID used to uniquely identify this module
 GUID = '7ad97044-65d0-425f-b799-5de9870b9d56'
