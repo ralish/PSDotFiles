@@ -17,7 +17,7 @@ GUID = '7ad97044-65d0-425f-b799-5de9870b9d56'
 Author = 'Samuel Leslie'
 
 # Company or vendor of this module
-#CompanyName = ''
+# CompanyName = ''
 
 # Copyright statement for this module
 Copyright = '(c) 2016 Samuel Leslie. All rights reserved.'
@@ -65,13 +65,13 @@ FormatsToProcess = @('PSDotFiles.format.ps1xml')
 FunctionsToExport = 'Get-DotFiles', 'Install-DotFiles', 'Remove-DotFiles'
 
 # Cmdlets to export from this module
-#CmdletsToExport = '*'
+# CmdletsToExport = '*'
 
 # Variables to export from this module
-#VariablesToExport = '*'
+# VariablesToExport = '*'
 
 # Aliases to export from this module
-#AliasesToExport = '*'
+# AliasesToExport = '*'
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
