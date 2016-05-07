@@ -526,6 +526,16 @@ Function Initialize-DotFilesComponent {
         } else {
             $Component.Availability = [Availability]::Unavailable
         }
+    } elseif ($Metadata.Component.Detection.Method -eq 'PathExists') {
+        if ($Metadata.Component.Detection.PathExists) {
+            if (Test-Path $Metadata.Component.Detection.PathExists) {
+                $Component.Availability = [Availability]::Available
+            } else {
+                $Component.Availability = [Availability]::Unavailable
+            }
+        } else {
+            Write-Error "[$Name] No absolute path specified for testing component availability."
+        }
     } elseif ($Metadata.Component.Detection.Method -eq 'Static') {
         if ($Metadata.Component.Detection.Availability) {
             $Availability = $Metadata.Component.Detection.Availability

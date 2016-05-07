@@ -17,6 +17,12 @@
                             located in a directory found in the system's PATH. Defaults to searching
                             for a binary with the same name as the component directory but this can
                             be customised via the <FindBinary> element.
+             - PathExists:  Determines the availability based on the existence of a nominated path
+                            specified in the <TestPath> element. The path must be absolute and would
+                            typically test that a file or directory exists. However, any absolute
+                            path that corresponds to an available PowerShell provider is valid (see
+                            Get-PSProvider for more details). As such, testing against a Registry
+                            path or more esoteric data stores is valid (e.g. the Certificate store).
              - Static:      Use the availability state provided in the <Availability> element.
         -->
         <Method></Method>
@@ -49,6 +55,13 @@
             Name of the binary to search for in the system's PATH with optional file extension.
         -->
         <FindBinary></FindBinary>
+
+        <!--
+            PathExists Method
+
+            Absolute path to test the existence of (can be for any valid PowerShell provider).
+        -->
+        <PathExists></PathExists>
 
         <!--
             Static Method
