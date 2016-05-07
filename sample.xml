@@ -21,23 +21,39 @@
         -->
         <Method></Method>
 
-        <!-- Selects either wildcard (default) or regular expression matching -->
+        <!--
+            Automatic Method
+
+            Selects either wildcard (default) or regular expression matching.
+        -->
         <MatchRegEx>False</MatchRegEx>
 
-        <!-- Selects either case insensitive (default) or case sensitive matching -->
+        <!--
+            Automatic Method
+
+            Selects either case insensitive (default) or case sensitive matching.
+        -->
         <MatchCase>False</MatchCase>
 
         <!--
+            Automatic Method
+
             The pattern used for matching against the Windows Registry keys. If undefined or blank
             we'll match against any Registry key where the component name is a substring of the key.
         -->
         <MatchPattern></MatchPattern>
 
-        <!-- Name of binary to search for in the system's PATH if using the FindInPath method -->
+        <!--
+            FindInPath Method
+
+            Name of the binary to search for in the system's PATH with optional file extension.
+        -->
         <FindBinary></FindBinary>
 
         <!--
-            Only used when the detection method is "Static" in which case this is required
+            Static Method
+
+            Availability state to always return for this component per the below options.
 
             Can be one of:
              - Available:           The component was detected
