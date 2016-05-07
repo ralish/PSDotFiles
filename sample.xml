@@ -16,7 +16,7 @@
              - FindInPath:  Determines the availability based on the presence of a nominated binary
                             located in a directory found in the system's PATH. Defaults to searching
                             for a binary with the same name as the component directory but this can
-                            be customised via the <FindBinary> element.
+                            be customised via the <FindInPath> element.
              - PathExists:  Determines the availability based on the existence of a nominated path
                             specified in the <TestPath> element. The path must be absolute and would
                             typically test that a file or directory exists. However, any absolute
@@ -54,7 +54,7 @@
 
             Name of the binary to search for in the system's PATH with optional file extension.
         -->
-        <FindBinary></FindBinary>
+        <FindInPath></FindInPath>
 
         <!--
             PathExists Method

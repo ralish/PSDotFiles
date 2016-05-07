@@ -2,7 +2,7 @@
     <FriendlyName>Windows PowerShell</FriendlyName>
     <Detection>
         <Method>FindInPath</Method>
-        <FindBinary>powershell</FindBinary>
+        <FindInPath>powershell</FindInPath>
     </Detection>
     <InstallPath>
         <SpecialFolder>Personal</SpecialFolder>

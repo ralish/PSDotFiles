@@ -515,8 +515,8 @@ Function Initialize-DotFilesComponent {
             $Component.Availability = [Availability]::Unavailable
         }
     } elseif ($Metadata.Component.Detection.Method -eq 'FindInPath') {
-        if ($Metadata.Component.Detection.FindBinary) {
-            $FindBinary = $Metadata.Component.Detection.FindBinary
+        if ($Metadata.Component.Detection.FindInPath) {
+            $FindBinary = $Metadata.Component.Detection.FindInPath
         } else {
             $FindBinary = $Component.Name
         }
