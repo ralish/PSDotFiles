@@ -1,6 +1,13 @@
 Changelog
 =========
 
+## v0.4.4
+
+- Add support for new detection method: `PathExists`
+- Rename the `<FindBinary>` element to `<FindInPath>` for consistency
+- Clean-up comments for the detection methods in the sample XML file
+- Remove redundant check for valid known component detection method
+
 ## v0.4.3
 
 - Add support for new detection method: `FindInPath`
