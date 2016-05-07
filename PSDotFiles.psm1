@@ -543,8 +543,7 @@ Function Initialize-DotFilesComponent {
         } else {
             Write-Error "[$Name] No component availability state specified for static detection."
         }
-    } elseif ($Metadata.Component.Detection.Method -and
-              $Metadata.Component.Detection.Method -notin ('Automatic', 'Static')) {
+    } elseif ($Metadata.Component.Detection.Method) {
         Write-Error ("[$Name] Invalid component detection method specified: " + $Metadata.Component.Detection.Method)
     }
 
