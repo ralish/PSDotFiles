@@ -12,8 +12,12 @@
                             detect the component by retrieving the list of installed programs from
                             the Windows Registry and searching for a case insensitive wildcard match
                             against the component name. The matching logic can be customised via the
-                            optional MatchRegEx, MatchCase and MatchPattern elements.
-             - Static:      Always use the availability state provided in the Availability element.
+                            optional <MatchRegEx>, <MatchCase> and <MatchPattern> elements.
+             - FindInPath:  Determines the availability based on the presence of a nominated binary
+                            located in a directory found in the system's PATH. Defaults to searching
+                            for a binary with the same name as the component directory but this can
+                            be customised via the <FindBinary> element.
+             - Static:      Use the availability state provided in the <Availability> element.
         -->
         <Method></Method>
 
@@ -28,6 +32,9 @@
             we'll match against any Registry key where the component name is a substring of the key.
         -->
         <MatchPattern></MatchPattern>
+
+        <!-- Name of binary to search for in the system's PATH if using the FindInPath method -->
+        <FindBinary></FindBinary>
 
         <!--
             Only used when the detection method is "Static" in which case this is required

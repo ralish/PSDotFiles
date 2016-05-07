@@ -1,9 +1,6 @@
 <Component>
     <FriendlyName>Git</FriendlyName>
     <Detection>
-        <Method>Automatic</Method>
-        <MatchRegEx>True</MatchRegEx>
-        <MatchCase>True</MatchCase>
-        <MatchPattern>^Git </MatchPattern>
+        <Method>FindInPath</Method>
     </Detection>
 </Component>

@@ -514,6 +514,18 @@ Function Initialize-DotFilesComponent {
         } else {
             $Component.Availability = [Availability]::Unavailable
         }
+    } elseif ($Metadata.Component.Detection.Method -eq 'FindInPath') {
+        if ($Metadata.Component.Detection.FindBinary) {
+            $FindBinary = $Metadata.Component.Detection.FindBinary
+        } else {
+            $FindBinary = $Component.Name
+        }
+
+        if (Get-Command $FindBinary -ErrorAction SilentlyContinue) {
+            $Component.Availability = [Availability]::Available
+        } else {
+            $Component.Availability = [Availability]::Unavailable
+        }
     } elseif ($Metadata.Component.Detection.Method -eq 'Static') {
         if ($Metadata.Component.Detection.Availability) {
             $Availability = $Metadata.Component.Detection.Availability
