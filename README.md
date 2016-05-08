@@ -109,9 +109,9 @@ Remove-DotFiles
 
 All commands have built-in help and examples which can be accessed with `Get-Help <command>`.
 
-Only the `Install-DotFiles` and `Remove-DotFiles` commands will modify your system by creating or removing the appropriate symlinks.
+Only `Install-DotFiles` and `Remove-DotFiles`  will modify your system by creating or removing the appropriate symlinks.
 
-Both `Install-DotFiles` and `Remove-DotFiles` support PowerShell's standard `-WhatIf` and `-Confirm` parameters to only show what would be performed or confirm each change respectively.
+Both `Install-DotFiles` and `Remove-DotFiles` support PowerShell's standard `-WhatIf` and `-Confirm` parameters.
 
 ## Troubleshooting
 
