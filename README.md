@@ -39,8 +39,20 @@ A simple dotfiles folder structure might look like this:
 
 ```fundamental
 dotfiles
+| --- clink
+   | --- clink_inputrc
+   | --- settings
+| --- conemu
+   | --- ConEmu.xml
 | --- git
+   | --- .gitattributes
    | --- .gitconfig 
+   | --- .gitignore
+| --- posh
+   | --- Modules
+      | --- MyModule
+         | --- MyModule.psm1
+   | --- profile.ps1
 | --- vim
    | --- .vimrc
 | --- etc...
