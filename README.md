@@ -130,3 +130,7 @@ Both `Install-DotFiles` and `Remove-DotFiles` support PowerShell's standard `-Wh
 Encountering unexpected behaviour or other problems? You may wish to run the problematic command with the `-Verbose` parameter for more details. You can also add the `-Debug` parameter for even more details on the command processing.
 
 If you think you've found a bug please consider opening an [issue](https://github.com/ralish/PSDotFiles/issues) so we can look into it and hopefully get it fixed!
+
+## License
+
+All content is licensed under the terms of [The MIT License](LICENSE).
