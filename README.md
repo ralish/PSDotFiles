@@ -1,18 +1,21 @@
 PSDotFiles
 ==========
 
-A simple dotfiles management framework for Windows built on PowerShell.
+A simple *dotfiles* management framework for Windows built on PowerShell.
 
-## Purpose
+Purpose
+-------
 
-PSDotFiles aims to provide a simple yet powerful and flexible framework for managing your dotfiles on Windows systems. The design is heavily influenced by [GNU Stow](https://www.gnu.org/software/stow/), which works by symlinking the contents of one or more folders into another folder. In this way, a collection of dotfiles can be easily divided into per application folders (e.g. `git`, `sublime`, `vim`, etc...).
+PSDotFiles aims to provide a simple yet powerful and flexible framework for managing your *dotfiles* on Windows systems. The design is heavily influenced by [GNU Stow](https://www.gnu.org/software/stow/), which works by symlinking the contents of one or more folders into another folder. In this way, a collection of *dotfiles* can be easily divided into per-application folders (e.g. `git`, `sublime`, `vim`, etc...).
 
 PSDotFiles implements this basic design but with a PowerShell-centric approach using a simple set of cmdlets.
 
-## Requirements
+Requirements
+------------
 
 ### PowerShell 5.0
-The only software requirement is Windows PowerShell 5.0, however, it's not yet in widespread distribution.
+
+The only software requirement is PowerShell 5.0, however, it's not yet in widespread distribution.
 
 The below table should help make things simple:
 
@@ -24,6 +27,7 @@ The below table should help make things simple:
 | Windows 8.1            | [Download WMF 5.0](https://www.microsoft.com/en-us/download/details.aspx?id=50395) |
 | Windows 10 (RTM/LTSB)  | Not available                                                                      |
 | Windows 10 (1511/TH2)  | Built-in                                                                           |
+| Windows 10 (1604/RS1)  | Built-in                                                                           |
 | Windows Server 2008    | Not available                                                                      |
 | Windows Server 2008 R2 | [Download WMF 5.0](https://www.microsoft.com/en-us/download/details.aspx?id=50395) |
 | Windows Server 2012    | [Download WMF 5.0](https://www.microsoft.com/en-us/download/details.aspx?id=50395) |
@@ -33,9 +37,9 @@ If PowerShell 5.0 is not available for your operating system then I'm afraid you
 
 ### Folder Structure
 
-PSDotFiles expects a dotfiles folder to be structured as multiple folders each containing the files and folders comprising a particular application's configuration. These top-level folders are referred to by PSDotFiles as components. The files and folders in each component's folder should be relative to a well-known top-level folder (e.g. your profile folder, which is the default target in PSDotFiles). The actual list of well-known folders are those in the `Environment.SpecialFolder` enumeration and can be found [here](https://msdn.microsoft.com/en-us/library/system.environment.specialfolder.aspx).
+PSDotFiles expects a *dotfiles* folder to be structured as multiple folders each containing the files and folders comprising a particular application's configuration. These top-level folders are referred to by PSDotFiles as **components**. The files and folders in each component's folder should be relative to a well-known top-level folder (e.g. your profile folder, which is the default target in PSDotFiles). The actual list of well-known folders are those in the `[Environment.SpecialFolder](https://msdn.microsoft.com/en-us/library/system.environment.specialfolder.aspx)` enumeration.
 
-A simple dotfiles folder structure might look like this:
+A simple *dotfiles* folder structure might look like this:
 
 ```fundamental
 dotfiles
@@ -55,10 +59,10 @@ dotfiles
    | --- profile.ps1
 | --- vim
    | --- .vimrc
-| --- etc...
 ```
 
-## Installing
+Installing
+----------
 
 ### PowerShellGet
 
@@ -89,9 +93,10 @@ You can check that PowerShell is able to locate the module by running the follow
 Get-Module PSDotFiles -ListAvailable
 ```
 
-## Configuring
+Configuring
+-----------
 
-Before you can use PSDotFiles you should set the `$DotFilesPath` variable to the location of your dotfiles folder. For example:
+Before you can use PSDotFiles you should set the `$DotFilesPath` variable to the location of your *dotfiles* folder. For example:
 
 ```posh
 $DotFilesPath = "C:\Users\<your.account>\dotfiles"
@@ -104,9 +109,10 @@ So that you don't have to enter this into every new PowerShell session it's a go
 
 If you're unsure which to use, just choose the first.
 
-## Quickstart
+Quickstart
+----------
 
-The module only exports three commands through which all dotfiles management occurs:
+The module only exports three commands through which all *dotfiles* management occurs:
 
 ```posh
 # Enumerates available dotfiles components
@@ -125,12 +131,14 @@ Only `Install-DotFiles` and `Remove-DotFiles`  will modify your system by creati
 
 Both `Install-DotFiles` and `Remove-DotFiles` support PowerShell's standard `-WhatIf` and `-Confirm` parameters.
 
-## Troubleshooting
+Troubleshooting
+---------------
 
 Encountering unexpected behaviour or other problems? You may wish to run the problematic command with the `-Verbose` parameter for more details. You can also add the `-Debug` parameter for even more details on the command processing.
 
-If you think you've found a bug please consider opening an [issue](https://github.com/ralish/PSDotFiles/issues) so we can look into it and hopefully get it fixed!
+If you think you've found a bug please consider [opening an issue](https://github.com/ralish/PSDotFiles/issues) so that I can look into it and hopefully get it fixed!
 
-## License
+License
+-------
 
 All content is licensed under the terms of [The MIT License](LICENSE).
