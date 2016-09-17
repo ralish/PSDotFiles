@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## v0.4.5
+
+- Now licensed under The MIT License
+- Minor changes to the module manifest
+- Minor updates to module documentation
+
 ## v0.4.4
 
 - Add support for new detection method: `PathExists`
