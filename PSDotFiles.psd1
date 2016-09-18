@@ -94,7 +94,7 @@ PrivateData = @{
         Tags = @('dotfiles')
 
         # A URL to the license for this module.
-        LicenseUri = 'https://github.com/ralish/PSDotFiles/LICENSE'
+        LicenseUri = 'https://github.com/ralish/PSDotFiles/blob/stable/LICENSE'
 
         # A URL to the main website for this project.
         ProjectUri = 'https://github.com/ralish/PSDotFiles'
@@ -103,7 +103,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'https://github.com/ralish/PSDotFiles/CHANGELOG.md'
+        ReleaseNotes = 'https://github.com/ralish/PSDotFiles/blob/stable/CHANGELOG.md'
 
     } # End of PSData hashtable
 
