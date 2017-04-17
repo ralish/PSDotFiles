@@ -47,7 +47,8 @@ Function Get-DotFiles {
         $Component = Get-DotFilesComponent -Directory $Directory
 
         if ($Component.Availability -in ('Available', 'AlwaysInstall')) {
-            $Results = Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly -Silent
+            [Boolean[]]$Results = @()
+            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly -Silent
             $Component.State = Get-ComponentInstallResult -Results $Results
         }
 
@@ -136,10 +137,11 @@ Function Install-DotFiles {
         Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
         Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
 
+        [Boolean[]]$Results = @()
         if (!$Simulate) {
-            $Results = Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
+            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
         } else {
-            $Results = Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
+            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
         }
 
         $Component.State = Get-ComponentInstallResult -Results $Results
@@ -219,10 +221,11 @@ Function Remove-DotFiles {
         Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
         Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
 
+        [Boolean[]]$Results = @()
         if (!$Simulate) {
-            $Results = Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
+            $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
         } else {
-            $Results = Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
+            $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
         }
 
         $Component.State = Get-ComponentInstallResult -Results $Results -Removal
@@ -314,14 +317,14 @@ Function Get-ComponentInstallResult {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
-        [AllowNull()]
+        [AllowEmptyCollection()]
             [Boolean[]]$Results,
         [Parameter(Mandatory=$false)]
             [Switch]$Removal
     )
 
-    if ($Results) {
-        $TotalResults = ($Results | Measure-Object).Count
+    if ($Results.Count) {
+        $TotalResults = $Results.Count
         $SuccessCount = ($Results | Where-Object { $_ -eq $true  } | Measure-Object).Count
         $FailureCount = ($Results | Where-Object { $_ -eq $false } | Measure-Object).Count
 
