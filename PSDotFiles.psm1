@@ -41,14 +41,14 @@ Function Get-DotFiles {
     Initialize-PSDotFiles @PSBoundParameters
 
     $Components = @()
-    $Directories = Get-ChildItem $script:DotFilesPath -Directory
+    $Directories = Get-ChildItem -Path $script:DotFilesPath -Directory
 
     foreach ($Directory in $Directories) {
         $Component = Get-DotFilesComponent -Directory $Directory
 
         if ($Component.Availability -in ('Available', 'AlwaysInstall')) {
             $Results = Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly -Silent
-            $Component.State = Get-ComponentInstallResult $Results
+            $Component.State = Get-ComponentInstallResult -Results $Results
         }
 
         $Components += $Component
@@ -110,31 +110,31 @@ Function Install-DotFiles {
 
     if (!(Test-IsAdministrator)) {
         if ($PSBoundParameters.ContainsKey('WhatIf')) {
-            Write-Warning "Not running with Administrator privileges but ignoring due to -WhatIf."
+            Write-Warning -Message 'Not running with Administrator privileges but ignoring due to -WhatIf.'
         } else {
-            throw "Unable to run Install-DotFiles as not running with Administrator privileges."
+            throw 'Unable to run Install-DotFiles as not running with Administrator privileges.'
         }
     }
 
     if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-        $Components = Get-DotFiles @PSBoundParameters | ? { $_.Availability -in ('Available', 'AlwaysInstall') }
+        $Components = Get-DotFiles @PSBoundParameters | Where-Object { $_.Availability -in ('Available', 'AlwaysInstall') }
     } else {
         $UnfilteredComponents = $Components
-        $Components = $UnfilteredComponents | ? { $_.Availability -in ('Available', 'AlwaysInstall') }
+        $Components = $UnfilteredComponents | Where-Object { $_.Availability -in ('Available', 'AlwaysInstall') }
     }
 
     foreach ($Component in $Components) {
         $Name = $Component.Name
 
         if ($PSCmdlet.ShouldProcess($Name, 'Install-DotFilesComponent')) {
-            Write-Verbose ("[$Name] Installing...")
+            Write-Verbose -Message ('[{0}] Installing...' -f $Name)
         } else {
-            Write-Verbose ("[$Name] Simulating install...")
+            Write-Verbose -Message ('[{0}] Simulating install...' -f $Name)
             $Simulate = $true
         }
 
-        Write-Debug ("[$Name] Source directory is: " + $Component.SourcePath)
-        Write-Debug ("[$Name] Installation path is: " + $Component.InstallPath)
+        Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
+        Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
 
         if (!$Simulate) {
             $Results = Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
@@ -142,7 +142,7 @@ Function Install-DotFiles {
             $Results = Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
         }
 
-        $Component.State = Get-ComponentInstallResult $Results
+        $Component.State = Get-ComponentInstallResult -Results $Results
     }
 
     return $Components
@@ -200,24 +200,24 @@ Function Remove-DotFiles {
     )
 
     if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-        $Components = Get-DotFiles @PSBoundParameters | ? { $_.State -in ('Installed', 'PartialInstall') }
+        $Components = Get-DotFiles @PSBoundParameters | Where-Object { $_.State -in ('Installed', 'PartialInstall') }
     } else {
         $UnfilteredComponents = $Components
-        $Components = $UnfilteredComponents | ? { $_.State -in ('Installed', 'PartialInstall') }
+        $Components = $UnfilteredComponents | Where-Object { $_.State -in ('Installed', 'PartialInstall') }
     }
 
     foreach ($Component in $Components) {
         $Name = $Component.Name
 
         if ($PSCmdlet.ShouldProcess($Name, 'Remove-DotFilesComponent')) {
-            Write-Verbose ("[$Name] Removing...")
+            Write-Verbose -Message ('[{0}] Removing...' -f $Name)
         } else {
-            Write-Verbose ("[$Name] Simulating removal...")
+            Write-Verbose -Message ('[{0}] Simulating removal...' -f $Name)
             $Simulate = $true
         }
 
-        Write-Debug ("[$Name] Source directory is: " + $Component.SourcePath)
-        Write-Debug ("[$Name] Installation path is: " + $Component.InstallPath)
+        Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
+        Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
 
         if (!$Simulate) {
             $Results = Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
@@ -225,7 +225,7 @@ Function Remove-DotFiles {
             $Results = Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
         }
 
-        $Component.State = Get-ComponentInstallResult $Results -Removal
+        $Component.State = Get-ComponentInstallResult -Results $Results -Removal
     }
 
     return $Components
@@ -245,36 +245,36 @@ Function Initialize-PSDotFiles {
     )
 
     if ($Path) {
-        $script:DotFilesPath = Test-DotFilesPath $Path
+        $script:DotFilesPath = Test-DotFilesPath -Path $Path
         if (!$script:DotFilesPath) {
             throw "The provided dotfiles path is either not a directory or it can't be accessed."
         }
     } elseif ($global:DotFilesPath) {
-        $script:DotFilesPath = Test-DotFilesPath $global:DotFilesPath
+        $script:DotFilesPath = Test-DotFilesPath -Path $global:DotFilesPath
         if (!$script:DotFilesPath) {
             throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
         }
     } else {
         throw "No dotfiles path was provided and the default dotfiles path (`$DotFilesPath) has not been configured."
     }
-    Write-Verbose "Using dotfiles directory: $script:DotFilesPath"
+    Write-Verbose -Message ('Using dotfiles directory: {0}' -f $script:DotFilesPath)
 
-    $script:GlobalMetadataPath = Join-Path $PSScriptRoot 'metadata'
-    Write-Debug "Using global metadata directory: $script:GlobalMetadataPath"
+    $script:GlobalMetadataPath = Join-Path -Path $PSScriptRoot -ChildPath 'metadata'
+    Write-Debug -Message ('Using global metadata directory: {0}' -f $script:GlobalMetadataPath)
 
-    $script:DotFilesMetadataPath = Join-Path $script:DotFilesPath 'metadata'
-    Write-Debug "Using dotfiles metadata directory: $script:DotFilesMetadataPath"
+    $script:DotFilesMetadataPath = Join-Path -Path $script:DotFilesPath -ChildPath 'metadata'
+    Write-Debug -Message ('Using dotfiles metadata directory: {0}' -f $script:DotFilesMetadataPath)
 
     if ($PSBoundParameters.ContainsKey('Autodetect')) {
         $script:DotFilesAutodetect = $Autodetect
-    } elseif (Get-Variable -Name DotFilesAutodetect -Scope Global -ErrorAction SilentlyContinue | Out-Null) {
+    } elseif ($null = Get-Variable -Name DotFilesAutodetect -Scope Global -ErrorAction SilentlyContinue) {
         $script:DotFilesAutodetect = $global:DotFilesAutodetect
     } else {
         $script:DotFilesAutodetect = $false
     }
-    Write-Debug "Automatic component detection state: $script:DotFilesAutodetect"
+    Write-Debug -Message ('Automatic component detection state: {0}' -f $script:DotFilesAutodetect)
 
-    Write-Debug "Refreshing cache of installed programs..."
+    Write-Debug -Message 'Refreshing cache of installed programs...'
     $script:InstalledPrograms = Get-InstalledPrograms
 }
 
@@ -291,7 +291,7 @@ Function Find-DotFilesComponent {
             [Switch]$RegularExpression
     )
 
-    $MatchingParameters = @{'Property'='DisplayName';
+    $MatchingParameters = @{'Property'='DisplayName'
                             'Value'=$Pattern}
     if (!$CaseSensitive -and !$RegularExpression) {
         $MatchingParameters += @{'ILike'=$true}
@@ -321,9 +321,9 @@ Function Get-ComponentInstallResult {
     )
 
     if ($Results) {
-        $TotalResults = ($Results | measure).Count
-        $SuccessCount = ($Results | ? { $_ -eq $true  } | measure).Count
-        $FailureCount = ($Results | ? { $_ -eq $false } | measure).Count
+        $TotalResults = ($Results | Measure-Object).Count
+        $SuccessCount = ($Results | Where-Object { $_ -eq $true  } | Measure-Object).Count
+        $FailureCount = ($Results | Where-Object { $_ -eq $false } | Measure-Object).Count
 
         if ($SuccessCount -eq $TotalResults) {
             if (!$Removal) {
@@ -348,39 +348,39 @@ Function Get-DotFilesComponent {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
-            [System.IO.DirectoryInfo]$Directory
+            [IO.DirectoryInfo]$Directory
     )
 
     $Name               = $Directory.Name
     $MetadataFile       = $Name + '.xml'
-    $GlobalMetadataFile = Join-Path $script:GlobalMetadataPath $MetadataFile
-    $CustomMetadataFile = Join-Path $script:DotFilesMetadataPath $MetadataFile
+    $GlobalMetadataFile = Join-Path -Path $script:GlobalMetadataPath -ChildPath $MetadataFile
+    $CustomMetadataFile = Join-Path -Path $script:DotFilesMetadataPath -ChildPath $MetadataFile
 
-    $GlobalMetadataPresent = Test-Path $GlobalMetadataFile -PathType Leaf
-    $CustomMetadataPresent = Test-Path $CustomMetadataFile -PathType Leaf
+    $GlobalMetadataPresent = Test-Path -Path $GlobalMetadataFile -PathType Leaf
+    $CustomMetadataPresent = Test-Path -Path $CustomMetadataFile -PathType Leaf
 
     if ($GlobalMetadataPresent -or $CustomMetadataPresent) {
         if ($GlobalMetadataPresent) {
-            Write-Debug "[$Name] Loading global metadata for component..."
-            $Metadata = [Xml](Get-Content $GlobalMetadataFile)
+            Write-Debug -Message ('[{0}] Loading global metadata for component...' -f $Name)
+            $Metadata = [Xml](Get-Content -Path $GlobalMetadataFile)
             $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
         }
 
         if ($CustomMetadataPresent) {
-            $Metadata = [Xml](Get-Content $CustomMetadataFile)
+            $Metadata = [Xml](Get-Content -Path $CustomMetadataFile)
             if ($GlobalMetadataPresent) {
-                Write-Debug "[$Name] Loading custom metadata overrides for component..."
+                Write-Debug -Message ('[{0}] Loading custom metadata overrides for component...' -f $Name)
                 $Component = Initialize-DotFilesComponent -Component $Component -Metadata $Metadata
             } else {
-                Write-Debug "[$Name] Loading custom metadata for component..."
+                Write-Debug -Message ('[{0}] Loading custom metadata for component...' -f $Name)
                 $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
             }
         }
     } elseif ($script:DotFilesAutodetect) {
-        Write-Debug "[$Name] Running automatic detection for component..."
+        Write-Debug -Message ('[{0}] Running automatic detection for component...' -f $Name)
         $Component = Initialize-DotFilesComponent -Name $Name
     } else {
-        Write-Debug "[$Name] No metadata & automatic detection disabled."
+        Write-Debug -Message ('[{0}] No metadata & automatic detection disabled.' -f $Name)
         $Component = [Component]::new($Name, $script:DotFilesPath)
         $Component.Availability = [Availability]::NoLogic
     }
@@ -398,23 +398,23 @@ Function Get-InstalledPrograms {
 
     $InstalledPrograms = @(
         # Native applications installed system wide
-        if (Test-Path "HKLM:$NativeRegPath") { Get-ChildItem "HKLM:$NativeRegPath" }
+        if (Test-Path -Path ('HKLM:{0}' -f $NativeRegPath)) { Get-ChildItem -Path ('HKLM:{0}' -f $NativeRegPath) }
         # Native applications installed under the current user
-        if (Test-Path "HKCU:$NativeRegPath") { Get-ChildItem "HKCU:$NativeRegPath" }
+        if (Test-Path -Path ('HKCU:{0}' -f $NativeRegPath)) { Get-ChildItem -Path ('HKCU:{0}' -f $NativeRegPath) }
         # 32-bit applications installed system wide on 64-bit Windows
-        if (Test-Path "HKLM:$Wow6432RegPath") { Get-ChildItem "HKLM:$Wow6432RegPath" }
+        if (Test-Path -Path ('HKLM:{0}' -f $Wow6432RegPath)) { Get-ChildItem -Path ('HKLM:{0}' -f $Wow6432RegPath) }
         # 32-bit applications installed under the current user on 64-bit Windows
-        if (Test-Path "HKCU:$Wow6432RegPath") { Get-ChildItem "HKCU:$Wow6432RegPath" }
+        if (Test-Path -Path ('HKCU:{0}' -f $Wow6432RegPath)) { Get-ChildItem -Path ('HKCU:{0}' -f $Wow6432RegPath) }
     ) | # Get the properties of each uninstall key
-        % { Get-ItemProperty $_.PSPath } |
+        ForEach-Object { Get-ItemProperty -Path $_.PSPath } |
         # Filter out all the uninteresting entries
-        ? { $_.DisplayName -and
+        Where-Object { $_.DisplayName -and
            !$_.SystemComponent -and
            !$_.ReleaseType -and
            !$_.ParentKeyName -and
            ($_.UninstallString -or $_.NoRemove) }
 
-    Write-Debug ("Registry scan found " + ($InstalledPrograms | measure).Count + " installed programs.")
+    Write-Debug -Message ('Registry scan found ' + ($InstalledPrograms | Measure-Object).Count + ' installed programs.')
 
     return $InstalledPrograms
 }
@@ -423,18 +423,18 @@ Function Get-SymlinkTarget {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
-            [System.IO.FileSystemInfo]$Symlink
+            [IO.FileSystemInfo]$Symlink
     )
 
     if ($Symlink.LinkType -ne 'SymbolicLink') {
         return $false
     }
 
-    $Absolute = [System.IO.Path]::IsPathRooted($Symlink.Target[0])
+    $Absolute = [IO.Path]::IsPathRooted($Symlink.Target[0])
     if ($Absolute) {
         return $Symlink.Target[0]
     } else {
-        return (Resolve-Path (Join-Path (Split-Path $Symlink -Parent) $Symlink.Target[0])).Path
+        return (Resolve-Path -Path (Join-Path -Path (Split-Path -Path $Symlink -Parent) -ChildPath $Symlink.Target[0])).Path
     }
 }
 
@@ -460,7 +460,7 @@ Function Initialize-DotFilesComponent {
     if ($PSBoundParameters.ContainsKey('Metadata')) {
         if (!$Metadata.Component) {
             $Component.Availability = [Availability]::DetectionFailure
-            Write-Error "[$Name] No <Component> element in metadata file."
+            Write-Error -Message ('[{0}] No <Component> element in metadata file.' -f $Name)
             return $Component
         }
     }
@@ -481,7 +481,7 @@ Function Initialize-DotFilesComponent {
         } elseif ($Metadata.Component.Detection.MatchRegEx -eq 'True') {
             $Parameters += @{'RegularExpression'=$true}
         } else {
-            Write-Error ("[$Name] Invalid MatchRegEx setting for automatic component detection: " + $Metadata.Component.Detection.MatchRegEx)
+            Write-Error -Message ('[{0}] Invalid MatchRegEx setting for automatic component detection: {1}' -f $Name, $Metadata.Component.Detection.MatchRegEx)
         }
 
         if (!$Metadata.Component.Detection.MatchCase -or
@@ -490,7 +490,7 @@ Function Initialize-DotFilesComponent {
         } elseif ($Metadata.Component.Detection.MatchCase -eq 'True') {
             $Parameters += @{'CaseSensitive'=$true}
         } else {
-            Write-Error ("[$Name] Invalid MatchCase setting for automatic component detection: " + $Metadata.Component.Detection.MatchCase)
+            Write-Error -Message ('[{0}] Invalid MatchCase setting for automatic component detection: {1}' -f $Name, $Metadata.Component.Detection.MatchCase)
         }
 
         if ($Metadata.Component.Detection.MatchPattern) {
@@ -500,7 +500,7 @@ Function Initialize-DotFilesComponent {
 
         $MatchingPrograms = Find-DotFilesComponent @Parameters
         if ($MatchingPrograms) {
-            $NumMatchingPrograms = ($MatchingPrograms | measure).Count
+            $NumMatchingPrograms = ($MatchingPrograms | Measure-Object).Count
             if ($NumMatchingPrograms -eq 1) {
                 $Component.Availability = [Availability]::Available
                 $Component.UninstallKey = $MatchingPrograms.PSPath
@@ -509,7 +509,7 @@ Function Initialize-DotFilesComponent {
                     $Component.FriendlyName = $MatchingPrograms.DisplayName
                 }
             } elseif ($NumMatchingPrograms -gt 1) {
-                Write-Error "[$Name] Automatic detection found $NumMatchingPrograms matching programs."
+                Write-Error -Message ('[{0}] Automatic detection found {1} matching programs.' -f $Name, $NumMatchingPrograms)
             }
         } else {
             $Component.Availability = [Availability]::Unavailable
@@ -521,30 +521,30 @@ Function Initialize-DotFilesComponent {
             $FindBinary = $Component.Name
         }
 
-        if (Get-Command $FindBinary -ErrorAction SilentlyContinue) {
+        if (Get-Command -Name $FindBinary -ErrorAction SilentlyContinue) {
             $Component.Availability = [Availability]::Available
         } else {
             $Component.Availability = [Availability]::Unavailable
         }
     } elseif ($Metadata.Component.Detection.Method -eq 'PathExists') {
         if ($Metadata.Component.Detection.PathExists) {
-            if (Test-Path $Metadata.Component.Detection.PathExists) {
+            if (Test-Path -Path $Metadata.Component.Detection.PathExists) {
                 $Component.Availability = [Availability]::Available
             } else {
                 $Component.Availability = [Availability]::Unavailable
             }
         } else {
-            Write-Error "[$Name] No absolute path specified for testing component availability."
+            Write-Error -Message ('[{0}] No absolute path specified for testing component availability.' -f $Name)
         }
     } elseif ($Metadata.Component.Detection.Method -eq 'Static') {
         if ($Metadata.Component.Detection.Availability) {
             $Availability = $Metadata.Component.Detection.Availability
             $Component.Availability = [Availability]::$Availability
         } else {
-            Write-Error "[$Name] No component availability state specified for static detection."
+            Write-Error -Message ('[{0}] No component availability state specified for static detection.' -f $Name)
         }
     } elseif ($Metadata.Component.Detection.Method) {
-        Write-Error ("[$Name] Invalid component detection method specified: " + $Metadata.Component.Detection.Method)
+        Write-Error -Message ('[{0}] Invalid component detection method specified: {1}' -f $Name, $Metadata.Component.Detection.Method)
     }
 
     # If the component isn't available don't bother determining the install path
@@ -565,27 +565,27 @@ Function Initialize-DotFilesComponent {
         if (!$SpecialFolder -and !$Destination) {
             $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
         } elseif (!$SpecialFolder -and $Destination) {
-            if ([System.IO.Path]::IsPathRooted($Destination)) {
-                if (Test-Path $Destination -PathType Container -IsValid) {
+            if ([IO.Path]::IsPathRooted($Destination)) {
+                if (Test-Path -Path $Destination -PathType Container -IsValid) {
                     $Component.InstallPath = $Destination
                 } else {
-                    Write-Error "[$Name] The destination path for symlinking is invalid: $Destination"
+                    Write-Error -Message ('[{0}] The destination path for symlinking is invalid: {1}' -f $Name, $Destination)
                 }
             } else {
-                Write-Error "[$Name] The destination path for symlinking is not an absolute path: $Destination"
+                Write-Error -Message ('[{0}] The destination path for symlinking is not an absolute path: {1}' -f $Name, $Destination)
             }
         } elseif ($SpecialFolder -and !$Destination) {
             $Component.InstallPath = [Environment]::GetFolderPath($SpecialFolder)
         } else {
-            if (!([System.IO.Path]::IsPathRooted($Destination))) {
-                $InstallPath = Join-Path ([Environment]::GetFolderPath($SpecialFolder)) $Destination
-                if (Test-Path $InstallPath -PathType Container -IsValid) {
+            if (!([IO.Path]::IsPathRooted($Destination))) {
+                $InstallPath = Join-Path -Path ([Environment]::GetFolderPath($SpecialFolder)) -ChildPath $Destination
+                if (Test-Path -Path $InstallPath -PathType Container -IsValid) {
                     $Component.InstallPath = $InstallPath
                 } else {
-                    Write-Error "[$Name] The destination path for symlinking is invalid: $InstallPath"
+                    Write-Error -Message ('[{0}] The destination path for symlinking is invalid: {1}' -f $Name, $InstallPath)
                 }
             } else {
-                Write-Error "[$Name] The destination path for symlinking is not a relative path: $Destination"
+                Write-Error -Message ('[{0}] The destination path for symlinking is not a relative path: {1}' -f $Name, $Destination)
             }
         }
     }
@@ -596,7 +596,7 @@ Function Initialize-DotFilesComponent {
         if ($HideSymlinks -eq 'True') {
             $Component.HideSymlinks = $true
         } elseif ($HideSymlinks -notin ('True', 'False')) {
-            Write-Error "[$Name] Invalid HideSymlinks setting: $HideSymlinks"
+            Write-Error -Message ('[{0}] Invalid HideSymlinks setting: {1}' -f $Name, $HideSymlinks)
         }
     }
 
@@ -616,7 +616,7 @@ Function Install-DotFilesComponentDirectory {
         [Parameter(Mandatory=$true)]
             [Component]$Component,
         [Parameter(Mandatory=$true)]
-            [System.IO.DirectoryInfo[]]$Directories,
+            [IO.DirectoryInfo[]]$Directories,
         [Parameter(Mandatory=$false)]
             [Switch]$TestOnly,
         [Parameter(Mandatory=$false)]
@@ -633,20 +633,20 @@ Function Install-DotFilesComponentDirectory {
             $TargetDirectory = $InstallPath
         } else {
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
-            $TargetDirectory = Join-Path $InstallPath $SourceDirectoryRelative
+            $TargetDirectory = Join-Path -Path $InstallPath -ChildPath $SourceDirectoryRelative
             if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
                 if (!$Silent) {
-                    Write-Verbose "[$Name] Ignoring directory path: $SourceDirectoryRelative"
+                    Write-Verbose -Message ('[{0}] Ignoring directory path: {1}' -f $Name, $SourceDirectoryRelative)
                 }
                 continue
             }
         }
 
-        if (Test-Path $TargetDirectory) {
-            $ExistingTarget = Get-Item $TargetDirectory -Force
-            if ($ExistingTarget -isnot [System.IO.DirectoryInfo]) {
+        if (Test-Path -Path $TargetDirectory) {
+            $ExistingTarget = Get-Item -Path $TargetDirectory -Force
+            if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
                 if (!$Silent) {
-                    Write-Error "[$Name] Expected a directory but found a file with the same name: $TargetDirectory"
+                    Write-Error -Message ('[{0}] Expected a directory but found a file with the same name: {1}' -f $Name, $TargetDirectory)
                 }
                 $Results += $false
             } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
@@ -654,17 +654,17 @@ Function Install-DotFilesComponentDirectory {
 
                 if (!($Directory.FullName -eq $SymlinkTarget)) {
                     if (!$Silent) {
-                        Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetDirectory`" -> `"$SymlinkTarget`""
+                        Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     }
                     $Results += $false
                 } else {
                     if (!$Silent) {
-                        Write-Debug "[$Name] Symlink already exists and points to expected target: `"$TargetDirectory`" -> `"$SymlinkTarget`""
+                        Write-Debug -Message ('[{0}] Symlink already exists and points to expected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     }
                     $Results += $true
                 }
             } else {
-                $NextFiles = Get-ChildItem $Directory.FullName -File -Force
+                $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
                 if ($NextFiles) {
                     if (!$TestOnly -and !$Silent) {
                         $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles
@@ -677,7 +677,7 @@ Function Install-DotFilesComponentDirectory {
                     }
                 }
 
-                $NextDirectories = Get-ChildItem $Directory.FullName -Directory -Force
+                $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
                 if ($NextDirectories) {
                     if (!$TestOnly -and !$Silent) {
                         $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
@@ -692,18 +692,18 @@ Function Install-DotFilesComponentDirectory {
             }
         } else {
             if (!$Silent) {
-                Write-Verbose ("[$Name] Linking directory: `"$TargetDirectory`" -> `"" + $Directory.FullName + "`"")
+                Write-Verbose -Message ('[{0}] Linking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
                 if ($TestOnly) {
                     New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName -WhatIf
                 } else {
                     $Symlink = New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName
                     if ($Component.HideSymlinks) {
                         if (!$Silent) {
-                            Write-Debug "[$Name] Setting attributes to hide directory symlink: `"$TargetDirectory`""
+                            Write-Debug -Message ('[{0}] Setting attributes to hide directory symlink: "{1}"' -f $Name, $TargetDirectory)
                         }
                         $Attributes = Set-SymlinkAttributes -Symlink $Symlink
                         if (!$Attributes) {
-                            Write-Error "[$Name] Unable to set Hidden and System attributes on directory symlink: `"$TargetDirectory`""
+                            Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
                         }
                     }
                 }
@@ -721,7 +721,7 @@ Function Install-DotFilesComponentFile {
         [Parameter(Mandatory=$true)]
             [Component]$Component,
         [Parameter(Mandatory=$true)]
-            [System.IO.FileInfo[]]$Files,
+            [IO.FileInfo[]]$Files,
         [Parameter(Mandatory=$false)]
             [Switch]$TestOnly,
         [Parameter(Mandatory=$false)]
@@ -735,25 +735,25 @@ Function Install-DotFilesComponentFile {
 
     foreach ($File in $Files) {
         $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
-        $TargetFile = Join-Path $Component.InstallPath $SourceFileRelative
+        $TargetFile = Join-Path -Path $Component.InstallPath -ChildPath $SourceFileRelative
 
         if ($SourceFileRelative -in $Component.IgnorePaths) {
             if (!$Silent) {
-                Write-Verbose "[$Name] Ignoring file path: $SourceFileRelative"
+                Write-Verbose -Message ('[{0}] Ignoring file path: {1}' -f $Name, $SourceFileRelative)
             }
             continue
         }
 
-        if (Test-Path $TargetFile) {
-            $ExistingTarget = Get-Item $TargetFile -Force
-            if ($ExistingTarget -isnot [System.IO.FileInfo]) {
+        if (Test-Path -Path $TargetFile) {
+            $ExistingTarget = Get-Item -Path $TargetFile -Force
+            if ($ExistingTarget -isnot [IO.FileInfo]) {
                 if (!$Silent) {
-                    Write-Error "[$Name] Expected a file but found a directory with the same name: $TargetFile"
+                    Write-Error -Message ('[{0}] Expected a file but found a directory with the same name: {1}' -f $Name, $TargetFile)
                 }
                 $Results += $false
             } elseif ($ExistingTarget.LinkType -ne 'SymbolicLink') {
                 if (!$Silent) {
-                    Write-Error "[$Name] Unable to create symlink as a file with the same name already exists: $TargetFile"
+                    Write-Error -Message ('[{0}] Unable to create symlink as a file with the same name already exists: {1}' -f $Name, $TargetFile)
                 }
                 $Results += $false
             } else {
@@ -761,30 +761,30 @@ Function Install-DotFilesComponentFile {
 
                 if (!($File.FullName -eq $SymlinkTarget)) {
                     if (!$Silent) {
-                        Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetFile`" -> `"$SymlinkTarget`""
+                        Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
                     }
                     $Results += $false
                 } else {
                     if (!$Silent) {
-                        Write-Debug "[$Name] Symlink already exists and points to expected target: `"$TargetFile`" -> `"$SymlinkTarget`""
+                        Write-Debug -Message ('[{0}] Symlink already exists and points to expected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
                     }
                     $Results += $true
                 }
             }
         } else {
             if (!$Silent) {
-                Write-Verbose ("[$Name] Linking file: `"$TargetFile`" -> `"" + $File.FullName  + "`"")
+                Write-Verbose -Message ('[{0}] Linking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
                 if ($TestOnly) {
                     New-Item -ItemType SymbolicLink -Path $TargetFile -value $File.FullName -WhatIf
                 } else {
                     $Symlink = New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName
                     if ($Component.HideSymlinks) {
                         if (!$Silent) {
-                            Write-Debug "[$Name] Setting attributes to hide file symlink: `"$TargetFile`""
+                            Write-Debug -Message ('[{0}] Setting attributes to hide file symlink: "{1}"' -f $Name, $TargetFile)
                         }
                         $Attributes = Set-SymlinkAttributes -Symlink $Symlink
                         if (!$Attributes) {
-                            Write-Error "[$Name] Unable to set Hidden and System attributes on file symlink: `"$TargetFile`""
+                            Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on file symlink: "{1}"' -f $Name, $TargetFile)
                         }
                     }
                 }
@@ -802,7 +802,7 @@ Function Remove-DotFilesComponentDirectory {
         [Parameter(Mandatory=$true)]
             [Component]$Component,
         [Parameter(Mandatory=$true)]
-            [System.IO.DirectoryInfo[]]$Directories,
+            [IO.DirectoryInfo[]]$Directories,
         [Parameter(Mandatory=$false)]
             [Switch]$TestOnly,
         [Parameter(Mandatory=$false)]
@@ -819,49 +819,49 @@ Function Remove-DotFilesComponentDirectory {
             $TargetDirectory = $InstallPath
         } else {
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
-            $TargetDirectory = Join-Path $InstallPath $SourceDirectoryRelative
+            $TargetDirectory = Join-Path -Path $InstallPath -ChildPath $SourceDirectoryRelative
             if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
                 if (!$Silent) {
-                    Write-Verbose "[$Name] Ignoring directory path: $SourceDirectoryRelative"
+                    Write-Verbose -Message ('[{0}] Ignoring directory path: {1}' -f $Name, $SourceDirectoryRelative)
                 }
                 continue
             }
         }
 
-        if (Test-Path $TargetDirectory) {
-            $ExistingTarget = Get-Item $TargetDirectory -Force
-            if ($ExistingTarget -isnot [System.IO.DirectoryInfo]) {
+        if (Test-Path -Path $TargetDirectory) {
+            $ExistingTarget = Get-Item -Path $TargetDirectory -Force
+            if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
                 if (!$Silent) {
-                    Write-Warning "[$Name] Expected a directory but found a file with the same name: $TargetDirectory"
+                    Write-Warning -Message ('[{0}] Expected a directory but found a file with the same name: {1}' -f $Name, $TargetDirectory)
                 }
             } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
                 $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
                 if (!($Directory.FullName -eq $SymlinkTarget)) {
                     if (!$Silent) {
-                        Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetDirectory`" -> `"$SymlinkTarget`""
+                        Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     }
                     $Results += $false
                 } else {
                     if (!$Silent) {
-                        Write-Verbose ("[$Name] Removing directory symlink: `"$TargetDirectory`" -> `"" + $Directory.FullName  + "`"")
+                        Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
                         if ($TestOnly) {
-                            Write-Warning "Will remove directory symlink using native rmdir: $TargetDirectory"
+                            Write-Warning -Message ('Will remove directory symlink using native rmdir: {0}' -f $TargetDirectory)
                         } else {
                             $Attributes = Set-SymlinkAttributes -Symlink $ExistingTarget -Remove
                             if (!$Attributes) {
-                                Write-Error "[$Name] Unable to remove Hidden and System attributes on directory symlink: `"$TargetDirectory`""
+                                Write-Error -Message ('[{0}] Unable to remove Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
                             }
 
                             # Apparently despite PowerShell 5.0's new symlink support you can't
                             # remove a directory symlink without recursively deleting its contents!
-                            cmd /c "rmdir `"$TargetDirectory`"" | Out-Null
+                            $null = & "$env:ComSpec" /c ('rmdir "{0}"' -f $TargetDirectory)
                         }
                     }
                     $Results += $true
                 }
             } else {
-                $NextFiles = Get-ChildItem $Directory.FullName -File -Force
+                $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
                 if ($NextFiles) {
                     if (!$TestOnly -and !$Silent) {
                         $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles
@@ -874,7 +874,7 @@ Function Remove-DotFilesComponentDirectory {
                     }
                 }
 
-                $NextDirectories = Get-ChildItem $Directory.FullName -Directory -Force
+                $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
                 if ($NextDirectories) {
                     if (!$TestOnly -and !$Silent) {
                         $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
@@ -889,7 +889,7 @@ Function Remove-DotFilesComponentDirectory {
             }
         } else {
             if (!$Silent) {
-                Write-Warning "[$Name] Expected a directory but found nothing: $TargetDirectory"
+                Write-Warning -Message ('[{0}] Expected a directory but found nothing: {1}' -f $Name, $TargetDirectory)
             }
         }
     }
@@ -903,7 +903,7 @@ Function Remove-DotFilesComponentFile {
         [Parameter(Mandatory=$true)]
             [Component]$Component,
         [Parameter(Mandatory=$true)]
-            [System.IO.FileInfo[]]$Files,
+            [IO.FileInfo[]]$Files,
         [Parameter(Mandatory=$false)]
             [Switch]$TestOnly,
         [Parameter(Mandatory=$false)]
@@ -917,40 +917,40 @@ Function Remove-DotFilesComponentFile {
 
     foreach ($File in $Files) {
         $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
-        $TargetFile = Join-Path $Component.InstallPath $SourceFileRelative
+        $TargetFile = Join-Path -Path $Component.InstallPath -ChildPath $SourceFileRelative
 
         if ($SourceFileRelative -in $Component.IgnorePaths) {
             if (!$Silent) {
-                Write-Verbose "[$Name] Ignoring file path: $SourceFileRelative"
+                Write-Verbose -Message ('[{0}] Ignoring file path: {1}' -f $Name, $SourceFileRelative)
             }
             continue
         }
 
-        if (Test-Path $TargetFile) {
-            $ExistingTarget = Get-Item $TargetFile -Force
-            if ($ExistingTarget -isnot [System.IO.FileInfo]) {
+        if (Test-Path -Path $TargetFile) {
+            $ExistingTarget = Get-Item -Path $TargetFile -Force
+            if ($ExistingTarget -isnot [IO.FileInfo]) {
                 if (!$Silent) {
-                    Write-Warning "[$Name] Expected a file but found a directory with the same name: $TargetFile"
+                    Write-Warning -Message ('[{0}] Expected a file but found a directory with the same name: {1}' -f $Name, $TargetFile)
                 }
             } elseif ($ExistingTarget.LinkType -ne 'SymbolicLink') {
                 if (!$Silent) {
-                    Write-Warning "[$Name] Found a file instead of a symbolic link so not removing: $TargetFile"
+                    Write-Warning -Message ('[{0}] Found a file instead of a symbolic link so not removing: {1}' -f $Name, $TargetFile)
                 }
             } else {
                 $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
                 if (!($File.FullName -eq $SymlinkTarget)) {
                     if (!$Silent) {
-                        Write-Error "[$Name] Symlink already exists but points to unexpected target: `"$TargetFile`" -> `"$SymlinkTarget`""
+                        Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
                     }
                     $Results += $false
                 } else {
                     if (!$Silent) {
-                        Write-Verbose ("[$Name] Removing file symlink: `"$TargetFile`" -> `"" + $File.FullName  + "`"")
+                        Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
                         if ($TestOnly){
-                            Remove-Item $TargetFile -WhatIf
+                            Remove-Item -Path $TargetFile -WhatIf
                         } else {
-                            Remove-Item $TargetFile -Force
+                            Remove-Item -Path $TargetFile -Force
                         }
                     }
                     $Results += $true
@@ -958,7 +958,7 @@ Function Remove-DotFilesComponentFile {
             }
         } else {
             if (!$Silent) {
-                Write-Warning "[$Name] Expected a file but found nothing: $TargetFile"
+                Write-Warning -Message ('[{0}] Expected a file but found nothing: {1}' -f $Name, $TargetFile)
             }
         }
     }
@@ -970,7 +970,7 @@ Function Set-SymlinkAttributes {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
-            [System.IO.FileSystemInfo]$Symlink,
+            [IO.FileSystemInfo]$Symlink,
         [Parameter(Mandatory=$false)]
             [Switch]$Remove
     )
@@ -979,8 +979,8 @@ Function Set-SymlinkAttributes {
         return $false
     }
 
-    $HiddenAttribute   = [System.IO.FileAttributes]::Hidden
-    $SystemAttribute   = [System.IO.FileAttributes]::System
+    $HiddenAttribute = [IO.FileAttributes]::Hidden
+    $SystemAttribute = [IO.FileAttributes]::System
 
     if (!$Remove) {
         $Symlink.Attributes = ($Symlink.Attributes -bor $HiddenAttribute)
@@ -1004,12 +1004,12 @@ Function Test-DotFilesPath {
             [String]$Path
     )
 
-    if (Test-Path $Path) {
-        $PathItem = Get-Item $Path -Force
-        if ($PathItem -is [System.IO.DirectoryInfo]) {
+    if (Test-Path -Path $Path) {
+        $PathItem = Get-Item -Path $Path -Force
+        if ($PathItem -is [IO.DirectoryInfo]) {
             $PathLink = Get-SymlinkTarget -Symlink $PathItem
             if ($PathLink) {
-                return (Test-DotFilesPath $PathLink)
+                return (Test-DotFilesPath -Path $PathLink)
             }
             return $PathItem
         }
