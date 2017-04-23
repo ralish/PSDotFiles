@@ -37,7 +37,7 @@ If PowerShell 5.0 is not available for your operating system then I'm afraid you
 
 ### Folder Structure
 
-PSDotFiles expects a *dotfiles* folder to be structured as multiple folders each containing the files and folders comprising a particular application's configuration. These top-level folders are referred to by PSDotFiles as **components**. The files and folders in each component's folder should be relative to a well-known top-level folder (e.g. your profile folder, which is the default target in PSDotFiles). The actual list of well-known folders are those in the `[Environment.SpecialFolder](https://msdn.microsoft.com/en-us/library/system.environment.specialfolder.aspx)` enumeration.
+PSDotFiles expects a *dotfiles* folder to be structured as multiple folders each containing the files and folders comprising a particular application's configuration. These top-level folders are referred to by PSDotFiles as **components**. The files and folders in each component's folder should be relative to a well-known top-level folder (e.g. your profile folder, which is the default target in PSDotFiles). The actual list of well-known folders are those in the [`Environment.SpecialFolder`](https://msdn.microsoft.com/en-us/library/system.environment.specialfolder.aspx) enumeration.
 
 A simple *dotfiles* folder structure might look like this:
 
