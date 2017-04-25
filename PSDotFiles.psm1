@@ -48,7 +48,7 @@ Function Get-DotFiles {
 
         if ($Component.Availability -in ('Available', 'AlwaysInstall')) {
             [Boolean[]]$Results = @()
-            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate -Silent
+            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate
             $Component.State = Get-ComponentInstallResult -Results $Results
         }
 
@@ -625,9 +625,7 @@ Function Install-DotFilesComponentDirectory {
         [Parameter(Mandatory=$true)]
             [IO.DirectoryInfo[]]$Directories,
         [Parameter(Mandatory=$false)]
-            [Switch]$Simulate,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Silent
+            [Switch]$Simulate
     )
 
     $Name = $Component.Name
@@ -636,23 +634,25 @@ Function Install-DotFilesComponentDirectory {
     [Boolean[]]$Results = @()
 
     foreach ($Directory in $Directories) {
+        # Check the source directory isn't ignored & determine the target directory
         if ($Directory.FullName -eq $SourcePath.FullName) {
             $TargetDirectory = $InstallPath
         } else {
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
-            $TargetDirectory = Join-Path -Path $InstallPath -ChildPath $SourceDirectoryRelative
             if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
-                if (!$Silent) {
+                if (!$Simulate) {
                     Write-Verbose -Message ('[{0}] Ignoring directory path: {1}' -f $Name, $SourceDirectoryRelative)
                 }
                 continue
             }
+            $TargetDirectory = Join-Path -Path $InstallPath -ChildPath $SourceDirectoryRelative
         }
 
+        # TODO
         if (Test-Path -Path $TargetDirectory) {
             $ExistingTarget = Get-Item -Path $TargetDirectory -Force
             if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
-                if (!$Silent) {
+                if (!$Simulate) {
                     Write-Error -Message ('[{0}] Expected a directory but found a file with the same name: {1}' -f $Name, $TargetDirectory)
                 }
                 $Results += $false
@@ -660,52 +660,42 @@ Function Install-DotFilesComponentDirectory {
                 $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
                 if (!($Directory.FullName -eq $SymlinkTarget)) {
-                    if (!$Silent) {
+                    if (!$Simulate) {
                         Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     }
                     $Results += $false
                 } else {
-                    if (!$Silent) {
-                        Write-Debug -Message ('[{0}] Symlink already exists and points to expected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
-                    }
+                    Write-Debug -Message ('[{0}] Symlink already exists and points to expected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     $Results += $true
                 }
             } else {
                 $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
                 if ($NextFiles) {
-                    if (!$Simulate -and !$Silent) {
-                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles
-                    } elseif (!$Simulate -and $Silent) {
-                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Silent
-                    } elseif ($Simulate -and !$Silent) {
+                    if ($Simulate) {
                         $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate
                     } else {
-                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate -Silent
+                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles
                     }
                 }
 
                 $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
                 if ($NextDirectories) {
-                    if (!$Simulate -and !$Silent) {
-                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
-                    } elseif (!$Simulate -and $Silent) {
-                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Silent
-                    } elseif ($Simulate -and !$Silent) {
+                    if ($Simulate) {
                         $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate
                     } else {
-                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate -Silent
+                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
                     }
                 }
             }
         } else {
-            if (!$Silent) {
+            if (!$Simulate) {
                 Write-Verbose -Message ('[{0}] Linking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
                 if ($Simulate) {
                     New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName -WhatIf
                 } else {
                     $Symlink = New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName
                     if ($Component.HideSymlinks) {
-                        if (!$Silent) {
+                        if (!$Simulate) {
                             Write-Debug -Message ('[{0}] Setting attributes to hide directory symlink: "{1}"' -f $Name, $TargetDirectory)
                         }
                         $Attributes = Set-SymlinkAttributes -Symlink $Symlink
@@ -730,9 +720,7 @@ Function Install-DotFilesComponentFile {
         [Parameter(Mandatory=$true)]
             [IO.FileInfo[]]$Files,
         [Parameter(Mandatory=$false)]
-            [Switch]$Simulate,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Silent
+            [Switch]$Simulate
     )
 
     $Name = $Component.Name
@@ -741,52 +729,51 @@ Function Install-DotFilesComponentFile {
     [Boolean[]]$Results = @()
 
     foreach ($File in $Files) {
+        # Check the source file isn't ignored & determine the target file
         $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
-        $TargetFile = Join-Path -Path $Component.InstallPath -ChildPath $SourceFileRelative
-
         if ($SourceFileRelative -in $Component.IgnorePaths) {
-            if (!$Silent) {
+            if (!$Simulate) {
                 Write-Verbose -Message ('[{0}] Ignoring file path: {1}' -f $Name, $SourceFileRelative)
             }
             continue
         }
+        $TargetFile = Join-Path -Path $Component.InstallPath -ChildPath $SourceFileRelative
 
+        # TODO
         if (Test-Path -Path $TargetFile) {
             $ExistingTarget = Get-Item -Path $TargetFile -Force
             if ($ExistingTarget -isnot [IO.FileInfo]) {
-                if (!$Silent) {
+                if (!$Simulate) {
                     Write-Error -Message ('[{0}] Expected a file but found a directory with the same name: {1}' -f $Name, $TargetFile)
                 }
                 $Results += $false
-            } elseif ($ExistingTarget.LinkType -ne 'SymbolicLink') {
-                if (!$Silent) {
-                    Write-Error -Message ('[{0}] Unable to create symlink as a file with the same name already exists: {1}' -f $Name, $TargetFile)
-                }
-                $Results += $false
-            } else {
+            } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
                 $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
                 if (!($File.FullName -eq $SymlinkTarget)) {
-                    if (!$Silent) {
+                    if (!$Simulate) {
                         Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
                     }
                     $Results += $false
                 } else {
-                    if (!$Silent) {
-                        Write-Debug -Message ('[{0}] Symlink already exists and points to expected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
-                    }
+                    Write-Debug -Message ('[{0}] Symlink already exists and points to expected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
                     $Results += $true
                 }
+            } else {
+                if (!$Simulate) {
+                    Write-Error -Message ('[{0}] Unable to create symlink as a file with the same name already exists: {1}' -f $Name, $TargetFile)
+                }
+                $Results += $false
             }
         } else {
-            if (!$Silent) {
+            if (!$Simulate) {
                 Write-Verbose -Message ('[{0}] Linking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
                 if ($Simulate) {
                     New-Item -ItemType SymbolicLink -Path $TargetFile -value $File.FullName -WhatIf
                 } else {
                     $Symlink = New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName
                     if ($Component.HideSymlinks) {
-                        if (!$Silent) {
+                        if (!$Simulate) {
                             Write-Debug -Message ('[{0}] Setting attributes to hide file symlink: "{1}"' -f $Name, $TargetFile)
                         }
                         $Attributes = Set-SymlinkAttributes -Symlink $Symlink
@@ -811,9 +798,7 @@ Function Remove-DotFilesComponentDirectory {
         [Parameter(Mandatory=$true)]
             [IO.DirectoryInfo[]]$Directories,
         [Parameter(Mandatory=$false)]
-            [Switch]$Simulate,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Silent
+            [Switch]$Simulate
     )
 
     $Name = $Component.Name
@@ -822,35 +807,37 @@ Function Remove-DotFilesComponentDirectory {
     [Boolean[]]$Results = @()
 
     foreach ($Directory in $Directories) {
+        # TODO
         if ($Directory.FullName -eq $SourcePath.FullName) {
             $TargetDirectory = $InstallPath
         } else {
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
-            $TargetDirectory = Join-Path -Path $InstallPath -ChildPath $SourceDirectoryRelative
             if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
-                if (!$Silent) {
+                if (!$Simulate) {
                     Write-Verbose -Message ('[{0}] Ignoring directory path: {1}' -f $Name, $SourceDirectoryRelative)
                 }
                 continue
             }
+            $TargetDirectory = Join-Path -Path $InstallPath -ChildPath $SourceDirectoryRelative
         }
 
+        # TODO
         if (Test-Path -Path $TargetDirectory) {
             $ExistingTarget = Get-Item -Path $TargetDirectory -Force
             if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
-                if (!$Silent) {
+                if (!$Simulate) {
                     Write-Warning -Message ('[{0}] Expected a directory but found a file with the same name: {1}' -f $Name, $TargetDirectory)
                 }
             } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
                 $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
                 if (!($Directory.FullName -eq $SymlinkTarget)) {
-                    if (!$Silent) {
+                    if (!$Simulate) {
                         Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     }
                     $Results += $false
                 } else {
-                    if (!$Silent) {
+                    if (!$Simulate) {
                         Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
                         if ($Simulate) {
                             Write-Warning -Message ('Will remove directory symlink using native rmdir: {0}' -f $TargetDirectory)
@@ -870,32 +857,24 @@ Function Remove-DotFilesComponentDirectory {
             } else {
                 $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
                 if ($NextFiles) {
-                    if (!$Simulate -and !$Silent) {
-                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles
-                    } elseif (!$Simulate -and $Silent) {
-                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -Silent
-                    } elseif ($Simulate -and !$Silent) {
+                    if ($Simulate) {
                         $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate
                     } else {
-                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate -Silent
+                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles
                     }
                 }
 
                 $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
                 if ($NextDirectories) {
-                    if (!$Simulate -and !$Silent) {
-                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
-                    } elseif (!$Simulate -and $Silent) {
-                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Silent
-                    } elseif ($Simulate -and !$Silent) {
+                    if ($Simulate) {
                         $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate
                     } else {
-                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate -Silent
+                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
                     }
                 }
             }
         } else {
-            if (!$Silent) {
+            if (!$Simulate) {
                 Write-Warning -Message ('[{0}] Expected a directory but found nothing: {1}' -f $Name, $TargetDirectory)
             }
         }
@@ -912,9 +891,7 @@ Function Remove-DotFilesComponentFile {
         [Parameter(Mandatory=$true)]
             [IO.FileInfo[]]$Files,
         [Parameter(Mandatory=$false)]
-            [Switch]$Simulate,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Silent
+            [Switch]$Simulate
     )
 
     $Name = $Component.Name
@@ -923,36 +900,33 @@ Function Remove-DotFilesComponentFile {
     [Boolean[]]$Results = @()
 
     foreach ($File in $Files) {
+        # TODO
         $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
-        $TargetFile = Join-Path -Path $Component.InstallPath -ChildPath $SourceFileRelative
-
         if ($SourceFileRelative -in $Component.IgnorePaths) {
-            if (!$Silent) {
+            if (!$Simulate) {
                 Write-Verbose -Message ('[{0}] Ignoring file path: {1}' -f $Name, $SourceFileRelative)
             }
             continue
         }
+        $TargetFile = Join-Path -Path $Component.InstallPath -ChildPath $SourceFileRelative
 
+        # TODO
         if (Test-Path -Path $TargetFile) {
             $ExistingTarget = Get-Item -Path $TargetFile -Force
             if ($ExistingTarget -isnot [IO.FileInfo]) {
-                if (!$Silent) {
+                if (!$Simulate) {
                     Write-Warning -Message ('[{0}] Expected a file but found a directory with the same name: {1}' -f $Name, $TargetFile)
                 }
-            } elseif ($ExistingTarget.LinkType -ne 'SymbolicLink') {
-                if (!$Silent) {
-                    Write-Warning -Message ('[{0}] Found a file instead of a symbolic link so not removing: {1}' -f $Name, $TargetFile)
-                }
-            } else {
+            } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
                 $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
                 if (!($File.FullName -eq $SymlinkTarget)) {
-                    if (!$Silent) {
+                    if (!$Simulate) {
                         Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
                     }
                     $Results += $false
                 } else {
-                    if (!$Silent) {
+                    if (!$Simulate) {
                         Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
                         if ($Simulate){
                             Remove-Item -Path $TargetFile -WhatIf
@@ -962,9 +936,13 @@ Function Remove-DotFilesComponentFile {
                     }
                     $Results += $true
                 }
+            } else {
+                if (!$Simulate) {
+                    Write-Warning -Message ('[{0}] Found a file instead of a symbolic link so not removing: {1}' -f $Name, $TargetFile)
+                }
             }
         } else {
-            if (!$Silent) {
+            if (!$Simulate) {
                 Write-Warning -Message ('[{0}] Expected a file but found nothing: {1}' -f $Name, $TargetFile)
             }
         }
