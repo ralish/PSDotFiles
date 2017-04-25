@@ -48,7 +48,7 @@ Function Get-DotFiles {
 
         if ($Component.Availability -in ('Available', 'AlwaysInstall')) {
             [Boolean[]]$Results = @()
-            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly -Silent
+            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate -Silent
             $Component.State = Get-ComponentInstallResult -Results $Results
         }
 
@@ -141,7 +141,7 @@ Function Install-DotFiles {
         if (!$Simulate) {
             $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
         } else {
-            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
+            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate
         }
 
         $Component.State = Get-ComponentInstallResult -Results $Results
@@ -225,7 +225,7 @@ Function Remove-DotFiles {
         if (!$Simulate) {
             $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
         } else {
-            $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -TestOnly
+            $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate
         }
 
         $Component.State = Get-ComponentInstallResult -Results $Results -Removal
@@ -625,7 +625,7 @@ Function Install-DotFilesComponentDirectory {
         [Parameter(Mandatory=$true)]
             [IO.DirectoryInfo[]]$Directories,
         [Parameter(Mandatory=$false)]
-            [Switch]$TestOnly,
+            [Switch]$Simulate,
         [Parameter(Mandatory=$false)]
             [Switch]$Silent
     )
@@ -673,34 +673,34 @@ Function Install-DotFilesComponentDirectory {
             } else {
                 $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
                 if ($NextFiles) {
-                    if (!$TestOnly -and !$Silent) {
+                    if (!$Simulate -and !$Silent) {
                         $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles
-                    } elseif (!$TestOnly -and $Silent) {
+                    } elseif (!$Simulate -and $Silent) {
                         $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Silent
-                    } elseif ($TestOnly -and !$Silent) {
-                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -TestOnly
+                    } elseif ($Simulate -and !$Silent) {
+                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate
                     } else {
-                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -TestOnly -Silent
+                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate -Silent
                     }
                 }
 
                 $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
                 if ($NextDirectories) {
-                    if (!$TestOnly -and !$Silent) {
+                    if (!$Simulate -and !$Silent) {
                         $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
-                    } elseif (!$TestOnly -and $Silent) {
+                    } elseif (!$Simulate -and $Silent) {
                         $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Silent
-                    } elseif ($TestOnly -and !$Silent) {
-                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -TestOnly
+                    } elseif ($Simulate -and !$Silent) {
+                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate
                     } else {
-                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -TestOnly -Silent
+                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate -Silent
                     }
                 }
             }
         } else {
             if (!$Silent) {
                 Write-Verbose -Message ('[{0}] Linking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
-                if ($TestOnly) {
+                if ($Simulate) {
                     New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName -WhatIf
                 } else {
                     $Symlink = New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName
@@ -730,7 +730,7 @@ Function Install-DotFilesComponentFile {
         [Parameter(Mandatory=$true)]
             [IO.FileInfo[]]$Files,
         [Parameter(Mandatory=$false)]
-            [Switch]$TestOnly,
+            [Switch]$Simulate,
         [Parameter(Mandatory=$false)]
             [Switch]$Silent
     )
@@ -781,7 +781,7 @@ Function Install-DotFilesComponentFile {
         } else {
             if (!$Silent) {
                 Write-Verbose -Message ('[{0}] Linking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
-                if ($TestOnly) {
+                if ($Simulate) {
                     New-Item -ItemType SymbolicLink -Path $TargetFile -value $File.FullName -WhatIf
                 } else {
                     $Symlink = New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName
@@ -811,7 +811,7 @@ Function Remove-DotFilesComponentDirectory {
         [Parameter(Mandatory=$true)]
             [IO.DirectoryInfo[]]$Directories,
         [Parameter(Mandatory=$false)]
-            [Switch]$TestOnly,
+            [Switch]$Simulate,
         [Parameter(Mandatory=$false)]
             [Switch]$Silent
     )
@@ -852,7 +852,7 @@ Function Remove-DotFilesComponentDirectory {
                 } else {
                     if (!$Silent) {
                         Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
-                        if ($TestOnly) {
+                        if ($Simulate) {
                             Write-Warning -Message ('Will remove directory symlink using native rmdir: {0}' -f $TargetDirectory)
                         } else {
                             $Attributes = Set-SymlinkAttributes -Symlink $ExistingTarget -Remove
@@ -870,27 +870,27 @@ Function Remove-DotFilesComponentDirectory {
             } else {
                 $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
                 if ($NextFiles) {
-                    if (!$TestOnly -and !$Silent) {
+                    if (!$Simulate -and !$Silent) {
                         $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles
-                    } elseif (!$TestOnly -and $Silent) {
+                    } elseif (!$Simulate -and $Silent) {
                         $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -Silent
-                    } elseif ($TestOnly -and !$Silent) {
-                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -TestOnly
+                    } elseif ($Simulate -and !$Silent) {
+                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate
                     } else {
-                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -TestOnly -Silent
+                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate -Silent
                     }
                 }
 
                 $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
                 if ($NextDirectories) {
-                    if (!$TestOnly -and !$Silent) {
+                    if (!$Simulate -and !$Silent) {
                         $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
-                    } elseif (!$TestOnly -and $Silent) {
+                    } elseif (!$Simulate -and $Silent) {
                         $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Silent
-                    } elseif ($TestOnly -and !$Silent) {
-                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -TestOnly
+                    } elseif ($Simulate -and !$Silent) {
+                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate
                     } else {
-                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -TestOnly -Silent
+                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate -Silent
                     }
                 }
             }
@@ -912,7 +912,7 @@ Function Remove-DotFilesComponentFile {
         [Parameter(Mandatory=$true)]
             [IO.FileInfo[]]$Files,
         [Parameter(Mandatory=$false)]
-            [Switch]$TestOnly,
+            [Switch]$Simulate,
         [Parameter(Mandatory=$false)]
             [Switch]$Silent
     )
@@ -954,7 +954,7 @@ Function Remove-DotFilesComponentFile {
                 } else {
                     if (!$Silent) {
                         Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
-                        if ($TestOnly){
+                        if ($Simulate){
                             Remove-Item -Path $TargetFile -WhatIf
                         } else {
                             Remove-Item -Path $TargetFile -Force
