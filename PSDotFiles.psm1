@@ -235,16 +235,13 @@ Function Remove-DotFiles {
 }
 
 Function Initialize-PSDotFiles {
-    # This function is intentionally *not* an advanced function so that unknown
-    # parameters passed into it via @PSBoundParameters won't cause it to fail.
-    # Do not insert a CmdletBinding() or any Parameter[] attributes or it will
-    # be designated an advanced function (implicitly in the latter case). The
-    # only alternative is to explicitly define all possible parameters which
-    # could be passed into this function via @PSBoundParameters, most of which
-    # won't ever actually be used here.
+    [CmdletBinding()]
     Param(
-        [Switch]$Autodetect,
-        [String]$Path
+        [Parameter(Mandatory=$false)]
+        [AllowEmptyString()]
+            [String]$Path,
+        [Parameter(Mandatory=$false)]
+            [Switch]$Autodetect
     )
 
     if ($Path) {
@@ -270,7 +267,7 @@ Function Initialize-PSDotFiles {
 
     if ($PSBoundParameters.ContainsKey('Autodetect')) {
         $script:DotFilesAutodetect = $Autodetect
-    } elseif ($null = Get-Variable -Name DotFilesAutodetect -Scope Global -ErrorAction SilentlyContinue) {
+    } elseif (Test-Path -Path Variable:\DotFilesAutodetect) {
         $script:DotFilesAutodetect = $global:DotFilesAutodetect
     } else {
         $script:DotFilesAutodetect = $false
