@@ -40,7 +40,7 @@ Function Get-DotFiles {
 
     Initialize-PSDotFiles @PSBoundParameters
 
-    $Components = @()
+    [Component[]]$Components = @()
     $Directories = Get-ChildItem -Path $script:DotFilesPath -Directory
 
     foreach ($Directory in $Directories) {
@@ -128,9 +128,9 @@ Function Install-DotFiles {
         $Name = $Component.Name
 
         if ($PSCmdlet.ShouldProcess($Name, 'Install-DotFilesComponent')) {
-            Write-Verbose -Message ('[{0}] Installing...' -f $Name)
+            Write-Verbose -Message ('[{0}] Installing ...' -f $Name)
         } else {
-            Write-Verbose -Message ('[{0}] Simulating install...' -f $Name)
+            Write-Verbose -Message ('[{0}] Simulating install ...' -f $Name)
             $Simulate = $true
         }
 
@@ -212,9 +212,9 @@ Function Remove-DotFiles {
         $Name = $Component.Name
 
         if ($PSCmdlet.ShouldProcess($Name, 'Remove-DotFilesComponent')) {
-            Write-Verbose -Message ('[{0}] Removing...' -f $Name)
+            Write-Verbose -Message ('[{0}] Removing ...' -f $Name)
         } else {
-            Write-Verbose -Message ('[{0}] Simulating removal...' -f $Name)
+            Write-Verbose -Message ('[{0}] Simulating removal ...' -f $Name)
             $Simulate = $true
         }
 
@@ -277,7 +277,7 @@ Function Initialize-PSDotFiles {
     }
     Write-Debug -Message ('Automatic component detection state: {0}' -f $script:DotFilesAutodetect)
 
-    Write-Debug -Message 'Refreshing cache of installed programs...'
+    Write-Debug -Message 'Refreshing cache of installed programs ...'
     $script:InstalledPrograms = Get-InstalledPrograms
 }
 
@@ -287,12 +287,16 @@ Function Find-DotFilesComponent {
         [Parameter(Mandatory=$true)]
             [String]$Name,
         [Parameter(Mandatory=$false)]
-            [String]$Pattern = "*$Name*",
+            [String]$Pattern,
         [Parameter(Mandatory=$false)]
             [Switch]$CaseSensitive,
         [Parameter(Mandatory=$false)]
             [Switch]$RegularExpression
     )
+
+    if (!$PSBoundParameters.ContainsKey('Pattern')) {
+        $Pattern = '*{0}*' -f $Name
+    }
 
     $MatchingParameters = @{'Property'='DisplayName'
                             'Value'=$Pattern}
@@ -310,6 +314,7 @@ Function Find-DotFilesComponent {
     if ($MatchingPrograms) {
         return $MatchingPrograms
     }
+
     return $false
 }
 
@@ -355,7 +360,7 @@ Function Get-DotFilesComponent {
     )
 
     $Name               = $Directory.Name
-    $MetadataFile       = $Name + '.xml'
+    $MetadataFile       = '{0}.xml' -f $Name
     $GlobalMetadataFile = Join-Path -Path $script:GlobalMetadataPath -ChildPath $MetadataFile
     $CustomMetadataFile = Join-Path -Path $script:DotFilesMetadataPath -ChildPath $MetadataFile
 
@@ -364,7 +369,7 @@ Function Get-DotFilesComponent {
 
     if ($GlobalMetadataPresent -or $CustomMetadataPresent) {
         if ($GlobalMetadataPresent) {
-            Write-Debug -Message ('[{0}] Loading global metadata for component...' -f $Name)
+            Write-Debug -Message ('[{0}] Loading global metadata for component ...' -f $Name)
             $Metadata = [Xml](Get-Content -Path $GlobalMetadataFile)
             $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
         }
@@ -372,15 +377,15 @@ Function Get-DotFilesComponent {
         if ($CustomMetadataPresent) {
             $Metadata = [Xml](Get-Content -Path $CustomMetadataFile)
             if ($GlobalMetadataPresent) {
-                Write-Debug -Message ('[{0}] Loading custom metadata overrides for component...' -f $Name)
+                Write-Debug -Message ('[{0}] Loading custom metadata overrides for component ...' -f $Name)
                 $Component = Initialize-DotFilesComponent -Component $Component -Metadata $Metadata
             } else {
-                Write-Debug -Message ('[{0}] Loading custom metadata for component...' -f $Name)
+                Write-Debug -Message ('[{0}] Loading custom metadata for component ...' -f $Name)
                 $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
             }
         }
     } elseif ($script:DotFilesAutodetect) {
-        Write-Debug -Message ('[{0}] Running automatic detection for component...' -f $Name)
+        Write-Debug -Message ('[{0}] Running automatic detection for component ...' -f $Name)
         $Component = Initialize-DotFilesComponent -Name $Name
     } else {
         Write-Debug -Message ('[{0}] No metadata & automatic detection disabled.' -f $Name)
@@ -389,6 +394,7 @@ Function Get-DotFilesComponent {
     }
 
     $Component.PSObject.TypeNames.Insert(0, 'PSDotFiles.Component')
+
     return $Component
 }
 
@@ -417,7 +423,7 @@ Function Get-InstalledPrograms {
            !$_.ParentKeyName -and
            ($_.UninstallString -or $_.NoRemove) }
 
-    Write-Debug -Message ('Registry scan found ' + ($InstalledPrograms | Measure-Object).Count + ' installed programs.')
+    Write-Debug -Message ('Registry scan found {0} installed programs.' -f ($InstalledPrograms | Measure-Object).Count)
 
     return $InstalledPrograms
 }
@@ -429,16 +435,16 @@ Function Get-SymlinkTarget {
             [IO.FileSystemInfo]$Symlink
     )
 
-    if ($Symlink.LinkType -ne 'SymbolicLink') {
-        return $false
+    if ($Symlink.LinkType -eq 'SymbolicLink') {
+        $Absolute = [IO.Path]::IsPathRooted($Symlink.Target[0])
+        if ($Absolute) {
+            return $Symlink.Target[0]
+        } else {
+            return (Resolve-Path -Path (Join-Path -Path (Split-Path -Path $Symlink -Parent) -ChildPath $Symlink.Target[0])).Path
+        }
     }
 
-    $Absolute = [IO.Path]::IsPathRooted($Symlink.Target[0])
-    if ($Absolute) {
-        return $Symlink.Target[0]
-    } else {
-        return (Resolve-Path -Path (Join-Path -Path (Split-Path -Path $Symlink -Parent) -ChildPath $Symlink.Target[0])).Path
-    }
+    return $false
 }
 
 Function Initialize-DotFilesComponent {
@@ -453,13 +459,14 @@ Function Initialize-DotFilesComponent {
             [Xml]$Metadata
     )
 
+    # Create the component if we're not overriding
     if ($PSCmdlet.ParameterSetName -eq 'New') {
         $Component = [Component]::new($Name, $script:DotFilesPath)
     } else {
         $Name = $Component.Name
     }
 
-    # Minimal check for sane XML file
+    # Minimal check for a sane metadata XML file
     if ($PSBoundParameters.ContainsKey('Metadata')) {
         if (!$Metadata.Component) {
             $Component.Availability = [Availability]::DetectionFailure
@@ -468,7 +475,7 @@ Function Initialize-DotFilesComponent {
         }
     }
 
-    # Set the friendly name if provided
+    # Set the friendly name if one was provided
     if ($Metadata.Component.FriendlyName) {
         $Component.FriendlyName = $Metadata.Component.Friendlyname
     }
@@ -511,7 +518,7 @@ Function Initialize-DotFilesComponent {
                      $MatchingPrograms.DisplayName) {
                     $Component.FriendlyName = $MatchingPrograms.DisplayName
                 }
-            } elseif ($NumMatchingPrograms -gt 1) {
+            } else {
                 Write-Error -Message ('[{0}] Automatic detection found {1} matching programs.' -f $Name, $NumMatchingPrograms)
             }
         } else {
@@ -565,8 +572,17 @@ Function Initialize-DotFilesComponent {
         $SpecialFolder = $Metadata.Component.InstallPath.SpecialFolder
         $Destination = $Metadata.Component.InstallPath.Destination
 
-        if (!$SpecialFolder -and !$Destination) {
-            $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
+        if ($SpecialFolder -and $Destination) {
+            if (!([IO.Path]::IsPathRooted($Destination))) {
+                $InstallPath = Join-Path -Path ([Environment]::GetFolderPath($SpecialFolder)) -ChildPath $Destination
+                if (Test-Path -Path $InstallPath -PathType Container -IsValid) {
+                    $Component.InstallPath = $InstallPath
+                } else {
+                    Write-Error -Message ('[{0}] The destination path for symlinking is invalid: {1}' -f $Name, $InstallPath)
+                }
+            } else {
+                Write-Error -Message ('[{0}] The destination path for symlinking is not a relative path: {1}' -f $Name, $Destination)
+            }
         } elseif (!$SpecialFolder -and $Destination) {
             if ([IO.Path]::IsPathRooted($Destination)) {
                 if (Test-Path -Path $Destination -PathType Container -IsValid) {
@@ -580,16 +596,7 @@ Function Initialize-DotFilesComponent {
         } elseif ($SpecialFolder -and !$Destination) {
             $Component.InstallPath = [Environment]::GetFolderPath($SpecialFolder)
         } else {
-            if (!([IO.Path]::IsPathRooted($Destination))) {
-                $InstallPath = Join-Path -Path ([Environment]::GetFolderPath($SpecialFolder)) -ChildPath $Destination
-                if (Test-Path -Path $InstallPath -PathType Container -IsValid) {
-                    $Component.InstallPath = $InstallPath
-                } else {
-                    Write-Error -Message ('[{0}] The destination path for symlinking is invalid: {1}' -f $Name, $InstallPath)
-                }
-            } else {
-                Write-Error -Message ('[{0}] The destination path for symlinking is not a relative path: {1}' -f $Name, $Destination)
-            }
+            $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
         }
     }
 
@@ -1017,6 +1024,7 @@ Function Test-DotFilesPath {
             return $PathItem
         }
     }
+
     return $false
 }
 
@@ -1028,6 +1036,7 @@ Function Test-IsAdministrator {
     if ($User.IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
         return $true
     }
+
     return $false
 }
 
@@ -1086,7 +1095,7 @@ Class Component {
     [Boolean]$HideSymlinks
 
     # INTERNAL: This will be set automatically based on the component name
-    [System.IO.DirectoryInfo]$SourcePath
+    [IO.DirectoryInfo]$SourcePath
     # INTERNAL: Uninstall Registry key (populated by Find-DotFilesComponent)
     [String]$UninstallKey
     # INTERNAL: Determined by the <SpecialFolder> and <Destination> elements
@@ -1096,8 +1105,8 @@ Class Component {
     # INTERNAL: This will be set automatically during detection and installation
     [InstallState]$State = [InstallState]::NotEvaluated
 
-    Component([String]$Name, [System.IO.DirectoryInfo]$DotFilesPath) {
+    Component([String]$Name, [IO.DirectoryInfo]$DotFilesPath) {
         $this.Name = $Name
-        $this.SourcePath = (Get-Item (Resolve-Path (Join-Path $DotFilesPath $Name)))
+        $this.SourcePath = (Get-Item -Path (Resolve-Path -Path (Join-Path -Path $DotFilesPath -ChildPath $Name)))
     }
 }
