@@ -856,9 +856,9 @@ Function Remove-DotFilesComponentDirectory {
                                 Write-Error -Message ('[{0}] Unable to remove Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
                             }
 
-                            # Apparently despite PowerShell 5.0's new symlink support you can't
-                            # remove a directory symlink without recursively deleting its contents!
-                            $null = & "$env:ComSpec" /c ('rmdir "{0}"' -f $TargetDirectory)
+                            # Remove-Item doesn't correctly handle deleting directory symbolic links
+                            # See: https://github.com/PowerShell/PowerShell/issues/621
+                            [IO.Directory]::Delete($TargetDirectory)
                         }
                     }
                     $Results += $true
