@@ -347,40 +347,39 @@ Function Get-DotFilesComponent {
 
     $Name               = $Directory.Name
     $MetadataFile       = '{0}.xml' -f $Name
-    $GlobalMetadataFile = Join-Path -Path $script:GlobalMetadataPath -ChildPath $MetadataFile
-    $CustomMetadataFile = Join-Path -Path $script:DotFilesMetadataPath -ChildPath $MetadataFile
+    $GlobalMetadataFile = Join-Path -Path $GlobalMetadataPath -ChildPath $MetadataFile
+    $CustomMetadataFile = Join-Path -Path $DotFilesMetadataPath -ChildPath $MetadataFile
 
     $GlobalMetadataPresent = Test-Path -Path $GlobalMetadataFile -PathType Leaf
     $CustomMetadataPresent = Test-Path -Path $CustomMetadataFile -PathType Leaf
 
     if ($GlobalMetadataPresent -or $CustomMetadataPresent) {
         if ($GlobalMetadataPresent) {
-            Write-Debug -Message ('[{0}] Loading global metadata for component ...' -f $Name)
+            Write-Debug -Message ('[{0}] Loading global metadata ...' -f $Name)
             $Metadata = [Xml](Get-Content -Path $GlobalMetadataFile)
             $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
         }
 
         if ($CustomMetadataPresent) {
+            Write-Debug -Message ('[{0}] Loading custom metadata ...' -f $Name)
             $Metadata = [Xml](Get-Content -Path $CustomMetadataFile)
+
             if ($GlobalMetadataPresent) {
-                Write-Debug -Message ('[{0}] Loading custom metadata overrides for component ...' -f $Name)
                 $Component = Initialize-DotFilesComponent -Component $Component -Metadata $Metadata
             } else {
-                Write-Debug -Message ('[{0}] Loading custom metadata for component ...' -f $Name)
                 $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
             }
         }
-    } elseif ($script:DotFilesAutodetect) {
-        Write-Debug -Message ('[{0}] Running automatic detection for component ...' -f $Name)
+    } elseif ($DotFilesAutodetect) {
+        Write-Debug -Message ('[{0}] Running automatic detection ...' -f $Name)
         $Component = Initialize-DotFilesComponent -Name $Name
     } else {
         Write-Debug -Message ('[{0}] No metadata & automatic detection disabled.' -f $Name)
-        $Component = [Component]::new($Name, $script:DotFilesPath)
+        $Component = [Component]::new($Name, $DotFilesPath)
         $Component.Availability = [Availability]::NoLogic
     }
 
     $Component.PSObject.TypeNames.Insert(0, 'PSDotFiles.Component')
-
     return $Component
 }
 
