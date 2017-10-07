@@ -384,36 +384,6 @@ Function Get-DotFilesComponent {
     return $Component
 }
 
-Function Get-InstalledPrograms {
-    [CmdletBinding()]
-    Param()
-
-    $NativeRegPath = '\Software\Microsoft\Windows\CurrentVersion\Uninstall'
-    $Wow6432RegPath = '\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
-
-    $InstalledPrograms = @(
-        # Native applications installed system wide
-        if (Test-Path -Path ('HKLM:{0}' -f $NativeRegPath)) { Get-ChildItem -Path ('HKLM:{0}' -f $NativeRegPath) }
-        # Native applications installed under the current user
-        if (Test-Path -Path ('HKCU:{0}' -f $NativeRegPath)) { Get-ChildItem -Path ('HKCU:{0}' -f $NativeRegPath) }
-        # 32-bit applications installed system wide on 64-bit Windows
-        if (Test-Path -Path ('HKLM:{0}' -f $Wow6432RegPath)) { Get-ChildItem -Path ('HKLM:{0}' -f $Wow6432RegPath) }
-        # 32-bit applications installed under the current user on 64-bit Windows
-        if (Test-Path -Path ('HKCU:{0}' -f $Wow6432RegPath)) { Get-ChildItem -Path ('HKCU:{0}' -f $Wow6432RegPath) }
-    ) | # Get the properties of each uninstall key
-        ForEach-Object { Get-ItemProperty -Path $_.PSPath } |
-        # Filter out all the uninteresting entries
-        Where-Object { $_.DisplayName -and
-           !$_.SystemComponent -and
-           !$_.ReleaseType -and
-           !$_.ParentKeyName -and
-           ($_.UninstallString -or $_.NoRemove) }
-
-    Write-Debug -Message ('Registry scan found {0} installed programs.' -f ($InstalledPrograms | Measure-Object).Count)
-
-    return $InstalledPrograms
-}
-
 Function Initialize-DotFilesComponent {
     [CmdletBinding()]
     Param(
@@ -925,6 +895,76 @@ Function Remove-DotFilesComponentFile {
     }
 
     return $Results
+}
+
+Function Get-InstalledPrograms {
+    [CmdletBinding()]
+    Param()
+
+    $Hives = @('HKLM', 'HKCU')
+    $NativeRegPath = 'Software\Microsoft\Windows\CurrentVersion\Uninstall'
+    $Wow6432RegPath = 'Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+
+    $UninstallKeys = @()
+    foreach ($Hive in $Hives) {
+        $HiveNativeRegPath = '{0}:\{1}' -f $Hive, $NativeRegPath
+        $UninstallKeys += Get-ChildItem -Path $HiveNativeRegPath
+
+        $HiveWow6432RegPath = '{0}:\{1}' -f $Hive, $Wow6432RegPath
+        if (Test-Path -Path $HiveWow6432RegPath -PathType Container) {
+            $UninstallKeys += Get-ChildItem -Path $HiveWow6432RegPath
+        }
+    }
+
+    $InstalledPrograms = @()
+    foreach ($UninstallKey in $UninstallKeys) {
+        $Program = Get-ItemProperty -Path $UninstallKey.PSPath
+        if ($Program.PSObject.Properties['DisplayName'] -and
+            !$Program.PSObject.Properties['SystemComponent'] -and
+            !$Program.PSObject.Properties['ReleaseType'] -and
+            !$Program.PSObject.Properties['ParentKeyName'] -and
+            ($Program.PSObject.Properties['UninstallString'] -or
+             $Program.PSObject.Properties['NoRemove'])) {
+            $InstalledProgram = [PSCustomObject]@{
+                Name = $Program.DisplayName
+                Publisher = $null
+                InstallDate = $null
+                EstimatedSize = $null
+                Version = $null
+                Location = $null
+                Uninstall = $null
+            }
+
+            if ($Program.PSObject.Properties['Publisher']) {
+                $InstalledProgram.Publisher = $Program.Publisher
+            }
+
+            if ($Program.PSObject.Properties['InstallDate']) {
+                $InstalledProgram.InstallDate = $Program.InstallDate
+            }
+
+            if ($Program.PSObject.Properties['EstimatedSize']) {
+                $InstalledProgram.EstimatedSize = $Program.EstimatedSize
+            }
+
+            if ($Program.PSObject.Properties['DisplayVersion']) {
+                $InstalledProgram.Version = $Program.DisplayVersion
+            }
+
+            if ($Program.PSObject.Properties['InstallLocation']) {
+                $InstalledProgram.Location = $Program.InstallLocation
+            }
+
+            if ($Program.PSObject.Properties['UninstallString']) {
+                $InstalledProgram.Uninstall = $Program.UninstallString
+            }
+
+            $InstalledPrograms += $InstalledProgram
+        }
+    }
+
+    Write-Debug -Message ('Registry scan found {0} installed programs.' -f ($InstalledPrograms | Measure-Object).Count)
+    return $InstalledPrograms
 }
 
 Function Get-SymlinkTarget {
