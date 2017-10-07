@@ -1,3 +1,6 @@
+# See the help for Set-StrictMode for the full details on what this enables.
+Set-StrictMode -Version 2.0
+
 Function Get-DotFiles {
     <#
         .SYNOPSIS
