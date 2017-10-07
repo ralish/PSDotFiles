@@ -1013,19 +1013,25 @@ Function Test-IsAdministrator {
 Enum Availability {
     # The component was detected
     Available
+
     # The component was not detected
     Unavailable
+
     # The component will be ignored
     #
     # This is distinct from "Unavailable" as it indicates the component is not
     # available on the underlying platform.
     Ignored
+
     # The component will always be installed
     AlwaysInstall
+
     # The component will never be installed
     NeverInstall
+
     # A failure occurred during component detection
     DetectionFailure
+
     # No detection logic was available
     NoLogic
 }
@@ -1033,8 +1039,10 @@ Enum Availability {
 Enum InstallState {
     # The component is installed
     Installed
+
     # The component is not installed
     NotInstalled
+
     # The component is partially installed
     #
     # After Get-DotFiles this typically means either:
@@ -1044,39 +1052,49 @@ Enum InstallState {
     # After Install-DotFiles or Remove-DotFiles this typically means errors were
     # encountered during the installation or removal operation (or simulation).
     PartialInstall
+
     # The install state of the component can't be determined
     #
     # This can occur when attempting to install a component that has no files or
-    # folders (because they're all ignored via the metadata or there are none).
+    # folders, or when they're all ignored via the component's metadata file.
     Unknown
+
     # The install state of the component has yet to be determined
     NotEvaluated
 }
 
 Class Component {
-    # REQUIRED: This should match the corresponding dotfiles directory
+    # REQUIRED: The directory name within the dotfiles directory
     [String]$Name
+
     # REQUIRED: The availability state per the Availability enumeration
     [Availability]$Availability = [Availability]::DetectionFailure
 
-    # OPTIONAL: Friendly name if one was provided or could be located
+    # OPTIONAL: Friendly name if one was provided or could be determined
     [String]$FriendlyName
+
     # OPTIONAL: Hides newly created symlinks per the <HideSymlinks> element
     [Boolean]$HideSymlinks
 
-    # INTERNAL: This will be set automatically based on the component name
+    # INTERNAL: Source directory derived from $DotFilesPath and $Name
     [IO.DirectoryInfo]$SourcePath
-    # INTERNAL: Uninstall Registry key (populated by Find-DotFilesComponent)
+
+    # INTERNAL: Uninstall registry key if located by Find-DotFilesComponent
     [String]$UninstallKey
-    # INTERNAL: Determined by the <SpecialFolder> and <Destination> elements
+
+    # INTERNAL: Installation directory
+    #           Influenced by the <SpecialFolder> and <Destination> elements
     [String]$InstallPath
-    # INTERNAL: Automatically set based on the <Path> elements in <IgnorePaths>
+
+    # INTERNAL: Source paths to be ignored
+    #           Set by <Path> elements under <IgnorePaths>
     [String[]]$IgnorePaths
-    # INTERNAL: This will be set automatically during detection and installation
+
+    # INTERNAL: The install state per the InstallState enumeration
     [InstallState]$State = [InstallState]::NotEvaluated
 
-    Component([String]$Name, [IO.DirectoryInfo]$DotFilesPath) {
+    Component ([String]$Name, [IO.DirectoryInfo]$DotFilesPath) {
         $this.Name = $Name
-        $this.SourcePath = (Get-Item -Path (Resolve-Path -Path (Join-Path -Path $DotFilesPath -ChildPath $Name)))
+        $this.SourcePath = Get-Item -Path (Resolve-Path -Path (Join-Path -Path $DotFilesPath -ChildPath $Name))
     }
 }
