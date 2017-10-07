@@ -414,25 +414,6 @@ Function Get-InstalledPrograms {
     return $InstalledPrograms
 }
 
-Function Get-SymlinkTarget {
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory)]
-        [IO.FileSystemInfo]$Symlink
-    )
-
-    if ($Symlink.LinkType -eq 'SymbolicLink') {
-        $Absolute = [IO.Path]::IsPathRooted($Symlink.Target[0])
-        if ($Absolute) {
-            return $Symlink.Target[0]
-        } else {
-            return (Resolve-Path -Path (Join-Path -Path (Split-Path -Path $Symlink -Parent) -ChildPath $Symlink.Target[0])).Path
-        }
-    }
-
-    return $false
-}
-
 Function Initialize-DotFilesComponent {
     [CmdletBinding()]
     Param(
@@ -944,6 +925,25 @@ Function Remove-DotFilesComponentFile {
     }
 
     return $Results
+}
+
+Function Get-SymlinkTarget {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory)]
+        [IO.FileSystemInfo]$Symlink
+    )
+
+    if ($Symlink.LinkType -ne 'SymbolicLink') {
+        return $false
+    }
+
+    $IsAbsolute = [IO.Path]::IsPathRooted($Symlink.Target[0])
+    if ($IsAbsolute) {
+        return $Symlink.Target[0]
+    }
+
+    return (Resolve-Path -Path (Join-Path -Path (Split-Path -Path $Symlink -Parent) -ChildPath $Symlink.Target[0])).Path
 }
 
 Function Set-SymlinkAttributes {
