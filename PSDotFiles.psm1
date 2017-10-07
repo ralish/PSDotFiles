@@ -959,19 +959,20 @@ Function Set-SymlinkAttributes {
         return $false
     }
 
-    $HiddenAttribute = [IO.FileAttributes]::Hidden
-    $SystemAttribute = [IO.FileAttributes]::System
+    $Hidden = [IO.FileAttributes]::Hidden
+    $System = [IO.FileAttributes]::System
 
-    if (!$Remove) {
-        $Symlink.Attributes = ($Symlink.Attributes -bor $HiddenAttribute)
-        $Symlink.Attributes = ($Symlink.Attributes -bor $SystemAttribute)
+    if ($Remove) {
+        if ($Symlink.Attributes -band $System) {
+            $Symlink.Attributes = $Symlink.Attributes -bxor $System
+        }
+
+        if ($Symlink.Attributes -band $Hidden) {
+            $Symlink.Attributes = $Symlink.Attributes -bxor $Hidden
+        }
     } else {
-        if ($CurrentAttributes -band $SystemAttribute) {
-            $Symlink.Attributes = ($CurrentAttributes -bxor $SystemAttribute)
-        }
-        if ($CurrentAttributes -band $HiddenAttribute) {
-            $Symlink.Attributes = ($CurrentAttributes -bxor $HiddenAttribute)
-        }
+        $Symlink.Attributes = $Symlink.Attributes -bor $System
+        $Symlink.Attributes = $Symlink.Attributes -bor $Hidden
     }
 
     return $true
