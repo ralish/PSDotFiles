@@ -240,7 +240,7 @@ Function Initialize-PSDotFiles {
         if (!$script:DotFilesPath) {
             throw "The provided dotfiles path is either not a directory or it can't be accessed."
         }
-    } elseif ($global:DotFilesPath) {
+    } elseif (Test-Path -Path 'Variable:\DotFilesPath') {
         $script:DotFilesPath = Test-DotFilesPath -Path $global:DotFilesPath
         if (!$script:DotFilesPath) {
             throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
@@ -248,24 +248,24 @@ Function Initialize-PSDotFiles {
     } else {
         throw "No dotfiles path was provided and the default dotfiles path (`$DotFilesPath) has not been configured."
     }
-    Write-Verbose -Message ('Using dotfiles directory: {0}' -f $script:DotFilesPath)
+    Write-Verbose -Message ('Using dotfiles directory: {0}' -f $DotFilesPath)
 
     $script:GlobalMetadataPath = Join-Path -Path $PSScriptRoot -ChildPath 'metadata'
-    Write-Debug -Message ('Using global metadata directory: {0}' -f $script:GlobalMetadataPath)
+    Write-Debug -Message ('Using global metadata directory: {0}' -f $GlobalMetadataPath)
 
-    $script:DotFilesMetadataPath = Join-Path -Path $script:DotFilesPath -ChildPath 'metadata'
-    Write-Debug -Message ('Using dotfiles metadata directory: {0}' -f $script:DotFilesMetadataPath)
+    $script:DotFilesMetadataPath = Join-Path -Path $DotFilesPath -ChildPath 'metadata'
+    Write-Debug -Message ('Using dotfiles metadata directory: {0}' -f $DotFilesMetadataPath)
 
     if ($PSBoundParameters.ContainsKey('Autodetect')) {
         $script:DotFilesAutodetect = $Autodetect
-    } elseif (Test-Path -Path Variable:\DotFilesAutodetect) {
+    } elseif (Test-Path -Path 'Variable:\DotFilesAutodetect') {
         $script:DotFilesAutodetect = $global:DotFilesAutodetect
     } else {
         $script:DotFilesAutodetect = $false
     }
-    Write-Debug -Message ('Automatic component detection state: {0}' -f $script:DotFilesAutodetect)
+    Write-Verbose -Message ('Automatic component detection: {0}' -f $DotFilesAutodetect)
 
-    Write-Debug -Message 'Refreshing cache of installed programs ...'
+    # TODO: Only retrieve installed programs if we absolutely have to.
     $script:InstalledPrograms = Get-InstalledPrograms
 }
 
