@@ -3,34 +3,33 @@ Set-StrictMode -Version 2.0
 
 Function Get-DotFiles {
     <#
-        .SYNOPSIS
-        Enumerates dotfiles components
-        .DESCRIPTION
-        Enumerates the available dotfiles components, where each component is represented by a top-level folder in the folder specified by the $DotFilesPath variable or the -Path parameter.
+    .SYNOPSIS
+    Enumerates dotfiles components
 
-        For each component a Component object is constructed and returned which contains the component's basic details, availability, installation state, and other configuration settings.
-        .PARAMETER Path
-        Use the specified directory as the dotfiles directory.
+    .DESCRIPTION
+    Enumerates the available dotfiles components, where each component is represented by a top-level folder in the folder specified by the $DotFilesPath variable or the -Path parameter.
 
-        This overrides any default specified in $DotFilesPath.
-        .PARAMETER Autodetect
-        Toggles automatic detection of available components without any metadata.
+    For each component a Component object is returned which specifies the component's basic details, availability, installation state, and other configuration settings.
 
-        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled.
-        .EXAMPLE
-        PS C:\>Get-DotFiles
+    .PARAMETER Path
+    Use the specified directory as the dotfiles directory.
 
-        Enumerates all available dotfiles components and returns a collection of Component objects representing the status of each.
-        .EXAMPLE
-        PS C:\>Get-DotFiles -Autodetect
+    This overrides any default specified in $DotFilesPath.
 
-        Enumerates all available dotfiles components, attempting automatic detection of those that lack a metadata file, and returns a collection of Component objects representing the status of each.
-        .EXAMPLE
-        PS C:\>$DotFiles = Get-DotFiles
+    .PARAMETER Autodetect
+    Toggles automatic detection of available components without any metadata.
 
-        Enumerates all available dotfiles components and saves the returned collection of Component objects to the $DotFiles variable. This allows easy inspection and custom formatting of the Component objects.
-        .LINK
-        https://github.com/ralish/PSDotFiles
+    This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled.
+
+    .EXAMPLE
+    Get-DotFiles
+
+    Enumerates all available dotfiles components and returns a collection of Component objects representing the status of each.
+
+    .EXAMPLE
+    Get-DotFiles -Autodetect
+
+    Enumerates all available dotfiles components, attempting automatic detection of those that lack a metadata file.
     #>
 
     [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Low')]
@@ -63,43 +62,38 @@ Function Get-DotFiles {
 
 Function Install-DotFiles {
     <#
-        .SYNOPSIS
-        Installs dotfiles components
-        .DESCRIPTION
-        Installs all available dotfiles components, or the nominated subset provided via a collection of Component objects as previously returned by the Get-DotFiles cmdlet.
+    .SYNOPSIS
+    Installs dotfiles components
 
-        For each installed component a Component object is returned which contains the component's basic details, availability, installation state, and other configuration settings.
-        .PARAMETER Path
-        Use the specified directory as the dotfiles directory.
+    .DESCRIPTION
+    Installs all available dotfiles components, or the nominated subset provided via a collection of Component objects as previously returned by the Get-DotFiles cmdlet.
 
-        This parameter is only used when not providing a collection of Component objects as the input, as in this case, the path of each Component is already provided in the object.
+    For each installed component a Component object is returned which specifies the component's basic details, availability, installation state, and other configuration settings.
 
-        This overrides any default specified in $DotFilesPath.
-        .PARAMETER Autodetect
-        Toggles automatic detection of available components without any metadata.
+    .PARAMETER Path
+    Use the specified directory as the dotfiles directory.
 
-        This parameter is only used when not providing a collection of Component objects as the input, as in this case, the availability of each Component is already provided in the object.
+    This overrides any default specified in $DotFilesPath.
 
-        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled.
-        .PARAMETER Components
-        A collection of Component objects to be installed as previously returned by Get-DotFiles. The collection may be a filtered set of Components to ensure only a desired subset is installed.
+    .PARAMETER Autodetect
+    Toggles automatic detection of available components without any metadata.
 
-        Note that only the Component objects with an appropriate Availability state will be installed.
-        .EXAMPLE
-        PS C:\>Install-DotFiles
+    This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled.
 
-        Installs all available dotfiles components and returns a collection of Component objects representing the status of each.
-        .EXAMPLE
-        PS C:\>Install-DotFiles -Autodetect
+    .PARAMETER Components
+    A collection of Component objects to be installed as previously returned by Get-DotFiles.
 
-        Installs all available dotfiles components, attempting automatic detection of those that lack a metadata file, and returns a collection of Component objects representing the status of each.
-        .EXAMPLE
-        PS C:\>$Components = Get-DotFiles | ? { $_.Name -eq 'git' -or $_.Name -eq 'vim' }
-        PS C:\>Install-DotFiles -Components $Components
+    Note that only the Component objects with an appropriate Availability state will be installed.
 
-        Installs only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles, and stored in the $Components variable.
-        .LINK
-        https://github.com/ralish/PSDotFiles
+    .EXAMPLE
+    Install-DotFiles
+
+    Installs all available dotfiles components and returns a collection of Component objects representing the status of each.
+
+    .EXAMPLE
+    $Components = Get-DotFiles | ? { $_.Name -eq 'git' -or $_.Name -eq 'vim' }; Install-DotFiles -Components $Components
+
+    Installs only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
     #>
 
     [CmdletBinding(DefaultParameterSetName='Retrieve',SupportsShouldProcess=$true,ConfirmImpact='Low')]
@@ -155,43 +149,38 @@ Function Install-DotFiles {
 
 Function Remove-DotFiles {
     <#
-        .SYNOPSIS
-        Removes dotfiles components
-        .DESCRIPTION
-        Removes all installed dotfiles components, or the nominated subset provided via a collection of Component objects as previously returned by the Get-DotFiles cmdlet.
+    .SYNOPSIS
+    Removes dotfiles components
 
-        For each removed component a Component object is returned which contains the component's basic details, availability, installation state, and other configuration settings.
-        .PARAMETER Path
-        Use the specified directory as the dotfiles directory.
+    .DESCRIPTION
+    Removes all installed dotfiles components, or the nominated subset provided via a collection of Component objects as previously returned by the Get-DotFiles cmdlet.
 
-        This parameter is only used when not providing a collection of Component objects as the input, as in this case, the path of each Component is already provided in the object.
+    For each removed component a Component object is returned which specifies the component's basic details, availability, installation state, and other configuration settings.
 
-        This overrides any default specified in $DotFilesPath.
-        .PARAMETER Autodetect
-        Toggles automatic detection of available components without any metadata.
+    .PARAMETER Path
+    Use the specified directory as the dotfiles directory.
 
-        This parameter is only used when not providing a collection of Component objects as the input, as in this case, the availability of each Component is already provided in the object.
+    This overrides any default specified in $DotFilesPath.
 
-        This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled.
-        .PARAMETER Components
-        A collection of Component objects to be removed as previously returned by Get-DotFiles. The collection may be a filtered set of Components to ensure only a desired subset is removed.
+    .PARAMETER Autodetect
+    Toggles automatic detection of available components without any metadata.
 
-        Note that only the Component objects with an appropriate Installed state will be removed.
-        .EXAMPLE
-        PS C:\>Remove-DotFiles
+    This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled.
 
-        Removes all installed dotfiles components and returns a collection of Component objects representing the status of each.
-        .EXAMPLE
-        PS C:\>Remove-DotFiles -Autodetect
+    .PARAMETER Components
+    A collection of Component objects to be removed as previously returned by Get-DotFiles.
 
-        Removes all available dotfiles components, attempting automatic detection of those that lack a metadata file, and returns a collection of Component objects representing the status of each.
-        .EXAMPLE
-        PS C:\>$Components = Get-DotFiles | ? { $_.Name -eq 'git' -or $_.Name -eq 'vim' }
-        PS C:\>Remove-DotFiles -Components $Components
+    Note that only the Component objects with an appropriate Installed state will be removed.
 
-        Removes only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles, and stored in the $Components variable.
-        .LINK
-        https://github.com/ralish/PSDotFiles
+    .EXAMPLE
+    Remove-DotFiles
+
+    Removes all installed dotfiles components and returns a collection of Component objects representing the status of each.
+
+    .EXAMPLE
+    $Components = Get-DotFiles | ? { $_.Name -eq 'git' -or $_.Name -eq 'vim' }; Remove-DotFiles -Components $Components
+
+    Removes only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
     #>
 
     [CmdletBinding(DefaultParameterSetName='Retrieve',SupportsShouldProcess=$true,ConfirmImpact='Low')]
