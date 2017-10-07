@@ -32,12 +32,10 @@ Function Get-DotFiles {
     Enumerates all available dotfiles components, attempting automatic detection of those that lack a metadata file.
     #>
 
-    [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Low')]
+    [CmdletBinding(ConfirmImpact='Low',SupportsShouldProcess)]
     Param(
-        [Parameter(Position=0,Mandatory=$false)]
-            [String]$Path,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Autodetect
+        [String]$Path,
+        [Switch]$Autodetect
     )
 
     Initialize-PSDotFiles @PSBoundParameters
@@ -96,14 +94,16 @@ Function Install-DotFiles {
     Installs only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
     #>
 
-    [CmdletBinding(DefaultParameterSetName='Retrieve',SupportsShouldProcess=$true,ConfirmImpact='Low')]
+    [CmdletBinding(DefaultParameterSetName='Retrieve',ConfirmImpact='Low',SupportsShouldProcess)]
     Param(
-        [Parameter(ParameterSetName='Retrieve',Position=0,Mandatory=$false)]
-            [String]$Path,
-        [Parameter(ParameterSetName='Retrieve',Mandatory=$false)]
-            [Switch]$Autodetect,
-        [Parameter(ParameterSetName='Provided',Position=0,Mandatory=$false)]
-            [Component[]]$Components
+        [Parameter(ParameterSetName='Retrieve')]
+        [String]$Path,
+
+        [Parameter(ParameterSetName='Retrieve')]
+        [Switch]$Autodetect,
+
+        [Parameter(ParameterSetName='Provided')]
+        [Component[]]$Components
     )
 
     if (!(Test-IsAdministrator)) {
@@ -183,14 +183,16 @@ Function Remove-DotFiles {
     Removes only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
     #>
 
-    [CmdletBinding(DefaultParameterSetName='Retrieve',SupportsShouldProcess=$true,ConfirmImpact='Low')]
+    [CmdletBinding(DefaultParameterSetName='Retrieve',ConfirmImpact='Low',SupportsShouldProcess)]
     Param(
-        [Parameter(ParameterSetName='Retrieve',Position=0,Mandatory=$false)]
-            [String]$Path,
-        [Parameter(ParameterSetName='Retrieve',Mandatory=$false)]
-            [Switch]$Autodetect,
-        [Parameter(ParameterSetName='Provided',Position=0,Mandatory=$false)]
-            [Component[]]$Components
+        [Parameter(ParameterSetName='Retrieve')]
+        [String]$Path,
+
+        [Parameter(ParameterSetName='Retrieve')]
+        [Switch]$Autodetect,
+
+        [Parameter(ParameterSetName='Provided')]
+        [Component[]]$Components
     )
 
     if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
@@ -229,11 +231,8 @@ Function Remove-DotFiles {
 Function Initialize-PSDotFiles {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$false)]
-        [AllowEmptyString()]
-            [String]$Path,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Autodetect
+        [String]$Path,
+        [Switch]$Autodetect
     )
 
     if ($Path) {
@@ -273,14 +272,12 @@ Function Initialize-PSDotFiles {
 Function Find-DotFilesComponent {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
-            [String]$Name,
-        [Parameter(Mandatory=$false)]
-            [String]$Pattern,
-        [Parameter(Mandatory=$false)]
-            [Switch]$CaseSensitive,
-        [Parameter(Mandatory=$false)]
-            [Switch]$RegularExpression
+        [Parameter(Mandatory)]
+        [String]$Name,
+
+        [String]$Pattern,
+        [Switch]$CaseSensitive,
+        [Switch]$RegularExpression
     )
 
     if (!$PSBoundParameters.ContainsKey('Pattern')) {
@@ -310,11 +307,11 @@ Function Find-DotFilesComponent {
 Function Get-ComponentInstallResult {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory)]
         [AllowEmptyCollection()]
-            [Boolean[]]$Results,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Removal
+        [Boolean[]]$Results,
+
+        [Switch]$Removal
     )
 
     if ($Results.Count) {
@@ -344,8 +341,8 @@ Function Get-ComponentInstallResult {
 Function Get-DotFilesComponent {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
-            [IO.DirectoryInfo]$Directory
+        [Parameter(Mandatory)]
+        [IO.DirectoryInfo]$Directory
     )
 
     $Name               = $Directory.Name
@@ -420,8 +417,8 @@ Function Get-InstalledPrograms {
 Function Get-SymlinkTarget {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
-            [IO.FileSystemInfo]$Symlink
+        [Parameter(Mandatory)]
+        [IO.FileSystemInfo]$Symlink
     )
 
     if ($Symlink.LinkType -eq 'SymbolicLink') {
@@ -439,13 +436,15 @@ Function Get-SymlinkTarget {
 Function Initialize-DotFilesComponent {
     [CmdletBinding()]
     Param(
-        [Parameter(ParameterSetName='New',Mandatory=$true)]
-            [String]$Name,
-        [Parameter(ParameterSetName='Override',Mandatory=$true)]
-            [Component]$Component,
-        [Parameter(ParameterSetName='New',Mandatory=$false)]
-        [Parameter(ParameterSetName='Override',Mandatory=$true)]
-            [Xml]$Metadata
+        [Parameter(ParameterSetName='New',Mandatory)]
+        [String]$Name,
+
+        [Parameter(ParameterSetName='Override',Mandatory)]
+        [Component]$Component,
+
+        [Parameter(ParameterSetName='New')]
+        [Parameter(ParameterSetName='Override',Mandatory)]
+        [Xml]$Metadata
     )
 
     # Create the component if we're not overriding
@@ -612,12 +611,13 @@ Function Initialize-DotFilesComponent {
 Function Install-DotFilesComponentDirectory {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
-            [Component]$Component,
-        [Parameter(Mandatory=$true)]
-            [IO.DirectoryInfo[]]$Directories,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Simulate
+        [Parameter(Mandatory)]
+        [Component]$Component,
+
+        [Parameter(Mandatory)]
+        [IO.DirectoryInfo[]]$Directories,
+
+        [Switch]$Simulate
     )
 
     $Name = $Component.Name
@@ -707,12 +707,13 @@ Function Install-DotFilesComponentDirectory {
 Function Install-DotFilesComponentFile {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
-            [Component]$Component,
-        [Parameter(Mandatory=$true)]
-            [IO.FileInfo[]]$Files,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Simulate
+        [Parameter(Mandatory)]
+        [Component]$Component,
+
+        [Parameter(Mandatory)]
+        [IO.FileInfo[]]$Files,
+
+        [Switch]$Simulate
     )
 
     $Name = $Component.Name
@@ -785,12 +786,13 @@ Function Install-DotFilesComponentFile {
 Function Remove-DotFilesComponentDirectory {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
-            [Component]$Component,
-        [Parameter(Mandatory=$true)]
-            [IO.DirectoryInfo[]]$Directories,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Simulate
+        [Parameter(Mandatory)]
+        [Component]$Component,
+
+        [Parameter(Mandatory)]
+        [IO.DirectoryInfo[]]$Directories,
+
+        [Switch]$Simulate
     )
 
     $Name = $Component.Name
@@ -878,12 +880,13 @@ Function Remove-DotFilesComponentDirectory {
 Function Remove-DotFilesComponentFile {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
-            [Component]$Component,
-        [Parameter(Mandatory=$true)]
-            [IO.FileInfo[]]$Files,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Simulate
+        [Parameter(Mandatory)]
+        [Component]$Component,
+
+        [Parameter(Mandatory)]
+        [IO.FileInfo[]]$Files,
+
+        [Switch]$Simulate
     )
 
     $Name = $Component.Name
@@ -946,10 +949,10 @@ Function Remove-DotFilesComponentFile {
 Function Set-SymlinkAttributes {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
-            [IO.FileSystemInfo]$Symlink,
-        [Parameter(Mandatory=$false)]
-            [Switch]$Remove
+        [Parameter(Mandatory)]
+        [IO.FileSystemInfo]$Symlink,
+
+        [Switch]$Remove
     )
 
     if ($Symlink.LinkType -ne 'SymbolicLink') {
@@ -977,8 +980,8 @@ Function Set-SymlinkAttributes {
 Function Test-DotFilesPath {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
-            [String]$Path
+        [Parameter(Mandatory)]
+        [String]$Path
     )
 
     if (Test-Path -Path $Path) {
