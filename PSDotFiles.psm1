@@ -1139,4 +1139,8 @@ Class Component {
         $this.Name = $Name
         $this.SourcePath = Get-Item -Path (Resolve-Path -Path (Join-Path -Path $DotFilesPath -ChildPath $Name))
     }
+
+    [String] ToString() {
+        return 'PSDotFiles: {0}' -f $this.Name
+    }
 }
