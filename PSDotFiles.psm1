@@ -1003,10 +1003,9 @@ Function Test-IsAdministrator {
     Param()
 
     $User = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
-    if ($User.IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
+    if ($User.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         return $true
     }
-
     return $false
 }
 
