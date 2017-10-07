@@ -984,15 +984,18 @@ Function Test-DotFilesPath {
         [String]$Path
     )
 
-    if (Test-Path -Path $Path) {
-        $PathItem = Get-Item -Path $Path -Force
-        if ($PathItem -is [IO.DirectoryInfo]) {
-            $PathLink = Get-SymlinkTarget -Symlink $PathItem
-            if ($PathLink) {
-                return (Test-DotFilesPath -Path $PathLink)
-            }
-            return $PathItem
+    try {
+        $PathItem = Get-Item -Path $Path -Force -ErrorAction Stop
+    } catch {
+        return $false
+    }
+
+    if ($PathItem -is [IO.DirectoryInfo]) {
+        $PathLink = Get-SymlinkTarget -Symlink $PathItem
+        if ($PathLink) {
+            return (Test-DotFilesPath -Path $PathLink)
         }
+        return $PathItem
     }
 
     return $false
