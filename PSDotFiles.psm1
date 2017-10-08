@@ -885,12 +885,13 @@ Function Get-DotFilesComponent {
         [IO.DirectoryInfo]$Directory
     )
 
-    $Name               = $Directory.Name
-    $MetadataFile       = '{0}.xml' -f $Name
-    $GlobalMetadataFile = Join-Path -Path $GlobalMetadataPath -ChildPath $MetadataFile
-    $CustomMetadataFile = Join-Path -Path $DotFilesMetadataPath -ChildPath $MetadataFile
+    $Name = $Directory.Name
+    $MetadataFile = '{0}.xml' -f $Name
 
+    $GlobalMetadataFile = Join-Path -Path $GlobalMetadataPath -ChildPath $MetadataFile
     $GlobalMetadataPresent = Test-Path -Path $GlobalMetadataFile -PathType Leaf
+
+    $CustomMetadataFile = Join-Path -Path $DotFilesMetadataPath -ChildPath $MetadataFile
     $CustomMetadataPresent = Test-Path -Path $CustomMetadataFile -PathType Leaf
 
     if ($GlobalMetadataPresent -or $CustomMetadataPresent) {
