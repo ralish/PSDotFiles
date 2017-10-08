@@ -247,7 +247,7 @@ Function Initialize-PSDotFiles {
     } else {
         throw "No dotfiles path was provided and the default dotfiles path (`$DotFilesPath) has not been configured."
     }
-    Write-Verbose -Message ('Using dotfiles directory: {0}' -f $DotFilesPath)
+    Write-Verbose -Message ('dotfiles directory: {0}' -f $DotFilesPath)
 
     $MetadataSchemaPath = Join-Path -Path $PSScriptRoot -ChildPath 'Metadata.xsd'
     $script:MetadataSchema = New-Object -TypeName Xml.Schema.XmlSchemaSet
@@ -256,10 +256,10 @@ Function Initialize-PSDotFiles {
     Write-Debug -Message ('Metadata schema: {0}' -f $MetadataSchemaPath)
 
     $script:GlobalMetadataPath = Join-Path -Path $PSScriptRoot -ChildPath 'metadata'
-    Write-Debug -Message ('Global metadata directory: {0}' -f $GlobalMetadataPath)
+    Write-Debug -Message ('Global metadata: {0}' -f $GlobalMetadataPath)
 
     $script:DotFilesMetadataPath = Join-Path -Path $DotFilesPath -ChildPath 'metadata'
-    Write-Debug -Message ('Dotfiles metadata directory: {0}' -f $DotFilesMetadataPath)
+    Write-Debug -Message ('Dotfiles metadata: {0}' -f $DotFilesMetadataPath)
 
     if ($PSBoundParameters.ContainsKey('Autodetect')) {
         $script:DotFilesAutodetect = $Autodetect
