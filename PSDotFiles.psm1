@@ -250,6 +250,12 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose -Message ('Using dotfiles directory: {0}' -f $DotFilesPath)
 
+    $MetadataSchemaPath = Join-Path -Path $PSScriptRoot -ChildPath 'Metadata.xsd'
+    $script:MetadataSchema = New-Object -TypeName Xml.Schema.XmlSchemaSet
+    $null = $MetadataSchema.Add($null, (Get-Item -Path $MetadataSchemaPath))
+    $MetadataSchema.Compile() # Implied on the first validation but do so now to ensure it's sane.
+    Write-Debug -Message ('Using metadata schema: {0}' -f $MetadataSchemaPath)
+
     $script:GlobalMetadataPath = Join-Path -Path $PSScriptRoot -ChildPath 'metadata'
     Write-Debug -Message ('Using global metadata directory: {0}' -f $GlobalMetadataPath)
 
