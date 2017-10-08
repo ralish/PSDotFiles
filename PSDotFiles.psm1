@@ -362,13 +362,13 @@ Function Get-DotFilesComponent {
     if ($GlobalMetadataPresent -or $CustomMetadataPresent) {
         if ($GlobalMetadataPresent) {
             Write-Debug -Message ('[{0}] Loading global metadata ...' -f $Name)
-            $Metadata = [Xml](Get-Content -Path $GlobalMetadataFile)
+            $Metadata = Get-ComponentMetadata -Path $GlobalMetadataFile
             $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
         }
 
         if ($CustomMetadataPresent) {
             Write-Debug -Message ('[{0}] Loading custom metadata ...' -f $Name)
-            $Metadata = [Xml](Get-Content -Path $CustomMetadataFile)
+            $Metadata = Get-ComponentMetadata -Path $CustomMetadataFile
 
             if ($GlobalMetadataPresent) {
                 $Component = Initialize-DotFilesComponent -Component $Component -Metadata $Metadata
@@ -900,6 +900,31 @@ Function Remove-DotFilesComponentFile {
     }
 
     return $Results
+}
+
+Function Get-ComponentMetadata {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory)]
+        [String]$Path
+    )
+
+    try {
+        $Metadata = [Xml](Get-Content -Path $Path)
+    } catch {
+        Write-Warning -Message ('Unable to load metadata file: {0}' -f $Path)
+        throw $_
+    }
+
+    $Metadata.Schemas = $MetadataSchema
+    try {
+        $Metadata.Validate($null)
+    } catch {
+        Write-Warning -Message ('Unable to validate metadata file: {0}' -f $Path)
+        throw $_
+    }
+
+    return $Metadata
 }
 
 Function Get-InstalledPrograms {
