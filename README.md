@@ -13,53 +13,7 @@ PSDotFiles implements this basic design but with a PowerShell-centric approach u
 Requirements
 ------------
 
-### PowerShell 5.0
-
-The only software requirement is PowerShell 5.0, however, it's not yet in widespread distribution.
-
-The below table should help make things simple:
-
-| Operating System       | Installation Steps                                                                 |
-| ---------------------- | ---------------------------------------------------------------------------------- |
-| Windows Vista          | Not available                                                                      |
-| Windows 7              | [Download WMF 5.0](https://www.microsoft.com/en-us/download/details.aspx?id=50395) |
-| Windows 8              | Not available                                                                      |
-| Windows 8.1            | [Download WMF 5.0](https://www.microsoft.com/en-us/download/details.aspx?id=50395) |
-| Windows 10 (RTM/LTSB)  | Not available                                                                      |
-| Windows 10 (1511/TH2)  | Built-in                                                                           |
-| Windows 10 (1604/RS1)  | Built-in                                                                           |
-| Windows Server 2008    | Not available                                                                      |
-| Windows Server 2008 R2 | [Download WMF 5.0](https://www.microsoft.com/en-us/download/details.aspx?id=50395) |
-| Windows Server 2012    | [Download WMF 5.0](https://www.microsoft.com/en-us/download/details.aspx?id=50395) |
-| Windows Server 2012 R2 | [Download WMF 5.0](https://www.microsoft.com/en-us/download/details.aspx?id=50395) |
-
-If PowerShell 5.0 is not available for your operating system then I'm afraid you're out of luck for now. You may wish to indicate your interest in a backport in [this issue](#1).
-
-### Folder Structure
-
-PSDotFiles expects a *dotfiles* folder to be structured as multiple folders each containing the files and folders comprising a particular application's configuration. These top-level folders are referred to by PSDotFiles as **components**. The files and folders in each component's folder should be relative to a well-known top-level folder (e.g. your profile folder, which is the default target in PSDotFiles). The actual list of well-known folders are those in the [`Environment.SpecialFolder`](https://msdn.microsoft.com/en-us/library/system.environment.specialfolder.aspx) enumeration.
-
-A simple *dotfiles* folder structure might look like this:
-
-```fundamental
-dotfiles
-| --- clink
-   | --- clink_inputrc
-   | --- settings
-| --- conemu
-   | --- ConEmu.xml
-| --- git
-   | --- .gitattributes
-   | --- .gitconfig 
-   | --- .gitignore
-| --- posh
-   | --- Modules
-      | --- MyModule
-         | --- MyModule.psm1
-   | --- profile.ps1
-| --- vim
-   | --- .vimrc
-```
+- PowerShell 5.0 (or later)
 
 Installing
 ----------
@@ -93,22 +47,6 @@ You can check that PowerShell is able to locate the module by running the follow
 Get-Module PSDotFiles -ListAvailable
 ```
 
-Configuring
------------
-
-Before you can use PSDotFiles you should set the `$DotFilesPath` variable to the location of your *dotfiles* folder. For example:
-
-```posh
-$DotFilesPath = "C:\Users\<your.account>\dotfiles"
-```
-
-So that you don't have to enter this into every new PowerShell session it's a good idea to add this to your PowerShell profile:
-
-- All PowerShell hosts (including the ISE): `$HOME\Documents\WindowsPowerShell\profile.ps1`
-- Only the **Microsoft.PowerShell** shell: `$HOME\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1`
-
-If you're unsure which to use, just choose the first.
-
 Quickstart
 ----------
 
@@ -130,6 +68,49 @@ All commands have built-in help and examples which can be accessed with `Get-Hel
 Only `Install-DotFiles` and `Remove-DotFiles`  will modify your system by creating or removing the appropriate symlinks.
 
 Both `Install-DotFiles` and `Remove-DotFiles` support PowerShell's standard `-WhatIf` and `-Confirm` parameters.
+
+Folder Structure
+----------------
+
+PSDotFiles expects a *dotfiles* folder to be structured as multiple folders each containing the files and folders comprising a particular application's configuration. These top-level folders are referred to by PSDotFiles as **components**. The files and folders in each component's folder should be relative to a well-known top-level folder (e.g. your profile folder, which is the default target in PSDotFiles). The actual list of well-known folders are those in the [`Environment.SpecialFolder`](https://msdn.microsoft.com/en-us/library/system.environment.specialfolder.aspx) enumeration.
+
+A simple *dotfiles* folder structure might look like this:
+
+```fundamental
+dotfiles
+| --- clink
+   | --- clink_inputrc
+   | --- settings
+| --- conemu
+   | --- ConEmu.xml
+| --- git
+   | --- .gitattributes
+   | --- .gitconfig
+   | --- .gitignore
+| --- posh
+   | --- Modules
+      | --- MyModule
+         | --- MyModule.psm1
+   | --- profile.ps1
+| --- vim
+   | --- .vimrc
+```
+
+Configuring
+-----------
+
+Before you can use PSDotFiles you should set the `$DotFilesPath` variable to the location of your *dotfiles* folder. For example:
+
+```posh
+$DotFilesPath = "C:\Users\<your.account>\dotfiles"
+```
+
+So that you don't have to enter this into every new PowerShell session it's a good idea to add this to your PowerShell profile:
+
+- All PowerShell hosts (including the ISE): `$HOME\Documents\WindowsPowerShell\profile.ps1`
+- Only the **Microsoft.PowerShell** shell: `$HOME\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1`
+
+If you're unsure which to use, just choose the first.
 
 Troubleshooting
 ---------------
