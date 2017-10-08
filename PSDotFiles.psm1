@@ -229,7 +229,7 @@ Function Remove-DotFiles {
 }
 
 Function Initialize-PSDotFiles {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     Param(
         [String]$Path,
         [Switch]$Autodetect
