@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:simpleType name="Availability">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Available" />
+            <xs:enumeration value="Unavailable" />
+            <xs:enumeration value="Ignored" />
+            <xs:enumeration value="AlwaysInstall" />
+            <xs:enumeration value="NeverInstall" />
+            <xs:enumeration value="DetectionFailure" />
+            <xs:enumeration value="NoLogic" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="Method">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Automatic" />
+            <xs:enumeration value="FindInPath" />
+            <xs:enumeration value="PathExists" />
+            <xs:enumeration value="Static" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:group name="MethodAutomatic">
+        <xs:sequence>
+            <xs:element name="MatchRegEx" type="xs:boolean" minOccurs="0" />
+            <xs:element name="MatchCase" type="xs:boolean" minOccurs="0" />
+            <xs:element name="MatchPattern" type="xs:string" minOccurs="0" />
+        </xs:sequence>
+    </xs:group>
+
+    <xs:group name="MethodFindInPath">
+        <xs:sequence>
+            <xs:element name="FindInPath" type="xs:string" minOccurs="0" />
+        </xs:sequence>
+    </xs:group>
+
+    <xs:group name="MethodPathExists">
+        <xs:sequence>
+            <xs:element name="PathExists" type="xs:string" />
+        </xs:sequence>
+    </xs:group>
+
+    <xs:group name="MethodStatic">
+        <xs:sequence>
+            <xs:element name="Availability" type="Availability" />
+        </xs:sequence>
+    </xs:group>
+
+    <xs:element name="Component">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="FriendlyName" type="xs:string" minOccurs="0" />
+                <xs:element name="Detection" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Method" type="Method" />
+                            <xs:choice>
+                                <xs:group ref="MethodAutomatic" />
+                                <xs:group ref="MethodFindInPath" />
+                                <xs:group ref="MethodPathExists" />
+                                <xs:group ref="MethodStatic" />
+                            </xs:choice>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="InstallPath" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="SpecialFolder" type="xs:string" minOccurs="0" />
+                            <xs:element name="Destination" type="xs:string" minOccurs="0" />
+                            <xs:element name="HideSymlinks" type="xs:boolean" minOccurs="0" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="IgnorePaths" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Path" type="xs:string" maxOccurs="unbounded" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>

@@ -1,4 +1,5 @@
-<Component>
+<?xml version="1.0" encoding="utf-8"?>
+<Component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="Metadata.xsd">
     <!-- An optional friendly name for the component -->
     <FriendlyName></FriendlyName>
 
@@ -32,14 +33,14 @@
 
             Selects either wildcard (default) or regular expression matching.
         -->
-        <MatchRegEx>False</MatchRegEx>
+        <MatchRegEx>false</MatchRegEx>
 
         <!--
             Automatic Method
 
             Selects either case insensitive (default) or case sensitive matching.
         -->
-        <MatchCase>False</MatchCase>
+        <MatchCase>false</MatchCase>
 
         <!--
             Automatic Method
@@ -117,7 +118,7 @@
             Specifies whether component symlinks should be hidden by setting the "Hidden" and
             "System" file attributes. The default is not to hide newly created symbolic links.
         -->
-        <HideSymlinks>False</HideSymlinks>
+        <HideSymlinks>false</HideSymlinks>
     </InstallPath>
 
     <!-- Optional configuration of relative paths which should be ignored -->
