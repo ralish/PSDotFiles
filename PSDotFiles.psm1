@@ -570,66 +570,76 @@ Function Install-DotFilesComponentFile {
         [Switch]$Simulate
     )
 
+    # Beware: This function is called recursively!
+
     $Name = $Component.Name
     $SourcePath = $Component.SourcePath
     $InstallPath = $Component.InstallPath
     [Boolean[]]$Results = @()
 
     foreach ($File in $Files) {
-        # Check the source file isn't ignored & determine the target file
+        # We always need to determine the relative path of files from the top-level directory of the
+        # component so we can adjust the target installation path appropriately. Like directories,
+        # files may also be ignored by an <IgnorePaths> configuration.
         $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
         if ($SourceFileRelative -in $Component.IgnorePaths) {
-            if (!$Simulate) {
-                Write-Verbose -Message ('[{0}] Ignoring file path: {1}' -f $Name, $SourceFileRelative)
-            }
+            Write-Debug -Message ('[{0}] Ignoring file: {1}' -f $Name, $SourceFileRelative)
             continue
         }
-        $TargetFile = Join-Path -Path $Component.InstallPath -ChildPath $SourceFileRelative
+        $TargetFile = Join-Path -Path $InstallPath -ChildPath $SourceFileRelative
 
-        # TODO
-        if (Test-Path -Path $TargetFile) {
+        # We've got the file source and target paths and have confirmed the source path is not
+        # ignored. Start by trying to retrieve any item which may already exist at the target path.
+        try {
             $ExistingTarget = Get-Item -Path $TargetFile -Force
-            if ($ExistingTarget -isnot [IO.FileInfo]) {
-                if (!$Simulate) {
-                    Write-Error -Message ('[{0}] Expected a file but found a directory with the same name: {1}' -f $Name, $TargetFile)
-                }
-                $Results += $false
-            } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
-                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
-                if (!($File.FullName -eq $SymlinkTarget)) {
-                    if (!$Simulate) {
-                        Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
-                    }
-                    $Results += $false
-                } else {
-                    Write-Debug -Message ('[{0}] Valid symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
-                    $Results += $true
-                }
-            } else {
-                if (!$Simulate) {
-                    Write-Error -Message ('[{0}] Unable to create symlink as a file with the same name already exists: {1}' -f $Name, $TargetFile)
-                }
+            # We found an item but it's not a file! The user will need to fix this conflict.
+            if ($ExistingTarget -isnot [IO.FileInfo]) {
                 $Results += $false
+                if (!$Simulate) {
+                    Write-Error -Message ('[{0}] Expected a file but found a directory: {1}' -f $Name, $TargetFile)
+                }
+                continue
             }
-        } else {
+
+            # We found a file. We can't replace it so this is another conflict for the user.
+            if ($ExistingTarget.LinkType -ne 'SymbolicLink') {
+                $Results += $false
+                if (!$Simulate) {
+                    Write-Error -Message ('[{0}] Unable to create symlink as a file already exists: {1}' -f $Name, $TargetFile)
+                }
+                continue
+            }
+
+            # We found a symbolic link. Either it points where we expect it to and all is well, or
+            # it points somewhere unexpected, and the user will need to investigate why that is.
+            $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
+            if ($File.FullName -eq $SymlinkTarget) {
+                $Results += $true
+                Write-Debug -Message ('[{0}] Valid file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
+            } else {
+                $Results += $false
+                if (!$Simulate) {
+                    Write-Error -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
+                }
+            }
+        } catch {
+            # Nothing exists at the target path so we can create the symlink
             if (!$Simulate) {
-                Write-Verbose -Message ('[{0}] Linking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
-                if ($Simulate) {
-                    New-Item -ItemType SymbolicLink -Path $TargetFile -value $File.FullName -WhatIf
-                } else {
-                    $Symlink = New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName
-                    if ($Component.HideSymlinks) {
-                        if (!$Simulate) {
-                            Write-Debug -Message ('[{0}] Hiding file symlink: "{1}"' -f $Name, $TargetFile)
-                        }
-                        $Attributes = Set-SymlinkAttributes -Symlink $Symlink
-                        if (!$Attributes) {
-                            Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on file symlink: "{1}"' -f $Name, $TargetFile)
-                        }
+                Write-Verbose -Message ('[{0}] Symlinking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
+                $Symlink = New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName
+
+                # Set the hidden and system attributes if requested
+                if ($Component.HideSymlinks) {
+                    $Attributes = Set-SymlinkAttributes -Symlink $Symlink
+
+                    # TODO: Can this ever actually fail?
+                    if (!$Attributes) {
+                        Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on file symlink: "{1}"' -f $Name, $TargetFile)
                     }
                 }
             }
+
             $Results += $true
         }
     }
