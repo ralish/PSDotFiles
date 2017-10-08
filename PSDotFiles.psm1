@@ -41,12 +41,11 @@ Function Get-DotFiles {
     Initialize-PSDotFiles @PSBoundParameters
 
     [Component[]]$Components = @()
-    $Directories = Get-ChildItem -Path $script:DotFilesPath -Directory
-
+    $Directories = Get-ChildItem -Path $DotFilesPath -Directory
     foreach ($Directory in $Directories) {
         $Component = Get-DotFilesComponent -Directory $Directory
 
-        if ($Component.Availability -in ('Available', 'AlwaysInstall')) {
+        if ($Component.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall)) {
             [Boolean[]]$Results = @()
             $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate
             $Component.State = Get-ComponentInstallResult -Results $Results
@@ -107,7 +106,7 @@ Function Install-DotFiles {
     )
 
     if (!(Test-IsAdministrator)) {
-        if ($PSBoundParameters.ContainsKey('WhatIf')) {
+        if ($WhatIfPreference) {
             Write-Warning -Message 'Not running with Administrator privileges but ignoring due to -WhatIf.'
         } else {
             throw 'Unable to run Install-DotFiles as not running with Administrator privileges.'
@@ -115,16 +114,16 @@ Function Install-DotFiles {
     }
 
     if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-        $Components = Get-DotFiles @PSBoundParameters | Where-Object { $_.Availability -in ('Available', 'AlwaysInstall') }
+        $UnfilteredComponents = Get-DotFiles @PSBoundParameters
     } else {
         $UnfilteredComponents = $Components
-        $Components = $UnfilteredComponents | Where-Object { $_.Availability -in ('Available', 'AlwaysInstall') }
     }
+    $Components = $UnfilteredComponents | Where-Object { $_.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall) }
 
     foreach ($Component in $Components) {
         $Name = $Component.Name
 
-        if ($PSCmdlet.ShouldProcess($Name, 'Install-DotFilesComponent')) {
+        if ($PSCmdlet.ShouldProcess($Name, 'Install')) {
             Write-Verbose -Message ('[{0}] Installing ...' -f $Name)
         } else {
             Write-Verbose -Message ('[{0}] Simulating install ...' -f $Name)
@@ -196,19 +195,19 @@ Function Remove-DotFiles {
     )
 
     if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-        $Components = Get-DotFiles @PSBoundParameters | Where-Object { $_.State -in ('Installed', 'PartialInstall') }
+        $UnfilteredComponents = Get-DotFiles @PSBoundParameters
     } else {
         $UnfilteredComponents = $Components
-        $Components = $UnfilteredComponents | Where-Object { $_.State -in ('Installed', 'PartialInstall') }
     }
+    $Components = $UnfilteredComponents | Where-Object { $_.State -in ([InstallState]::Installed, [InstallState]::PartialInstall) }
 
     foreach ($Component in $Components) {
         $Name = $Component.Name
 
-        if ($PSCmdlet.ShouldProcess($Name, 'Remove-DotFilesComponent')) {
-            Write-Verbose -Message ('[{0}] Removing ...' -f $Name)
+        if ($PSCmdlet.ShouldProcess($Name, 'Uninstall')) {
+            Write-Verbose -Message ('[{0}] Uninstalling ...' -f $Name)
         } else {
-            Write-Verbose -Message ('[{0}] Simulating removal ...' -f $Name)
+            Write-Verbose -Message ('[{0}] Simulating uninstall ...' -f $Name)
             $Simulate = $true
         }
 
