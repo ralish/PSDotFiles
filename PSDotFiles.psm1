@@ -275,124 +275,6 @@ Function Initialize-PSDotFiles {
     $script:InstalledPrograms = Get-InstalledPrograms
 }
 
-Function Find-DotFilesComponent {
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory)]
-        [String]$Name,
-
-        [String]$Pattern,
-        [Switch]$CaseSensitive,
-        [Switch]$RegularExpression
-    )
-
-    $Parameters = @{
-        'Property'='Name'
-    }
-
-    if ($Pattern) {
-        $Parameters['Value'] = $Pattern
-    } else {
-        $Parameters['Value'] = '*{0}*' -f $Name
-    }
-
-    if ($CaseSensitive -and $RegularExpression) {
-        $Parameters['CMatch'] = $true
-    } elseif ($CaseSensitive -and !$RegularExpression) {
-        $Parameters['CLike'] = $true
-    } elseif (!$CaseSensitive -and $RegularExpression) {
-        $Parameters['IMatch'] = $true
-    } else {
-        $Parameters['ILike'] = $true
-    }
-
-    $MatchingPrograms = $script:InstalledPrograms | Where-Object @Parameters
-    if ($MatchingPrograms) {
-        return $MatchingPrograms
-    }
-
-    return $false
-}
-
-Function Get-ComponentInstallResult {
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory)]
-        [AllowEmptyCollection()]
-        [Boolean[]]$Results,
-
-        [Switch]$Removal
-    )
-
-    if ($Results.Count) {
-        $TotalResults = $Results.Count
-        $SuccessCount = ($Results | Where-Object { $_ -eq $true  } | Measure-Object).Count
-        $FailureCount = ($Results | Where-Object { $_ -eq $false } | Measure-Object).Count
-
-        if ($SuccessCount -eq $TotalResults) {
-            if (!$Removal) {
-                return [InstallState]::Installed
-            } else {
-                return [InstallState]::NotInstalled
-            }
-        } elseif ($FailureCount -eq $TotalResults) {
-            if (!$Removal) {
-                return [InstallState]::NotInstalled
-            } else {
-                return [InstallState]::Installed
-            }
-        } else {
-            return [InstallState]::PartialInstall
-        }
-    }
-    return [InstallState]::Unknown
-}
-
-Function Get-DotFilesComponent {
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory)]
-        [IO.DirectoryInfo]$Directory
-    )
-
-    $Name               = $Directory.Name
-    $MetadataFile       = '{0}.xml' -f $Name
-    $GlobalMetadataFile = Join-Path -Path $GlobalMetadataPath -ChildPath $MetadataFile
-    $CustomMetadataFile = Join-Path -Path $DotFilesMetadataPath -ChildPath $MetadataFile
-
-    $GlobalMetadataPresent = Test-Path -Path $GlobalMetadataFile -PathType Leaf
-    $CustomMetadataPresent = Test-Path -Path $CustomMetadataFile -PathType Leaf
-
-    if ($GlobalMetadataPresent -or $CustomMetadataPresent) {
-        if ($GlobalMetadataPresent) {
-            Write-Debug -Message ('[{0}] Loading global metadata ...' -f $Name)
-            $Metadata = Get-ComponentMetadata -Path $GlobalMetadataFile
-            $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
-        }
-
-        if ($CustomMetadataPresent) {
-            Write-Debug -Message ('[{0}] Loading custom metadata ...' -f $Name)
-            $Metadata = Get-ComponentMetadata -Path $CustomMetadataFile
-
-            if ($GlobalMetadataPresent) {
-                $Component = Initialize-DotFilesComponent -Component $Component -Metadata $Metadata
-            } else {
-                $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
-            }
-        }
-    } elseif ($DotFilesAutodetect) {
-        Write-Debug -Message ('[{0}] Running automatic detection ...' -f $Name)
-        $Component = Initialize-DotFilesComponent -Name $Name
-    } else {
-        Write-Debug -Message ('[{0}] No metadata & automatic detection disabled.' -f $Name)
-        $Component = [Component]::new($Name, $DotFilesPath)
-        $Component.Availability = [Availability]::NoLogic
-    }
-
-    $Component.PSObject.TypeNames.Insert(0, 'PSDotFiles.Component')
-    return $Component
-}
-
 Function Initialize-DotFilesComponent {
     [CmdletBinding()]
     Param(
@@ -899,6 +781,79 @@ Function Remove-DotFilesComponentFile {
     return $Results
 }
 
+Function Find-DotFilesComponent {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory)]
+        [String]$Name,
+
+        [String]$Pattern,
+        [Switch]$CaseSensitive,
+        [Switch]$RegularExpression
+    )
+
+    $Parameters = @{
+        'Property'='Name'
+    }
+
+    if ($Pattern) {
+        $Parameters['Value'] = $Pattern
+    } else {
+        $Parameters['Value'] = '*{0}*' -f $Name
+    }
+
+    if ($CaseSensitive -and $RegularExpression) {
+        $Parameters['CMatch'] = $true
+    } elseif ($CaseSensitive -and !$RegularExpression) {
+        $Parameters['CLike'] = $true
+    } elseif (!$CaseSensitive -and $RegularExpression) {
+        $Parameters['IMatch'] = $true
+    } else {
+        $Parameters['ILike'] = $true
+    }
+
+    $MatchingPrograms = $script:InstalledPrograms | Where-Object @Parameters
+    if ($MatchingPrograms) {
+        return $MatchingPrograms
+    }
+
+    return $false
+}
+
+Function Get-ComponentInstallResult {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [Boolean[]]$Results,
+
+        [Switch]$Removal
+    )
+
+    if ($Results.Count) {
+        $TotalResults = $Results.Count
+        $SuccessCount = ($Results | Where-Object { $_ -eq $true  } | Measure-Object).Count
+        $FailureCount = ($Results | Where-Object { $_ -eq $false } | Measure-Object).Count
+
+        if ($SuccessCount -eq $TotalResults) {
+            if (!$Removal) {
+                return [InstallState]::Installed
+            } else {
+                return [InstallState]::NotInstalled
+            }
+        } elseif ($FailureCount -eq $TotalResults) {
+            if (!$Removal) {
+                return [InstallState]::NotInstalled
+            } else {
+                return [InstallState]::Installed
+            }
+        } else {
+            return [InstallState]::PartialInstall
+        }
+    }
+    return [InstallState]::Unknown
+}
+
 Function Get-ComponentMetadata {
     [CmdletBinding()]
     Param(
@@ -922,6 +877,51 @@ Function Get-ComponentMetadata {
     }
 
     return $Metadata
+}
+
+Function Get-DotFilesComponent {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory)]
+        [IO.DirectoryInfo]$Directory
+    )
+
+    $Name               = $Directory.Name
+    $MetadataFile       = '{0}.xml' -f $Name
+    $GlobalMetadataFile = Join-Path -Path $GlobalMetadataPath -ChildPath $MetadataFile
+    $CustomMetadataFile = Join-Path -Path $DotFilesMetadataPath -ChildPath $MetadataFile
+
+    $GlobalMetadataPresent = Test-Path -Path $GlobalMetadataFile -PathType Leaf
+    $CustomMetadataPresent = Test-Path -Path $CustomMetadataFile -PathType Leaf
+
+    if ($GlobalMetadataPresent -or $CustomMetadataPresent) {
+        if ($GlobalMetadataPresent) {
+            Write-Debug -Message ('[{0}] Loading global metadata ...' -f $Name)
+            $Metadata = Get-ComponentMetadata -Path $GlobalMetadataFile
+            $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
+        }
+
+        if ($CustomMetadataPresent) {
+            Write-Debug -Message ('[{0}] Loading custom metadata ...' -f $Name)
+            $Metadata = Get-ComponentMetadata -Path $CustomMetadataFile
+
+            if ($GlobalMetadataPresent) {
+                $Component = Initialize-DotFilesComponent -Component $Component -Metadata $Metadata
+            } else {
+                $Component = Initialize-DotFilesComponent -Name $Name -Metadata $Metadata
+            }
+        }
+    } elseif ($DotFilesAutodetect) {
+        Write-Debug -Message ('[{0}] Running automatic detection ...' -f $Name)
+        $Component = Initialize-DotFilesComponent -Name $Name
+    } else {
+        Write-Debug -Message ('[{0}] No metadata & automatic detection disabled.' -f $Name)
+        $Component = [Component]::new($Name, $DotFilesPath)
+        $Component.Availability = [Availability]::NoLogic
+    }
+
+    $Component.PSObject.TypeNames.Insert(0, 'PSDotFiles.Component')
+    return $Component
 }
 
 Function Get-InstalledPrograms {
