@@ -254,13 +254,13 @@ Function Initialize-PSDotFiles {
     $script:MetadataSchema = New-Object -TypeName Xml.Schema.XmlSchemaSet
     $null = $MetadataSchema.Add($null, (Get-Item -Path $MetadataSchemaPath))
     $MetadataSchema.Compile() # Implied on the first validation but do so now to ensure it's sane.
-    Write-Debug -Message ('Using metadata schema: {0}' -f $MetadataSchemaPath)
+    Write-Debug -Message ('Metadata schema: {0}' -f $MetadataSchemaPath)
 
     $script:GlobalMetadataPath = Join-Path -Path $PSScriptRoot -ChildPath 'metadata'
-    Write-Debug -Message ('Using global metadata directory: {0}' -f $GlobalMetadataPath)
+    Write-Debug -Message ('Global metadata directory: {0}' -f $GlobalMetadataPath)
 
     $script:DotFilesMetadataPath = Join-Path -Path $DotFilesPath -ChildPath 'metadata'
-    Write-Debug -Message ('Using dotfiles metadata directory: {0}' -f $DotFilesMetadataPath)
+    Write-Debug -Message ('Dotfiles metadata directory: {0}' -f $DotFilesMetadataPath)
 
     if ($PSBoundParameters.ContainsKey('Autodetect')) {
         $script:DotFilesAutodetect = $Autodetect
@@ -492,7 +492,7 @@ Function Install-DotFilesComponentDirectory {
                     }
                     $Results += $false
                 } else {
-                    Write-Debug -Message ('[{0}] Symlink already exists and points to expected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                    Write-Debug -Message ('[{0}] Valid symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     $Results += $true
                 }
             } else {
@@ -523,7 +523,7 @@ Function Install-DotFilesComponentDirectory {
                     $Symlink = New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName
                     if ($Component.HideSymlinks) {
                         if (!$Simulate) {
-                            Write-Debug -Message ('[{0}] Setting attributes to hide directory symlink: "{1}"' -f $Name, $TargetDirectory)
+                            Write-Debug -Message ('[{0}] Hiding directory symlink: "{1}"' -f $Name, $TargetDirectory)
                         }
                         $Attributes = Set-SymlinkAttributes -Symlink $Symlink
                         if (!$Attributes) {
@@ -584,7 +584,7 @@ Function Install-DotFilesComponentFile {
                     }
                     $Results += $false
                 } else {
-                    Write-Debug -Message ('[{0}] Symlink already exists and points to expected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
+                    Write-Debug -Message ('[{0}] Valid symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
                     $Results += $true
                 }
             } else {
@@ -602,7 +602,7 @@ Function Install-DotFilesComponentFile {
                     $Symlink = New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName
                     if ($Component.HideSymlinks) {
                         if (!$Simulate) {
-                            Write-Debug -Message ('[{0}] Setting attributes to hide file symlink: "{1}"' -f $Name, $TargetFile)
+                            Write-Debug -Message ('[{0}] Hiding file symlink: "{1}"' -f $Name, $TargetFile)
                         }
                         $Attributes = Set-SymlinkAttributes -Symlink $Symlink
                         if (!$Attributes) {
