@@ -546,7 +546,9 @@ Function Install-DotFilesComponentDirectory {
 
                     # TODO: Can this ever actually fail?
                     if (!$Attributes) {
+                        $Results += $false
                         Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
+                        continue
                     }
                 }
             }
@@ -635,7 +637,9 @@ Function Install-DotFilesComponentFile {
 
                     # TODO: Can this ever actually fail?
                     if (!$Attributes) {
+                        $Results += $true
                         Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on file symlink: "{1}"' -f $Name, $TargetFile)
+                        continue
                     }
                 }
             }
