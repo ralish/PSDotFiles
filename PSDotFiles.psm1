@@ -405,51 +405,49 @@ Function Initialize-DotFilesComponent {
 
     # Create the component if we're not overriding
     if ($PSCmdlet.ParameterSetName -eq 'New') {
-        $Component = [Component]::new($Name, $script:DotFilesPath)
+        $Component = [Component]::new($Name, $DotFilesPath)
     } else {
         $Name = $Component.Name
     }
 
-    # Minimal check for a sane metadata XML file
-    if ($PSBoundParameters.ContainsKey('Metadata')) {
-        if (!$Metadata.Component) {
-            $Component.Availability = [Availability]::DetectionFailure
-            Write-Error -Message ('[{0}] No <Component> element in metadata file.' -f $Name)
-            return $Component
-        }
-    }
-
     # Set the friendly name if one was provided
-    if ($Metadata.Component.FriendlyName) {
+    if ($Metadata -and $Metadata.SelectSingleNode('//Component/FriendlyName')) {
         $Component.FriendlyName = $Metadata.Component.Friendlyname
     }
 
-    # Configure and perform component detection
-    if ($Metadata.Component.Detection.Method -eq 'Automatic' -or
-        ($PSCmdlet.ParameterSetName -eq 'New' -and !$Metadata.Component.Detection.Method)) {
-        $Parameters = @{'Name'=$Name}
+    # Determine the detection method
+    if ($Metadata -and $Metadata.SelectSingleNode('//Component/Detection')) {
+        $DetectionMethod = $Metadata.Component.Detection.Method
+    } elseif ($PSCmdlet.ParameterSetName -eq 'New') {
+        $DetectionMethod = 'Automatic'
+    } else {
+        $DetectionMethod = $false
+    }
 
-        if (!$Metadata.Component.Detection.MatchRegEx -or
-             $Metadata.Component.Detection.MatchRegEx -eq 'False') {
-            $Parameters += @{'RegularExpression'=$false}
-        } elseif ($Metadata.Component.Detection.MatchRegEx -eq 'True') {
-            $Parameters += @{'RegularExpression'=$true}
-        } else {
-            Write-Error -Message ('[{0}] Invalid MatchRegEx setting for automatic component detection: {1}' -f $Name, $Metadata.Component.Detection.MatchRegEx)
+    # Run component detection
+    if ($DetectionMethod -eq 'Automatic') {
+        $Parameters = @{
+            'Name'=$Name
+            'RegularExpression'=$false
+            'CaseSensitive'=$false
         }
 
-        if (!$Metadata.Component.Detection.MatchCase -or
-             $Metadata.Component.Detection.MatchCase -eq 'False') {
-            $Parameters += @{'CaseSensitive'=$false}
-        } elseif ($Metadata.Component.Detection.MatchCase -eq 'True') {
-            $Parameters += @{'CaseSensitive'=$true}
-        } else {
-            Write-Error -Message ('[{0}] Invalid MatchCase setting for automatic component detection: {1}' -f $Name, $Metadata.Component.Detection.MatchCase)
-        }
+        if ($Metadata) {
+            if ($Metadata.SelectSingleNode('//Component/Detection/MatchRegEx')) {
+                if ($Metadata.Component.Detection.MatchRegEx -eq 'true') {
+                    $Parameters['RegularExpression']=$true
+                }
+            }
 
-        if ($Metadata.Component.Detection.MatchPattern) {
-            $MatchPattern = $Metadata.Component.Detection.MatchPattern
-            $Parameters += @{'Pattern'=$MatchPattern}
+            if ($Metadata.SelectSingleNode('//Component/Detection/MatchCase')) {
+                if ($Metadata.Component.Detection.MatchCase -eq 'true') {
+                    $Parameters['CaseSensitive']=$true
+                }
+            }
+
+            if ($Metadata.SelectSingleNode('//Component/Detection/MatchPattern')) {
+                $Parameters['Pattern']=$Metadata.Component.Detection.MatchPattern
+            }
         }
 
         $MatchingPrograms = Find-DotFilesComponent @Parameters
@@ -457,9 +455,8 @@ Function Initialize-DotFilesComponent {
             $NumMatchingPrograms = ($MatchingPrograms | Measure-Object).Count
             if ($NumMatchingPrograms -eq 1) {
                 $Component.Availability = [Availability]::Available
-                $Component.UninstallKey = $MatchingPrograms.PSPath
-                if (!$Component.FriendlyName -and
-                     $MatchingPrograms.DisplayName) {
+                $Component.UninstallKey = $MatchingPrograms.Uninstall
+                if (!$Component.FriendlyName -and $MatchingPrograms.DisplayName) {
                     $Component.FriendlyName = $MatchingPrograms.DisplayName
                 }
             } else {
@@ -468,54 +465,55 @@ Function Initialize-DotFilesComponent {
         } else {
             $Component.Availability = [Availability]::Unavailable
         }
-    } elseif ($Metadata.Component.Detection.Method -eq 'FindInPath') {
-        if ($Metadata.Component.Detection.FindInPath) {
+    } elseif ($DetectionMethod -eq 'FindInPath') {
+        if ($Metadata.SelectSingleNode('//Component/Detection/FindInPath')) {
             $FindBinary = $Metadata.Component.Detection.FindInPath
         } else {
             $FindBinary = $Component.Name
         }
 
-        if (Get-Command -Name $FindBinary -ErrorAction SilentlyContinue) {
+        if (Get-Command -Name $FindBinary -ErrorAction Ignore) {
             $Component.Availability = [Availability]::Available
         } else {
             $Component.Availability = [Availability]::Unavailable
         }
-    } elseif ($Metadata.Component.Detection.Method -eq 'PathExists') {
-        if ($Metadata.Component.Detection.PathExists) {
-            if (Test-Path -Path $Metadata.Component.Detection.PathExists) {
-                $Component.Availability = [Availability]::Available
-            } else {
-                $Component.Availability = [Availability]::Unavailable
-            }
+    } elseif ($DetectionMethod -eq 'PathExists') {
+        if (Test-Path -Path $Metadata.Component.Detection.PathExists) {
+            $Component.Availability = [Availability]::Available
         } else {
-            Write-Error -Message ('[{0}] No absolute path specified for testing component availability.' -f $Name)
+            $Component.Availability = [Availability]::Unavailable
         }
-    } elseif ($Metadata.Component.Detection.Method -eq 'Static') {
-        if ($Metadata.Component.Detection.Availability) {
-            $Availability = $Metadata.Component.Detection.Availability
-            $Component.Availability = [Availability]::$Availability
-        } else {
-            Write-Error -Message ('[{0}] No component availability state specified for static detection.' -f $Name)
-        }
-    } elseif ($Metadata.Component.Detection.Method) {
-        Write-Error -Message ('[{0}] Invalid component detection method specified: {1}' -f $Name, $Metadata.Component.Detection.Method)
+    } elseif ($DetectionMethod -eq 'Static') {
+        $Availability = $Metadata.Component.Detection.Availability
+        $Component.Availability = [Availability]::$Availability
     }
 
-    # If the component isn't available don't bother determining the install path
-    if ($Component.Availability -notin ('Available', 'AlwaysInstall')) {
+    # If the component isn't available we're done
+    if ($Component.Availability -notin ([Availability]::Available, [Availability]::AlwaysInstall)) {
         return $Component
     }
 
-    # Configure component installation path
-    if ($PSCmdlet.ParameterSetName -eq 'New' -and
-        !$Metadata.Component.InstallPath.SpecialFolder -and
-        !$Metadata.Component.InstallPath.Destination) {
+    # Set the default installation path initially
+    if ($PSCmdlet.ParameterSetName -eq 'New') {
         $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
-    } elseif ($Metadata.Component.InstallPath.SpecialFolder -or
-              $Metadata.Component.InstallPath.Destination) {
-        $SpecialFolder = $Metadata.Component.InstallPath.SpecialFolder
-        $Destination = $Metadata.Component.InstallPath.Destination
+    }
 
+    # Configure installation settings
+    if ($Metadata -and $Metadata.SelectSingleNode('//Component/InstallPath')) {
+        $SpecialFolder = $false
+        $Destination = $false
+
+        # Are we installing to a special folder?
+        if ($Metadata.SelectSingleNode('//Component/InstallPath/SpecialFolder')) {
+            $SpecialFolder = $Metadata.Component.InstallPath.SpecialFolder
+        }
+
+        # Are we installing to a custom destination?
+        if ($Metadata.SelectSingleNode('//Component/InstallPath/Destination')) {
+            $Destination = $Metadata.Component.InstallPath.Destination
+        }
+
+        # Determine the installation path
         if ($SpecialFolder -and $Destination) {
             if (!([IO.Path]::IsPathRooted($Destination))) {
                 $InstallPath = Join-Path -Path ([Environment]::GetFolderPath($SpecialFolder)) -ChildPath $Destination
@@ -539,23 +537,18 @@ Function Initialize-DotFilesComponent {
             }
         } elseif ($SpecialFolder -and !$Destination) {
             $Component.InstallPath = [Environment]::GetFolderPath($SpecialFolder)
-        } else {
-            $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
+        }
+
+        # Configure symlink hiding
+        if ($Metadata.SelectSingleNode('//Component/InstallPath/HideSymlinks')) {
+            if ($Metadata.Component.InstallPath.HideSymlinks -eq 'true') {
+                $Component.HideSymlinks = $true
+            }
         }
     }
 
-    # Configure component symlink hiding
-    if ($Metadata.Component.InstallPath.HideSymlinks) {
-        $HideSymlinks = $Metadata.Component.InstallPath.HideSymlinks
-        if ($HideSymlinks -eq 'True') {
-            $Component.HideSymlinks = $true
-        } elseif ($HideSymlinks -notin ('True', 'False')) {
-            Write-Error -Message ('[{0}] Invalid HideSymlinks setting: {1}' -f $Name, $HideSymlinks)
-        }
-    }
-
-    # Configure component ignore paths
-    if ($Metadata.Component.IgnorePaths.Path) {
+    # Configure ignore paths
+    if ($Metadata -and $Metadata.SelectSingleNode('//Component/IgnorePaths')) {
         foreach ($Path in $Metadata.Component.IgnorePaths.Path) {
             $Component.IgnorePaths += $Path
         }
