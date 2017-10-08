@@ -454,83 +454,103 @@ Function Install-DotFilesComponentDirectory {
         [Switch]$Simulate
     )
 
+    # Beware: This function is called recursively!
+
     $Name = $Component.Name
     $SourcePath = $Component.SourcePath
     $InstallPath = $Component.InstallPath
     [Boolean[]]$Results = @()
 
     foreach ($Directory in $Directories) {
-        # Check the source directory isn't ignored & determine the target directory
+        # Check if we're operating on the top-level directory of a component or have recursed into a
+        # subdirectory. If the latter, we need the relative path from the top-level directory so we
+        # can adjust the target installation directory appropriately. Further, subdirectories may be
+        # ignored by an <IgnorePaths> configuration, so also check this before proceeding further.
         if ($Directory.FullName -eq $SourcePath.FullName) {
             $TargetDirectory = $InstallPath
         } else {
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
+
             if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
-                if (!$Simulate) {
-                    Write-Verbose -Message ('[{0}] Ignoring directory path: {1}' -f $Name, $SourceDirectoryRelative)
-                }
+                Write-Debug -Message ('[{0}] Ignoring directory: {1}' -f $Name, $SourceDirectoryRelative)
                 continue
             }
+
             $TargetDirectory = Join-Path -Path $InstallPath -ChildPath $SourceDirectoryRelative
         }
 
-        # TODO
-        if (Test-Path -Path $TargetDirectory) {
+        # We've got the directory source and target paths and have confirmed the source path is not
+        # ignored. Start by trying to retrieve any item which may already exist at the target path.
+        try {
             $ExistingTarget = Get-Item -Path $TargetDirectory -Force
+
+            # We found an item but it's not a directory! The user will need to fix this conflict.
             if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
-                if (!$Simulate) {
-                    Write-Error -Message ('[{0}] Expected a directory but found a file with the same name: {1}' -f $Name, $TargetDirectory)
-                }
                 $Results += $false
-            } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
+                if (!$Simulate) {
+                    Write-Error -Message ('[{0}] Expected a directory but found a file: {1}' -f $Name, $TargetDirectory)
+                }
+                continue
+            }
+
+            # We found a symbolic link. Either it points where we expect it to and all is well, or
+            # it points somewhere unexpected, and the user will need to investigate why that is.
+            if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
                 $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
-
-                if (!($Directory.FullName -eq $SymlinkTarget)) {
-                    if (!$Simulate) {
-                        Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
-                    }
-                    $Results += $false
-                } else {
-                    Write-Debug -Message ('[{0}] Valid symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                if ($Directory.FullName -eq $SymlinkTarget) {
                     $Results += $true
-                }
-            } else {
-                $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
-                if ($NextFiles) {
-                    if ($Simulate) {
-                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate
-                    } else {
-                        $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles
-                    }
-                }
-
-                $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
-                if ($NextDirectories) {
-                    if ($Simulate) {
-                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate
-                    } else {
-                        $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
-                    }
-                }
-            }
-        } else {
-            if (!$Simulate) {
-                Write-Verbose -Message ('[{0}] Linking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
-                if ($Simulate) {
-                    New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName -WhatIf
+                    Write-Debug -Message ('[{0}] Valid directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                 } else {
-                    $Symlink = New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName
-                    if ($Component.HideSymlinks) {
-                        if (!$Simulate) {
-                            Write-Debug -Message ('[{0}] Hiding directory symlink: "{1}"' -f $Name, $TargetDirectory)
-                        }
-                        $Attributes = Set-SymlinkAttributes -Symlink $Symlink
-                        if (!$Attributes) {
-                            Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
-                        }
+                    $Results += $false
+                    if (!$Simulate) {
+                        Write-Error -Message ('[{0}] Found a directory symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                    }
+                }
+                continue
+            }
+
+            # We found a regular directory. As we can't create a directory symlink, we'll recurse
+            # into the source path and attempt to symlink each file into the target.
+            $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
+            if ($NextFiles) {
+                if ($Simulate) {
+                    $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate
+                } else {
+                    $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles
+                }
+            }
+
+            # As above, but now symlink each of the directories
+            $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
+            if ($NextDirectories) {
+                if ($Simulate) {
+                    $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate
+                } else {
+                    $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
+                }
+            }
+
+            # Warn if there were no items in the source path and we couldn't symlink the directory
+            if (!$NextFiles -and !$NextDirectories) {
+                Write-Warning -Message ('[{0}] Unable to symlink empty directory as target exists: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+            }
+        } catch {
+            # Nothing exists at the target path so we can create the symlink
+            if (!$Simulate) {
+                Write-Verbose -Message ('[{0}] Symlinking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
+                $Symlink = New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName
+
+                # Set the hidden and system attributes if requested
+                if ($Component.HideSymlinks) {
+                    $Attributes = Set-SymlinkAttributes -Symlink $Symlink
+
+                    # TODO: Can this ever actually fail?
+                    if (!$Attributes) {
+                        Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
                     }
                 }
             }
+
             $Results += $true
         }
     }
