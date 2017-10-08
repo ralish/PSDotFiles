@@ -286,23 +286,27 @@ Function Find-DotFilesComponent {
         [Switch]$RegularExpression
     )
 
-    if (!$PSBoundParameters.ContainsKey('Pattern')) {
-        $Pattern = '*{0}*' -f $Name
+    $Parameters = @{
+        'Property'='Name'
     }
 
-    $MatchingParameters = @{'Property'='DisplayName'
-                            'Value'=$Pattern}
-    if (!$CaseSensitive -and !$RegularExpression) {
-        $MatchingParameters += @{'ILike'=$true}
-    } elseif (!$CaseSensitive -and $RegularExpression) {
-        $MatchingParameters += @{'IMatch'=$true}
-    } elseif ($CaseSensitive -and !$RegularExpression) {
-        $MatchingParameters += @{'CLike'=$true}
+    if ($Pattern) {
+        $Parameters['Value'] = $Pattern
     } else {
-        $MatchingParameters += @{'CMatch'=$true}
+        $Parameters['Value'] = '*{0}*' -f $Name
     }
 
-    $MatchingPrograms = $script:InstalledPrograms | Where-Object @MatchingParameters
+    if ($CaseSensitive -and $RegularExpression) {
+        $Parameters['CMatch'] = $true
+    } elseif ($CaseSensitive -and !$RegularExpression) {
+        $Parameters['CLike'] = $true
+    } elseif (!$CaseSensitive -and $RegularExpression) {
+        $Parameters['IMatch'] = $true
+    } else {
+        $Parameters['ILike'] = $true
+    }
+
+    $MatchingPrograms = $script:InstalledPrograms | Where-Object @Parameters
     if ($MatchingPrograms) {
         return $MatchingPrograms
     }
