@@ -229,7 +229,7 @@ Function Initialize-PSDotFiles {
         if (!$script:DotFilesPath) {
             throw "The provided dotfiles path is either not a directory or it can't be accessed."
         }
-    } elseif (Test-Path -Path 'Variable:\DotFilesPath') {
+    } elseif (Get-Variable -Name 'DotFilesPath' -Scope Global -ErrorAction Ignore) {
         $script:DotFilesPath = Test-DotFilesPath -Path $global:DotFilesPath
         if (!$script:DotFilesPath) {
             throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
@@ -253,7 +253,7 @@ Function Initialize-PSDotFiles {
 
     if ($PSBoundParameters.ContainsKey('Autodetect')) {
         $script:DotFilesAutodetect = $Autodetect
-    } elseif (Test-Path -Path 'Variable:\DotFilesAutodetect') {
+    } elseif (Get-Variable -Name 'DotFilesAutodetect' -Scope Global -ErrorAction Ignore) {
         $script:DotFilesAutodetect = $global:DotFilesAutodetect
     } else {
         $script:DotFilesAutodetect = $false
