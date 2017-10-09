@@ -122,21 +122,16 @@ Function Install-DotFiles {
 
     foreach ($Component in $Components) {
         $Name = $Component.Name
-
-        if ($PSCmdlet.ShouldProcess($Name, 'Install')) {
-            Write-Verbose -Message ('[{0}] Installing ...' -f $Name)
-        } else {
-            Write-Verbose -Message ('[{0}] Simulating install ...' -f $Name)
-            $Simulate = $true
-        }
+        [Boolean[]]$Results = @()
 
         Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
         Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
 
-        [Boolean[]]$Results = @()
-        if (!$Simulate) {
+        if ($PSCmdlet.ShouldProcess($Name, 'Install')) {
+            Write-Verbose -Message ('[{0}] Installing ...' -f $Name)
             $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
         } else {
+            Write-Verbose -Message ('[{0}] Simulating install ...' -f $Name)
             $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate
         }
 
@@ -203,21 +198,16 @@ Function Remove-DotFiles {
 
     foreach ($Component in $Components) {
         $Name = $Component.Name
-
-        if ($PSCmdlet.ShouldProcess($Name, 'Remove')) {
-            Write-Verbose -Message ('[{0}] Removing ...' -f $Name)
-        } else {
-            Write-Verbose -Message ('[{0}] Simulating removal ...' -f $Name)
-            $Simulate = $true
-        }
+        [Boolean[]]$Results = @()
 
         Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
         Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
 
-        [Boolean[]]$Results = @()
-        if (!$Simulate) {
+        if ($PSCmdlet.ShouldProcess($Name, 'Remove')) {
+            Write-Verbose -Message ('[{0}] Removing ...' -f $Name)
             $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
         } else {
+            Write-Verbose -Message ('[{0}] Simulating removal ...' -f $Name)
             $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate
         }
 
