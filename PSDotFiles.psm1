@@ -132,10 +132,8 @@ Function Install-DotFiles {
         Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
 
         if ($PSCmdlet.ShouldProcess($Name, 'Install')) {
-            Write-Verbose -Message ('[{0}] Installing ...' -f $Name)
             $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
         } else {
-            Write-Verbose -Message ('[{0}] Simulating install ...' -f $Name)
             $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate
         }
 
@@ -208,10 +206,8 @@ Function Remove-DotFiles {
         Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
 
         if ($PSCmdlet.ShouldProcess($Name, 'Remove')) {
-            Write-Verbose -Message ('[{0}] Removing ...' -f $Name)
             $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
         } else {
-            Write-Verbose -Message ('[{0}] Simulating removal ...' -f $Name)
             $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate
         }
 
