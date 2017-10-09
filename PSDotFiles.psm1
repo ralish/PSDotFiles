@@ -907,10 +907,11 @@ Function Get-ComponentInstallResult {
             } else {
                 return [InstallState]::Installed
             }
-        } else {
-            return [InstallState]::PartialInstall
         }
+
+        return [InstallState]::PartialInstall
     }
+
     return [InstallState]::Unknown
 }
 
