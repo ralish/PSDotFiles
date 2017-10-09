@@ -204,10 +204,10 @@ Function Remove-DotFiles {
     foreach ($Component in $Components) {
         $Name = $Component.Name
 
-        if ($PSCmdlet.ShouldProcess($Name, 'Uninstall')) {
-            Write-Verbose -Message ('[{0}] Uninstalling ...' -f $Name)
+        if ($PSCmdlet.ShouldProcess($Name, 'Remove')) {
+            Write-Verbose -Message ('[{0}] Removing ...' -f $Name)
         } else {
-            Write-Verbose -Message ('[{0}] Simulating uninstall ...' -f $Name)
+            Write-Verbose -Message ('[{0}] Simulating removal ...' -f $Name)
             $Simulate = $true
         }
 
