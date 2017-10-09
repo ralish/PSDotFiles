@@ -105,11 +105,15 @@ Function Install-DotFiles {
         [Component[]]$Components
     )
 
-    if (!(Test-IsAdministrator)) {
+    if (!((Test-IsAdministrator) -or (Test-IsWin10DevMode))) {
         if ($WhatIfPreference) {
-            Write-Warning -Message 'Not running with Administrator privileges but ignoring due to -WhatIf.'
+            Write-Warning -Message 'Missing privileges to create symlinks but ignoring due to -WhatIf.'
         } else {
-            throw 'Unable to run Install-DotFiles as not running with Administrator privileges.'
+            Write-Warning -Message 'We appear to be running under a user account without permission to create symlinks.'
+            Write-Warning -Message 'To fix this perform one of the following:'
+            Write-Warning -Message '- Run as an elevated user (ie. with Administrator privileges)'
+            Write-Warning -Message "- If you're on Windows 10 Creators Update or newer enable Developer Mode"
+            throw 'Unable to run Install-DotFiles as missing privileges to create symlinks.'
         }
     }
 
@@ -1129,6 +1133,32 @@ Function Test-IsAdministrator {
     if ($User.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         return $true
     }
+    return $false
+}
+
+Function Test-IsWin10DevMode {
+    [CmdletBinding()]
+    Param()
+
+    # Windows 10 Creators Update introduced support for creating symlinks without Administrator
+    # privileges. The corresponding release build number is 15063 (we ignore Insider builds).
+    $BuildNumber = [Int](Get-WmiObject -Class Win32_OperatingSystem).BuildNumber
+    if ($BuildNumber -lt 15063) {
+        return $false
+    }
+
+    # Check if Developer Mode is enabled which permits unprivileged users to create symlinks
+    $DevModeKey = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\AppModelUnlock'
+    if (Test-Path -Path $DevModeKey -PathType Container) {
+        $DevMode = Get-ItemProperty -Path $DevModeKey
+
+        if ($DevMode.PSObject.Properties['AllowDevelopmentWithoutDevLicense']) {
+            if ($DevMode.AllowDevelopmentWithoutDevLicense -eq 1) {
+                return $true
+            }
+        }
+    }
+
     return $false
 }
 
