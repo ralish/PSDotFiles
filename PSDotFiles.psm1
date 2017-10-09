@@ -775,49 +775,63 @@ Function Remove-DotFilesComponentFile {
     $InstallPath = $Component.InstallPath
     [Boolean[]]$Results = @()
 
+    # Beware: This function is called recursively!
+
     foreach ($File in $Files) {
-        # TODO
+        # We always need to determine the relative path of files from the top-level directory of the
+        # component so we can adjust the target installation path appropriately. Like directories,
+        # files may also be ignored by an <IgnorePaths> configuration.
         $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
         if ($SourceFileRelative -in $Component.IgnorePaths) {
-            if (!$Simulate) {
-                Write-Verbose -Message ('[{0}] Ignoring file path: {1}' -f $Name, $SourceFileRelative)
-            }
+            Write-Debug -Message ('[{0}] Ignoring file: {1}' -f $Name, $SourceFileRelative)
             continue
         }
-        $TargetFile = Join-Path -Path $Component.InstallPath -ChildPath $SourceFileRelative
+        $TargetFile = Join-Path -Path $InstallPath -ChildPath $SourceFileRelative
 
-        # TODO
-        if (Test-Path -Path $TargetFile) {
+        # We've got the file source and target paths and have confirmed the source path is not
+        # ignored. Start by trying to retrieve any item which may already exist at the target path.
+        try {
             $ExistingTarget = Get-Item -Path $TargetFile -Force
+
+            # We found an item but it's not a file! This is unexpected, but as we're removing a
+            # component it's not an error. It will break if the user attempts to install it though.
             if ($ExistingTarget -isnot [IO.FileInfo]) {
                 if (!$Simulate) {
-                    Write-Warning -Message ('[{0}] Expected a file but found a directory with the same name: {1}' -f $Name, $TargetFile)
+                    Write-Warning -Message ('[{0}] Expected a file but found a directory: {1}' -f $Name, $TargetFile)
                 }
-            } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
-                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
-
-                if (!($File.FullName -eq $SymlinkTarget)) {
-                    if (!$Simulate) {
-                        Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
-                    }
-                    $Results += $false
-                } else {
-                    if (!$Simulate) {
-                        Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
-                        if ($Simulate){
-                            Remove-Item -Path $TargetFile -WhatIf
-                        } else {
-                            Remove-Item -Path $TargetFile -Force
-                        }
-                    }
-                    $Results += $true
-                }
-            } else {
-                if (!$Simulate) {
-                    Write-Warning -Message ('[{0}] Found a file instead of a symbolic link so not removing: {1}' -f $Name, $TargetFile)
-                }
+                continue
             }
-        } else {
+
+            # We found a file but it's not a symbolic link! Like the above, this is unexpected but
+            # as we're removing a component we'll just warn the user (though an install won't work).
+            if ($ExistingTarget.LinkType -ne 'SymbolicLink') {
+                if (!$Simulate) {
+                    Write-Warning -Message ('[{0}] Found a file instead of a symbolic link: {1}' -f $Name, $TargetFile)
+                }
+                continue
+            }
+
+            # We found a symbolic link. Either it points where we expect it to and we'll remove it,
+            # or it points somewhere unexpected, and the user will need to investigate why that is.
+            $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
+
+            # The symlink points to an unexpected target. This could be an error or completely fine.
+            # As we won't make any changes warn the user and let them decide what to do.
+            if ($File.FullName -ne $SymlinkTarget) {
+                if (!$Simulate) {
+                    Write-Warning -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
+                }
+                continue
+            }
+
+            # The symlink points where we expect so we're good to proceed with its removal
+            if (!$Simulate) {
+                Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
+                Remove-Item -Path $TargetFile -Force
+            }
+
+            $Results += $true
+        } catch {
             if (!$Simulate) {
                 Write-Warning -Message ('[{0}] Expected a file but found nothing: {1}' -f $Name, $TargetFile)
             }
