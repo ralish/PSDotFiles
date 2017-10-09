@@ -663,79 +663,99 @@ Function Remove-DotFilesComponentDirectory {
         [Switch]$Simulate
     )
 
+    # Beware: This function is called recursively!
+
     $Name = $Component.Name
     $SourcePath = $Component.SourcePath
     $InstallPath = $Component.InstallPath
     [Boolean[]]$Results = @()
 
     foreach ($Directory in $Directories) {
-        # TODO
+        # Check if we're operating on the top-level directory of a component or have recursed into a
+        # subdirectory. If the latter, we need the relative path from the top-level directory so we
+        # can adjust the target installation directory appropriately. Further, subdirectories may be
+        # ignored by an <IgnorePaths> configuration, so also check this before proceeding further.
         if ($Directory.FullName -eq $SourcePath.FullName) {
             $TargetDirectory = $InstallPath
         } else {
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
+
             if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
-                if (!$Simulate) {
-                    Write-Verbose -Message ('[{0}] Ignoring directory path: {1}' -f $Name, $SourceDirectoryRelative)
-                }
+                Write-Debug -Message ('[{0}] Ignoring directory: {1}' -f $Name, $SourceDirectoryRelative)
                 continue
             }
+
             $TargetDirectory = Join-Path -Path $InstallPath -ChildPath $SourceDirectoryRelative
         }
 
-        # TODO
-        if (Test-Path -Path $TargetDirectory) {
+        # We've got the directory source and target paths and have confirmed the source path is not
+        # ignored. Start by trying to retrieve any item which may already exist at the target path.
+        try {
             $ExistingTarget = Get-Item -Path $TargetDirectory -Force
+
+            # We found an item but it's not a directory! This is unexpected, but as we're removing a
+            # component it's not an error. It will break if the user attempts to install it though.
             if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
                 if (!$Simulate) {
-                    Write-Warning -Message ('[{0}] Expected a directory but found a file with the same name: {1}' -f $Name, $TargetDirectory)
+                    Write-Warning -Message ('[{0}] Expected a directory but found a file: {1}' -f $Name, $TargetDirectory)
                 }
-            } elseif ($ExistingTarget.LinkType -eq 'SymbolicLink') {
+                continue
+            }
+
+            # We found a symbolic link. Either it points where we expect it to and we'll remove it,
+            # or it points somewhere unexpected, and the user will need to investigate why that is.
+            if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
                 $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
-                if (!($Directory.FullName -eq $SymlinkTarget)) {
+                # The symlink points to an unexpected target. This could be an error or completely
+                # fine. As we won't make any changes warn the user and let them decide what to do.
+                if ($Directory.FullName -ne $SymlinkTarget) {
                     if (!$Simulate) {
-                        Write-Error -Message ('[{0}] Symlink already exists but points to unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                        Write-Warning -Message ('[{0}] Found a directory symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     }
-                    $Results += $false
+                    continue
+                }
+
+                # The symlink points where we expect so we're good to proceed with its removal
+                if (!$Simulate) {
+                    Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
+
+                    # Always remove the hidden and system attributes before removal if they're set
+                    $Attributes = Set-SymlinkAttributes -Symlink $ExistingTarget -Remove
+                    # TODO: Can this ever actually fail?
+                    if (!$Attributes) {
+                        Write-Error -Message ('[{0}] Unable to remove Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
+                    }
+
+                    # Remove-Item doesn't correctly handle deleting directory symbolic links
+                    # See: https://github.com/PowerShell/PowerShell/issues/621
+                    [IO.Directory]::Delete($TargetDirectory)
+                }
+
+                $Results += $true
+                continue
+            }
+
+            # We found a regular directory. Recurse into it looking for file symlinks to remove.
+            $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
+            if ($NextFiles) {
+                if ($Simulate) {
+                    $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate
                 } else {
-                    if (!$Simulate) {
-                        Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
-                        if ($Simulate) {
-                            Write-Warning -Message ('Will remove directory symlink using native rmdir: {0}' -f $TargetDirectory)
-                        } else {
-                            $Attributes = Set-SymlinkAttributes -Symlink $ExistingTarget -Remove
-                            if (!$Attributes) {
-                                Write-Error -Message ('[{0}] Unable to remove Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
-                            }
-
-                            # Remove-Item doesn't correctly handle deleting directory symbolic links
-                            # See: https://github.com/PowerShell/PowerShell/issues/621
-                            [IO.Directory]::Delete($TargetDirectory)
-                        }
-                    }
-                    $Results += $true
-                }
-            } else {
-                $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
-                if ($NextFiles) {
-                    if ($Simulate) {
-                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate
-                    } else {
-                        $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles
-                    }
-                }
-
-                $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
-                if ($NextDirectories) {
-                    if ($Simulate) {
-                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate
-                    } else {
-                        $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
-                    }
+                    $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles
                 }
             }
-        } else {
+
+            # As above, but now for directory symlinks
+            $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
+            if ($NextDirectories) {
+                if ($Simulate) {
+                    $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate
+                } else {
+                    $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
+                }
+            }
+        } catch {
             if (!$Simulate) {
                 Write-Warning -Message ('[{0}] Expected a directory but found nothing: {1}' -f $Name, $TargetDirectory)
             }
