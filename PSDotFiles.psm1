@@ -128,15 +128,18 @@ Function Install-DotFiles {
         $Name = $Component.Name
         [Boolean[]]$Results = @()
 
-        Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
-        Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
-
-        if ($PSCmdlet.ShouldProcess($Name, 'Install')) {
-            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
-        } else {
-            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate
+        $Parameters = @{
+            'Component'=$Component
+            'Directories'=$Component.SourcePath
         }
 
+        if (!($PSCmdlet.ShouldProcess($Name, 'Install'))) {
+            $Parameters['Simulate']=$true
+        }
+
+        Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
+        Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
+        $Results += Install-DotFilesComponentDirectory @Parameters
         $Component.State = Get-ComponentInstallResult -Results $Results
     }
 
@@ -202,15 +205,18 @@ Function Remove-DotFiles {
         $Name = $Component.Name
         [Boolean[]]$Results = @()
 
-        Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
-        Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
-
-        if ($PSCmdlet.ShouldProcess($Name, 'Remove')) {
-            $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath
-        } else {
-            $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate
+        $Parameters = @{
+            'Component'=$Component
+            'Directories'=$Component.SourcePath
         }
 
+        if (!($PSCmdlet.ShouldProcess($Name, 'Remove'))) {
+            $Parameters['Simulate']=$true
+        }
+
+        Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
+        Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
+        $Results += Remove-DotFilesComponentDirectory @Parameters
         $Component.State = Get-ComponentInstallResult -Results $Results -Removal
     }
 
