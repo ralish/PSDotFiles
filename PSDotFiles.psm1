@@ -720,13 +720,6 @@ Function Remove-DotFilesComponentDirectory {
                 if (!$Simulate) {
                     Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
 
-                    # Always remove the hidden and system attributes before removal if they're set
-                    $Attributes = Set-SymlinkAttributes -Symlink $ExistingTarget -Remove
-                    # TODO: Can this ever actually fail?
-                    if (!$Attributes) {
-                        Write-Error -Message ('[{0}] Unable to remove Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
-                    }
-
                     # Remove-Item doesn't correctly handle deleting directory symbolic links
                     # See: https://github.com/PowerShell/PowerShell/issues/621
                     [IO.Directory]::Delete($TargetDirectory)
