@@ -134,7 +134,7 @@ Function Install-DotFiles {
         }
 
         if (!($PSCmdlet.ShouldProcess($Name, 'Install'))) {
-            $Parameters['Simulate']=$true
+            $Parameters['Simulate'] = $true
         }
 
         Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
@@ -211,7 +211,7 @@ Function Remove-DotFiles {
         }
 
         if (!($PSCmdlet.ShouldProcess($Name, 'Remove'))) {
-            $Parameters['Simulate']=$true
+            $Parameters['Simulate'] = $true
         }
 
         Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
@@ -230,7 +230,7 @@ Function Initialize-PSDotFiles {
         [Switch]$Autodetect
     )
 
-    if ($Path) {
+    if ($PSBoundParameters.ContainsKey('Path')) {
         $script:DotFilesPath = Test-DotFilesPath -Path $Path
         if (!$script:DotFilesPath) {
             throw "The provided dotfiles path is either not a directory or it can't be accessed."
@@ -241,7 +241,7 @@ Function Initialize-PSDotFiles {
             throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
         }
     } else {
-        throw "No dotfiles path was provided and the default dotfiles path (`$DotFilesPath) has not been configured."
+        throw 'No dotfiles path was provided and the default dotfiles path (`$DotFilesPath) has not been configured.'
     }
     Write-Verbose -Message ('dotfiles directory: {0}' -f $DotFilesPath)
 
@@ -316,18 +316,18 @@ Function Initialize-DotFilesComponent {
         if ($Metadata) {
             if ($Metadata.SelectSingleNode('//Component/Detection/MatchRegEx')) {
                 if ($Metadata.Component.Detection.MatchRegEx -eq 'true') {
-                    $Parameters['RegularExpression']=$true
+                    $Parameters['RegularExpression'] = $true
                 }
             }
 
             if ($Metadata.SelectSingleNode('//Component/Detection/MatchCase')) {
                 if ($Metadata.Component.Detection.MatchCase -eq 'true') {
-                    $Parameters['CaseSensitive']=$true
+                    $Parameters['CaseSensitive'] = $true
                 }
             }
 
             if ($Metadata.SelectSingleNode('//Component/Detection/MatchPattern')) {
-                $Parameters['Pattern']=$Metadata.Component.Detection.MatchPattern
+                $Parameters['Pattern'] = $Metadata.Component.Detection.MatchPattern
             }
         }
 
