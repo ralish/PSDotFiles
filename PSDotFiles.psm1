@@ -88,7 +88,7 @@ Function Install-DotFiles {
     Installs all available dotfiles components and returns a collection of Component objects representing the status of each.
 
     .EXAMPLE
-    $Components = Get-DotFiles | ? { $_.Name -eq 'git' -or $_.Name -eq 'vim' }; Install-DotFiles -Components $Components
+    Get-DotFiles | ? { $_.Name -in ('git', 'vim') } | Install-DotFiles
 
     Installs only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
     #>
@@ -101,49 +101,56 @@ Function Install-DotFiles {
         [Parameter(ParameterSetName='Retrieve')]
         [Switch]$Autodetect,
 
-        [Parameter(ParameterSetName='Provided')]
+        [Parameter(ParameterSetName='Provided',Mandatory,ValueFromPipeline)]
         [Component[]]$Components
     )
 
-    if (!((Test-IsAdministrator) -or (Test-IsWin10DevMode))) {
-        if ($WhatIfPreference) {
-            Write-Warning -Message 'Missing privileges to create symlinks but ignoring due to -WhatIf.'
-        } else {
-            Write-Warning -Message 'We appear to be running under a user account without permission to create symlinks.'
-            Write-Warning -Message 'To fix this perform one of the following:'
-            Write-Warning -Message '- Run as an elevated user (ie. with Administrator privileges)'
-            Write-Warning -Message "- If you're on Windows 10 Creators Update or newer enable Developer Mode"
-            throw 'Unable to run Install-DotFiles as missing privileges to create symlinks.'
+    Begin {
+        if (!((Test-IsAdministrator) -or (Test-IsWin10DevMode))) {
+            if ($WhatIfPreference) {
+                Write-Warning -Message 'Missing privileges to create symlinks but ignoring due to -WhatIf.'
+            } else {
+                Write-Warning -Message 'We appear to be running under a user account without permission to create symlinks.'
+                Write-Warning -Message 'To fix this perform one of the following:'
+                Write-Warning -Message '- Run as an elevated user (ie. with Administrator privileges)'
+                Write-Warning -Message "- If you're on Windows 10 Creators Update or newer enable Developer Mode"
+                throw 'Unable to run Install-DotFiles as missing privileges to create symlinks.'
+            }
+        }
+
+        [Component[]]$Processed = @()
+        if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
+            $Components = Get-DotFiles @PSBoundParameters
         }
     }
 
-    if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-        $UnfilteredComponents = Get-DotFiles @PSBoundParameters
-    } else {
-        $UnfilteredComponents = $Components
-    }
-    $Components = $UnfilteredComponents | Where-Object { $_.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall) }
+    Process {
+        $ToInstall = $Components | Where-Object { $_.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall) }
 
-    foreach ($Component in $Components) {
-        $Name = $Component.Name
-        [Boolean[]]$Results = @()
+        foreach ($Component in $ToInstall) {
+            $Name = $Component.Name
+            [Boolean[]]$Results = @()
 
-        $Parameters = @{
-            'Component'=$Component
-            'Directories'=$Component.SourcePath
+            $Parameters = @{
+                'Component'=$Component
+                'Directories'=$Component.SourcePath
+            }
+
+            if (!($PSCmdlet.ShouldProcess($Name, 'Install'))) {
+                $Parameters['Simulate'] = $true
+            }
+
+            Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
+            Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
+            $Results += Install-DotFilesComponentDirectory @Parameters
+            $Component.State = Get-ComponentInstallResult -Results $Results
+            $Processed += $Component
         }
-
-        if (!($PSCmdlet.ShouldProcess($Name, 'Install'))) {
-            $Parameters['Simulate'] = $true
-        }
-
-        Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
-        Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
-        $Results += Install-DotFilesComponentDirectory @Parameters
-        $Component.State = Get-ComponentInstallResult -Results $Results
     }
 
-    return $Components
+    End {
+        return $Processed
+    }
 }
 
 Function Remove-DotFiles {
@@ -177,7 +184,7 @@ Function Remove-DotFiles {
     Removes all installed dotfiles components and returns a collection of Component objects representing the status of each.
 
     .EXAMPLE
-    $Components = Get-DotFiles | ? { $_.Name -eq 'git' -or $_.Name -eq 'vim' }; Remove-DotFiles -Components $Components
+    Get-DotFiles | ? { $_.Name -in ('git', 'vim') } | Remove-DotFiles
 
     Removes only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
     #>
@@ -190,37 +197,44 @@ Function Remove-DotFiles {
         [Parameter(ParameterSetName='Retrieve')]
         [Switch]$Autodetect,
 
-        [Parameter(ParameterSetName='Provided')]
+        [Parameter(ParameterSetName='Provided',Mandatory,ValueFromPipeline)]
         [Component[]]$Components
     )
 
-    if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-        $UnfilteredComponents = Get-DotFiles @PSBoundParameters
-    } else {
-        $UnfilteredComponents = $Components
-    }
-    $Components = $UnfilteredComponents | Where-Object { $_.State -in ([InstallState]::Installed, [InstallState]::PartialInstall) }
-
-    foreach ($Component in $Components) {
-        $Name = $Component.Name
-        [Boolean[]]$Results = @()
-
-        $Parameters = @{
-            'Component'=$Component
-            'Directories'=$Component.SourcePath
+    Begin {
+        [Component[]]$Processed = @()
+        if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
+            $Components = Get-DotFiles @PSBoundParameters
         }
-
-        if (!($PSCmdlet.ShouldProcess($Name, 'Remove'))) {
-            $Parameters['Simulate'] = $true
-        }
-
-        Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
-        Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
-        $Results += Remove-DotFilesComponentDirectory @Parameters
-        $Component.State = Get-ComponentInstallResult -Results $Results -Removal
     }
 
-    return $Components
+    Process {
+        $ToInstall = $Components | Where-Object { $_.State -in ([InstallState]::Installed, [InstallState]::PartialInstall) }
+
+        foreach ($Component in $ToInstall) {
+            $Name = $Component.Name
+            [Boolean[]]$Results = @()
+
+            $Parameters = @{
+                'Component'=$Component
+                'Directories'=$Component.SourcePath
+            }
+
+            if (!($PSCmdlet.ShouldProcess($Name, 'Remove'))) {
+                $Parameters['Simulate'] = $true
+            }
+
+            Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
+            Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
+            $Results += Remove-DotFilesComponentDirectory @Parameters
+            $Component.State = Get-ComponentInstallResult -Results $Results -Removal
+            $Processed += $Component
+        }
+    }
+
+    End {
+        return $Processed
+    }
 }
 
 Function Initialize-PSDotFiles {
