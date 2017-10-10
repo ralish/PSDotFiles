@@ -492,7 +492,7 @@ Function Install-DotFilesComponentDirectory {
         # We've got the directory source and target paths and have confirmed the source path is not
         # ignored. Start by trying to retrieve any item which may already exist at the target path.
         try {
-            $ExistingTarget = Get-Item -Path $TargetDirectory -Force
+            $ExistingTarget = Get-Item -Path $TargetDirectory -Force -ErrorAction Stop
 
             # We found an item but it's not a directory! The user will need to fix this conflict.
             if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
@@ -603,7 +603,7 @@ Function Install-DotFilesComponentFile {
         # We've got the file source and target paths and have confirmed the source path is not
         # ignored. Start by trying to retrieve any item which may already exist at the target path.
         try {
-            $ExistingTarget = Get-Item -Path $TargetFile -Force
+            $ExistingTarget = Get-Item -Path $TargetFile -Force -ErrorAction Stop
 
             # We found an item but it's not a file! The user will need to fix this conflict.
             if ($ExistingTarget -isnot [IO.FileInfo]) {
@@ -701,7 +701,7 @@ Function Remove-DotFilesComponentDirectory {
         # We've got the directory source and target paths and have confirmed the source path is not
         # ignored. Start by trying to retrieve any item which may already exist at the target path.
         try {
-            $ExistingTarget = Get-Item -Path $TargetDirectory -Force
+            $ExistingTarget = Get-Item -Path $TargetDirectory -Force -ErrorAction Stop
 
             # We found an item but it's not a directory! This is unexpected, but as we're removing a
             # component it's not an error. It will break if the user attempts to install it though.
@@ -801,7 +801,7 @@ Function Remove-DotFilesComponentFile {
         # We've got the file source and target paths and have confirmed the source path is not
         # ignored. Start by trying to retrieve any item which may already exist at the target path.
         try {
-            $ExistingTarget = Get-Item -Path $TargetFile -Force
+            $ExistingTarget = Get-Item -Path $TargetFile -Force -ErrorAction Stop
 
             # We found an item but it's not a file! This is unexpected, but as we're removing a
             # component it's not an error. It will break if the user attempts to install it though.
