@@ -255,7 +255,7 @@ Function Initialize-PSDotFiles {
             throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
         }
     } else {
-        throw 'No dotfiles path was provided and the default dotfiles path (`$DotFilesPath) has not been configured.'
+        throw 'No dotfiles path was provided and the default dotfiles path ($DotFilesPath) has not been configured.'
     }
     Write-Verbose -Message ('dotfiles directory: {0}' -f $DotFilesPath)
 
@@ -780,12 +780,12 @@ Function Remove-DotFilesComponentFile {
         [Switch]$Simulate
     )
 
+    # Beware: This function is called recursively!
+
     $Name = $Component.Name
     $SourcePath = $Component.SourcePath
     $InstallPath = $Component.InstallPath
     [Boolean[]]$Results = @()
-
-    # Beware: This function is called recursively!
 
     foreach ($File in $Files) {
         # We always need to determine the relative path of files from the top-level directory of the
