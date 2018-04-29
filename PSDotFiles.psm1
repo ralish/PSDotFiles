@@ -257,7 +257,7 @@ Function Initialize-PSDotFiles {
             throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
         }
     } else {
-        throw 'No dotfiles path was provided and the default dotfiles path ($DotFilesPath) has not been configured.'
+        throw 'No dotfiles path was provided and the default path ($DotFilesPath) has not been configured.'
     }
     Write-Verbose -Message ('dotfiles directory: {0}' -f $DotFilesPath)
 
