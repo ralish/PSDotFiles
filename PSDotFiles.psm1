@@ -32,7 +32,7 @@ Function Get-DotFiles {
     Enumerates all available dotfiles components, attempting automatic detection of those that lack a metadata file.
     #>
 
-    [CmdletBinding(ConfirmImpact='Low',SupportsShouldProcess)]
+    [CmdletBinding(ConfirmImpact='Low', SupportsShouldProcess)]
     Param(
         [String]$Path,
         [Switch]$Autodetect
@@ -93,7 +93,7 @@ Function Install-DotFiles {
     Installs only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
     #>
 
-    [CmdletBinding(DefaultParameterSetName='Retrieve',ConfirmImpact='Low',SupportsShouldProcess)]
+    [CmdletBinding(DefaultParameterSetName='Retrieve', ConfirmImpact='Low', SupportsShouldProcess)]
     Param(
         [Parameter(ParameterSetName='Retrieve')]
         [String]$Path,
@@ -101,7 +101,7 @@ Function Install-DotFiles {
         [Parameter(ParameterSetName='Retrieve')]
         [Switch]$Autodetect,
 
-        [Parameter(ParameterSetName='Provided',Mandatory,ValueFromPipeline)]
+        [Parameter(ParameterSetName='Provided', Mandatory, ValueFromPipeline)]
         [Component[]]$Components
     )
 
@@ -189,7 +189,7 @@ Function Remove-DotFiles {
     Removes only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
     #>
 
-    [CmdletBinding(DefaultParameterSetName='Retrieve',ConfirmImpact='Low',SupportsShouldProcess)]
+    [CmdletBinding(DefaultParameterSetName='Retrieve', ConfirmImpact='Low', SupportsShouldProcess)]
     Param(
         [Parameter(ParameterSetName='Retrieve')]
         [String]$Path,
@@ -197,7 +197,7 @@ Function Remove-DotFiles {
         [Parameter(ParameterSetName='Retrieve')]
         [Switch]$Autodetect,
 
-        [Parameter(ParameterSetName='Provided',Mandatory,ValueFromPipeline)]
+        [Parameter(ParameterSetName='Provided', Mandatory, ValueFromPipeline)]
         [Component[]]$Components
     )
 
@@ -238,6 +238,8 @@ Function Remove-DotFiles {
 }
 
 Function Initialize-PSDotFiles {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '')]
     [CmdletBinding(SupportsShouldProcess)]
     Param(
         [String]$Path,
@@ -280,21 +282,21 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose -Message ('Automatic component detection: {0}' -f $DotFilesAutodetect)
 
-    # TODO: Only retrieve installed programs if we absolutely have to.
+    # TODO: Only retrieve installed programs if we have to
     $script:InstalledPrograms = Get-InstalledPrograms
 }
 
 Function Initialize-DotFilesComponent {
     [CmdletBinding()]
     Param(
-        [Parameter(ParameterSetName='New',Mandatory)]
+        [Parameter(ParameterSetName='New', Mandatory)]
         [String]$Name,
 
-        [Parameter(ParameterSetName='Override',Mandatory)]
+        [Parameter(ParameterSetName='Override', Mandatory)]
         [Component]$Component,
 
         [Parameter(ParameterSetName='New')]
-        [Parameter(ParameterSetName='Override',Mandatory)]
+        [Parameter(ParameterSetName='Override', Mandatory)]
         [Xml]$Metadata
     )
 
@@ -662,6 +664,7 @@ Function Install-DotFilesComponentFile {
 }
 
 Function Remove-DotFilesComponentDirectory {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)]
@@ -769,6 +772,7 @@ Function Remove-DotFilesComponentDirectory {
 }
 
 Function Remove-DotFilesComponentFile {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)]
@@ -1022,8 +1026,7 @@ Function Get-InstalledPrograms {
             !$Program.PSObject.Properties['SystemComponent'] -and
             !$Program.PSObject.Properties['ReleaseType'] -and
             !$Program.PSObject.Properties['ParentKeyName'] -and
-            ($Program.PSObject.Properties['UninstallString'] -or
-             $Program.PSObject.Properties['NoRemove'])) {
+            ($Program.PSObject.Properties['UninstallString'] -or $Program.PSObject.Properties['NoRemove'])) {
             $InstalledProgram = [PSCustomObject]@{
                 Name = $Program.DisplayName
                 Publisher = $null
@@ -1086,6 +1089,7 @@ Function Get-SymlinkTarget {
 }
 
 Function Set-SymlinkAttributes {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)]
@@ -1158,7 +1162,7 @@ Function Test-IsWin10DevMode {
 
     # Windows 10 Creators Update introduced support for creating symlinks without Administrator
     # privileges. The corresponding release build number is 15063 (we ignore Insider builds).
-    $BuildNumber = [Int](Get-WmiObject -Class Win32_OperatingSystem).BuildNumber
+    $BuildNumber = [Int](Get-CimInstance -ClassName Win32_OperatingSystem).BuildNumber
     if ($BuildNumber -lt 15063) {
         return $false
     }
