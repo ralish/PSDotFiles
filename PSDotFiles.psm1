@@ -353,8 +353,8 @@ Function Initialize-DotFilesComponent {
             if ($NumMatchingPrograms -eq 1) {
                 $Component.Availability = [Availability]::Available
                 $Component.UninstallKey = $MatchingPrograms.Uninstall
-                if (!$Component.FriendlyName -and $MatchingPrograms.DisplayName) {
-                    $Component.FriendlyName = $MatchingPrograms.DisplayName
+                if (!$Component.FriendlyName -and $MatchingPrograms.Name) {
+                    $Component.FriendlyName = $MatchingPrograms.Name
                 }
             } else {
                 Write-Error -Message ('[{0}] Automatic detection found {1} matching programs.' -f $Name, $NumMatchingPrograms)
