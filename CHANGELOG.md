@@ -1,6 +1,16 @@
 Changelog
 =========
 
+v0.5
+----
+
+- Added pipeline support to `Install-DotFiles` & `Remove-DotFiles` for handling `Component` objects
+- Added support for unprivileged symlink creation under Windows 10 Creators Update Developer Mode
+- Added schema definition for metadata XML files & perform validation of each metadata file on load
+- Enabled Strict Mode set to version 2.0 (latest at time of writing)
+- Major refactoring & clean-up of the codebase to conform to best practices
+- Numerous documentation updates & improvements
+
 v0.4.5
 ------
 
