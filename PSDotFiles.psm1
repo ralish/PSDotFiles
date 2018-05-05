@@ -554,7 +554,7 @@ Function Install-DotFilesComponentDirectory {
             # Nothing exists at the target path so we can create the symlink
             if (!$Simulate) {
                 Write-Verbose -Message ('[{0}] Symlinking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
-                $Symlink = New-Item -ItemType SymbolicLink -Path $TargetDirectory -Value $Directory.FullName
+                $Symlink = New-Symlink -Path $TargetDirectory -Target $Directory.FullName
 
                 # Set the hidden and system attributes if requested
                 if ($Component.HideSymlinks) {
@@ -645,7 +645,7 @@ Function Install-DotFilesComponentFile {
             # Nothing exists at the target path so we can create the symlink
             if (!$Simulate) {
                 Write-Verbose -Message ('[{0}] Symlinking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
-                $Symlink = New-Item -ItemType SymbolicLink -Path $TargetFile -Value $File.FullName
+                $Symlink = New-Symlink -Path $TargetFile -Target $File.FullName
 
                 # Set the hidden and system attributes if requested
                 if ($Component.HideSymlinks) {
@@ -1092,6 +1092,38 @@ Function Get-SymlinkTarget {
     return (Resolve-Path -Path (Join-Path -Path (Split-Path -Path $Symlink -Parent) -ChildPath $Symlink.Target[0])).Path
 }
 
+Function New-Symlink {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory)]
+        [String]$Path,
+
+        [Parameter(Mandatory)]
+        [String]$Target
+    )
+
+    if ($script:IsAdministrator) {
+        $Symlink = New-Item -ItemType SymbolicLink -Path $Path -Value $Target
+    } elseif ($script:IsWin10DevMode) {
+        $TargetItem = Get-Item -Path $Target
+
+        if ($TargetItem -is [IO.FileInfo]) {
+            Start-Process -FilePath cmd.exe -ArgumentList @('/D', '/C', 'mklink', $Path, $Target, '>nul') -NoNewWindow -Wait
+        } elseif ($TargetItem -is [IO.DirectoryInfo]) {
+            Start-Process -FilePath cmd.exe -ArgumentList @('/D', '/C', 'mklink', '/D', $Path, $Target, '>nul') -NoNewWindow -Wait
+        } else {
+            throw ('Symlink target is not a file or directory: {0}' -f $Target)
+        }
+
+        $Symlink = Get-Item -Path $Path
+    } else {
+        throw 'Missing symbolic link creation privileges.'
+    }
+
+    return $Symlink
+}
+
 Function Set-SymlinkAttributes {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
@@ -1163,6 +1195,12 @@ Function Test-IsAdministrator {
 Function Test-IsWin10DevMode {
     [CmdletBinding()]
     Param()
+
+    # Note that PowerShell only permits symlinks to be created via New-Item if running with
+    # Administrator privileges (as of v5.1), even if we're running Creators Update or newer w/
+    # Developer Mode enabled. This appears to be due to New-Item assuming Administrator privileges
+    # are always required to create a symlink? The workaround is to call cmd and use its internal
+    # mklink command. This is unfortunately much slower, as we have to spawn a process per symlink.
 
     # Windows 10 Creators Update introduced support for creating symlinks without Administrator
     # privileges. The corresponding release build number is 15063 (we ignore Insider builds).
