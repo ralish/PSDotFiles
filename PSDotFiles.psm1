@@ -985,6 +985,7 @@ Function Get-DotFilesComponent {
             Write-Debug -Message ('[{0}] Loading custom metadata ...' -f $Name)
             $Metadata = Get-ComponentMetadata -Path $CustomMetadataFile
 
+            # TODO: Merge metadata so we can call Initialize-DotFilesComponent once
             if ($GlobalMetadataPresent) {
                 $Component = Initialize-DotFilesComponent -Component $Component -Metadata $Metadata
             } else {
@@ -1278,34 +1279,34 @@ Enum InstallState {
 }
 
 Class Component {
-    # REQUIRED: The directory name within the dotfiles directory
+    # The directory name within the dotfiles directory
     [String]$Name
 
-    # REQUIRED: The availability state per the Availability enumeration
-    [Availability]$Availability = [Availability]::DetectionFailure
-
-    # OPTIONAL: Friendly name if one was provided or could be determined
-    [String]$FriendlyName
-
-    # OPTIONAL: Hides newly created symlinks per the <HideSymlinks> element
-    [Boolean]$HideSymlinks
-
-    # INTERNAL: Source directory derived from $DotFilesPath and $Name
+    # Source directory derived from $DotFilesPath and $Name
     [IO.DirectoryInfo]$SourcePath
 
-    # INTERNAL: Uninstall registry key if located by Find-DotFilesComponent
+    # Friendly name if one was provided or could be determined
+    [String]$FriendlyName
+
+    # Uninstall registry key if located by Find-DotFilesComponent
     [String]$UninstallKey
 
-    # INTERNAL: Installation directory
-    #           Influenced by the <SpecialFolder> and <Destination> elements
+    # The availability state per the Availability enumeration
+    [Availability]$Availability = [Availability]::DetectionFailure
+
+    # The install state per the InstallState enumeration
+    [InstallState]$State = [InstallState]::NotEvaluated
+
+    # Installation directory
+    # Note: Influenced by the <SpecialFolder> and <Destination> elements
     [String]$InstallPath
 
-    # INTERNAL: Source paths to be ignored
-    #           Set by <Path> elements under <IgnorePaths>
-    [String[]]$IgnorePaths
+    # Hides newly created symlinks per the <HideSymlinks> element
+    [Boolean]$HideSymlinks
 
-    # INTERNAL: The install state per the InstallState enumeration
-    [InstallState]$State = [InstallState]::NotEvaluated
+    # Source paths to be ignored
+    # Note: Set by <Path> elements under <IgnorePaths>
+    [String[]]$IgnorePaths
 
     Component ([String]$Name, [IO.DirectoryInfo]$DotFilesPath) {
         $this.Name = $Name
