@@ -101,12 +101,12 @@ Function Install-DotFiles {
         [Parameter(ParameterSetName='Retrieve')]
         [Switch]$Autodetect,
 
-        [Parameter(ParameterSetName='Provided', Mandatory, ValueFromPipeline)]
+        [Parameter(ParameterSetName='Pipeline', Mandatory, ValueFromPipeline)]
         [Component[]]$Components
     )
 
     Begin {
-        if (!((Test-IsAdministrator) -or (Test-IsWin10DevMode))) {
+        if (!($script:IsAdministrator -or $script:IsWin10DevMode)) {
             if ($WhatIfPreference) {
                 Write-Warning -Message 'Missing privileges to create symlinks but ignoring due to -WhatIf.'
             } else {
@@ -197,7 +197,7 @@ Function Remove-DotFiles {
         [Parameter(ParameterSetName='Retrieve')]
         [Switch]$Autodetect,
 
-        [Parameter(ParameterSetName='Provided', Mandatory, ValueFromPipeline)]
+        [Parameter(ParameterSetName='Pipeline', Mandatory, ValueFromPipeline)]
         [Component[]]$Components
     )
 
@@ -282,7 +282,11 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose -Message ('Automatic component detection: {0}' -f $DotFilesAutodetect)
 
-    # TODO: Only retrieve installed programs if we have to
+    # Cache these results for usage later
+    $script:IsAdministrator = Test-IsAdministrator
+    $script:IsWin10DevMode = Test-IsWin10DevMode
+
+    # TODO: Only retrieve installed programs if necessary
     $script:InstalledPrograms = Get-InstalledPrograms
 }
 
