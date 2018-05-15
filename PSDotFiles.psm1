@@ -30,6 +30,9 @@ Function Get-DotFiles {
         Get-DotFiles -Autodetect
 
         Enumerates all available dotfiles components, attempting automatic detection of those that lack a metadata file.
+
+        .LINK
+        https://github.com/ralish/PSDotFiles
     #>
 
     [CmdletBinding(ConfirmImpact='Low', SupportsShouldProcess)]
@@ -91,6 +94,9 @@ Function Install-DotFiles {
         Get-DotFiles | ? { $_.Name -in ('git', 'vim') } | Install-DotFiles
 
         Installs only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
+
+        .LINK
+        https://github.com/ralish/PSDotFiles
     #>
 
     [CmdletBinding(DefaultParameterSetName='Retrieve', ConfirmImpact='Low', SupportsShouldProcess)]
@@ -187,6 +193,9 @@ Function Remove-DotFiles {
         Get-DotFiles | ? { $_.Name -in ('git', 'vim') } | Remove-DotFiles
 
         Removes only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
+
+        .LINK
+        https://github.com/ralish/PSDotFiles
     #>
 
     [CmdletBinding(DefaultParameterSetName='Retrieve', ConfirmImpact='Low', SupportsShouldProcess)]
