@@ -777,7 +777,9 @@ Function Remove-DotFilesComponentDirectory {
                 }
 
                 # The symlink points where we expect so we're good to proceed with its removal
-                if (!$Simulate) {
+                if ($Simulate) {
+                    Write-Verbose -Message ('[{0}] Will remove directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
+                } else {
                     Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
 
                     # Remove-Item doesn't correctly handle deleting directory symbolic links
@@ -886,7 +888,9 @@ Function Remove-DotFilesComponentFile {
             }
 
             # The symlink points where we expect so we're good to proceed with its removal
-            if (!$Simulate) {
+            if ($Simulate) {
+                Write-Verbose -Message ('[{0}] Will remove file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
+            } else {
                 Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
                 Remove-Item -Path $TargetFile -Force
             }
