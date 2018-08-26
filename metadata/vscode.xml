@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/ralish/PSDotFiles/master/Metadata.xsd">
+    <FriendlyName>Visual Studio Code</FriendlyName>
+
+    <Detection>
+        <Method>FindInPath</Method>
+        <FindInPath>code</FindInPath>
+    </Detection>
+
+    <InstallPath>
+        <SpecialFolder>ApplicationData</SpecialFolder>
+        <Destination>Code\User</Destination>
+    </InstallPath>
+</Component>
