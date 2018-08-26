@@ -112,6 +112,8 @@ Function Install-DotFiles {
     )
 
     Begin {
+        Initialize-PSDotFiles @PSBoundParameters
+
         if (!($script:IsAdministrator -or $script:IsWin10DevMode)) {
             if ($WhatIfPreference) {
                 Write-Warning -Message 'Missing privileges to create symlinks but ignoring due to -WhatIf.'
@@ -211,6 +213,8 @@ Function Remove-DotFiles {
     )
 
     Begin {
+        Initialize-PSDotFiles @PSBoundParameters
+
         [Component[]]$Processed = @()
         if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
             $Components = Get-DotFiles @PSBoundParameters
