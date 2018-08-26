@@ -298,9 +298,7 @@ Function Initialize-PSDotFiles {
     # Cache these results for usage later
     $script:IsAdministrator = Test-IsAdministrator
     $script:IsWin10DevMode = Test-IsWin10DevMode
-
-    # TODO: Only retrieve installed programs if necessary
-    $script:InstalledPrograms = Get-InstalledPrograms
+    $script:RefreshInstalledPrograms = $true
 }
 
 Function Initialize-DotFilesComponent {
@@ -920,6 +918,12 @@ Function Find-DotFilesComponent {
         [Switch]$CaseSensitive,
         [Switch]$RegularExpression
     )
+
+    if ($RefreshInstalledPrograms) {
+        Write-Verbose -Message 'Refreshing installed programs ...'
+        $script:InstalledPrograms = Get-InstalledPrograms
+        $script:RefreshInstalledPrograms = $false
+    }
 
     $Parameters = @{
         'Property'='Name'
