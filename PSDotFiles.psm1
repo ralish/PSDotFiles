@@ -1271,7 +1271,7 @@ Function Test-IsWin10DevMode {
 
     # Windows 10 Creators Update introduced support for creating symlinks without Administrator
     # privileges. The corresponding release build number is 15063 (we ignore Insider builds).
-    $BuildNumber = [Int](Get-CimInstance -ClassName Win32_OperatingSystem).BuildNumber
+    $BuildNumber = [Int](Get-CimInstance -ClassName Win32_OperatingSystem -Verbose:$false).BuildNumber
     if ($BuildNumber -lt 15063) {
         return $false
     }
