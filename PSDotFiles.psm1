@@ -114,7 +114,7 @@ Function Install-DotFiles {
     Begin {
         Initialize-PSDotFiles @PSBoundParameters
 
-        if (!($script:IsAdministrator -or $script:IsWin10DevMode)) {
+        if (!($IsAdministrator -or $IsWin10DevMode)) {
             if ($WhatIfPreference) {
                 Write-Warning -Message 'Missing privileges to create symlinks but ignoring due to -WhatIf.'
             } else {
@@ -945,7 +945,7 @@ Function Find-DotFilesComponent {
         $Parameters['ILike'] = $true
     }
 
-    $MatchingPrograms = $script:InstalledPrograms | Where-Object @Parameters
+    $MatchingPrograms = $InstalledPrograms | Where-Object @Parameters
     if ($MatchingPrograms) {
         return $MatchingPrograms
     }
@@ -1159,9 +1159,9 @@ Function New-Symlink {
         [String]$Target
     )
 
-    if ($script:IsAdministrator) {
+    if ($IsAdministrator) {
         $Symlink = New-Item -ItemType SymbolicLink -Path $Path -Value $Target
-    } elseif ($script:IsWin10DevMode) {
+    } elseif ($IsWin10DevMode) {
         $TargetItem = Get-Item -Path $Target
 
         if ($TargetItem -is [IO.FileInfo]) {
