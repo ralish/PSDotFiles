@@ -43,21 +43,7 @@ Function Get-DotFiles {
 
     Initialize-PSDotFiles @PSBoundParameters
 
-    [Component[]]$Components = @()
-    $Directories = Get-ChildItem -Path $DotFilesPath -Directory
-    foreach ($Directory in $Directories) {
-        $Component = Get-DotFilesComponent -Directory $Directory
-
-        if ($Component.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall)) {
-            [Boolean[]]$Results = @()
-            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Verify
-            $Component.State = Get-ComponentInstallResult -Results $Results
-        }
-
-        $Components += $Component
-    }
-
-    return $Components
+    return Get-DotFilesInternal @PSBoundParameters
 }
 
 Function Install-DotFiles {
@@ -128,7 +114,7 @@ Function Install-DotFiles {
 
         [Component[]]$Processed = @()
         if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-            $Components = Get-DotFiles @PSBoundParameters
+            $Components = Get-DotFilesInternal @PSBoundParameters
         }
     }
 
@@ -217,7 +203,7 @@ Function Remove-DotFiles {
 
         [Component[]]$Processed = @()
         if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-            $Components = Get-DotFiles @PSBoundParameters
+            $Components = Get-DotFilesInternal @PSBoundParameters
         }
     }
 
@@ -248,6 +234,31 @@ Function Remove-DotFiles {
     End {
         return $Processed
     }
+}
+
+Function Get-DotFilesInternal {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '')]
+    [CmdletBinding(SupportsShouldProcess)]
+    Param(
+        [String]$Path,
+        [Switch]$Autodetect
+    )
+
+    [Component[]]$Components = @()
+    $Directories = Get-ChildItem -Path $DotFilesPath -Directory
+    foreach ($Directory in $Directories) {
+        $Component = Get-DotFilesComponent -Directory $Directory
+
+        if ($Component.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall)) {
+            [Boolean[]]$Results = @()
+            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Verify
+            $Component.State = Get-ComponentInstallResult -Results $Results
+        }
+
+        $Components += $Component
+    }
+
+    return $Components
 }
 
 Function Initialize-PSDotFiles {
