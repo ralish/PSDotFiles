@@ -50,7 +50,7 @@ Function Get-DotFiles {
 
         if ($Component.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall)) {
             [Boolean[]]$Results = @()
-            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Simulate
+            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Verify
             $Component.State = Get-ComponentInstallResult -Results $Results
         }
 
@@ -468,7 +468,7 @@ Function Initialize-DotFilesComponent {
 }
 
 Function Install-DotFilesComponentDirectory {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Install')]
     Param(
         [Parameter(Mandatory)]
         [Component]$Component,
@@ -476,7 +476,11 @@ Function Install-DotFilesComponentDirectory {
         [Parameter(Mandatory)]
         [IO.DirectoryInfo[]]$Directories,
 
-        [Switch]$Simulate
+        [Parameter(ParameterSetName='Simulate')]
+        [Switch]$Simulate,
+
+        [Parameter(ParameterSetName='Verify')]
+        [Switch]$Verify
     )
 
     # Beware: This function is called recursively!
@@ -512,7 +516,7 @@ Function Install-DotFilesComponentDirectory {
             # We found an item but it's not a directory! The user will need to fix this conflict.
             if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
                 $Results += $false
-                if (!$Simulate) {
+                if ($PSCmdlet.ParameterSetName -ne 'Install') {
                     Write-Error -Message ('[{0}] Expected a directory but found a file: {1}' -f $Name, $TargetDirectory)
                 }
                 continue
@@ -527,7 +531,7 @@ Function Install-DotFilesComponentDirectory {
                     Write-Debug -Message ('[{0}] Valid directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                 } else {
                     $Results += $false
-                    if (!$Simulate) {
+                    if ($PSCmdlet.ParameterSetName -ne 'Install') {
                         Write-Error -Message ('[{0}] Found a directory symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     }
                 }
@@ -538,7 +542,9 @@ Function Install-DotFilesComponentDirectory {
             # into the source path and attempt to symlink each file into the target.
             $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
             if ($NextFiles) {
-                if ($Simulate) {
+                if ($Verify) {
+                    $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Verify
+                } elseif ($Simulate) {
                     $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate
                 } else {
                     $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles
@@ -548,7 +554,9 @@ Function Install-DotFilesComponentDirectory {
             # As above, but now symlink each of the directories
             $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
             if ($NextDirectories) {
-                if ($Simulate) {
+                if ($Verify) {
+                    $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Verify
+                } elseif ($Simulate) {
                     $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate
                 } else {
                     $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
@@ -560,21 +568,32 @@ Function Install-DotFilesComponentDirectory {
                 Write-Warning -Message ('[{0}] Unable to symlink empty directory as target exists: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
             }
         } catch {
-            # Nothing exists at the target path so we can create the symlink
-            if (!$Simulate) {
-                Write-Verbose -Message ('[{0}] Symlinking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
-                $Symlink = New-Symlink -Path $TargetDirectory -Target $Directory.FullName
+            # Missing directory on a verification means the component is not/partially installed
+            if ($Verify) {
+                $Results += $false
+                continue
+            }
 
-                # Set the hidden and system attributes if requested
-                if ($Component.HideSymlinks) {
-                    $Attributes = Set-SymlinkAttributes -Symlink $Symlink
+            # Missing directory on a simulation means this directory will be symlinked on install
+            if ($Simulate) {
+                Write-Verbose -Message ('[{0}] Will symlink directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
+                $Results += $true
+                continue
+            }
 
-                    # TODO: Can this ever actually fail?
-                    if (!$Attributes) {
-                        $Results += $false
-                        Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
-                        continue
-                    }
+            # Nothing exists at the target path so we can create the directory symlink
+            Write-Verbose -Message ('[{0}] Symlinking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
+            $Symlink = New-Symlink -Path $TargetDirectory -Target $Directory.FullName
+
+            # Set the hidden and system attributes if requested
+            if ($Component.HideSymlinks) {
+                $Attributes = Set-SymlinkAttributes -Symlink $Symlink
+
+                # TODO: Can this ever actually fail?
+                if (!$Attributes) {
+                    $Results += $false
+                    Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
+                    continue
                 }
             }
 
@@ -586,7 +605,7 @@ Function Install-DotFilesComponentDirectory {
 }
 
 Function Install-DotFilesComponentFile {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Install')]
     Param(
         [Parameter(Mandatory)]
         [Component]$Component,
@@ -594,7 +613,11 @@ Function Install-DotFilesComponentFile {
         [Parameter(Mandatory)]
         [IO.FileInfo[]]$Files,
 
-        [Switch]$Simulate
+        [Parameter(ParameterSetName='Simulate')]
+        [Switch]$Simulate,
+
+        [Parameter(ParameterSetName='Verify')]
+        [Switch]$Verify
     )
 
     # Beware: This function is called recursively!
@@ -623,7 +646,7 @@ Function Install-DotFilesComponentFile {
             # We found an item but it's not a file! The user will need to fix this conflict.
             if ($ExistingTarget -isnot [IO.FileInfo]) {
                 $Results += $false
-                if (!$Simulate) {
+                if ($PSCmdlet.ParameterSetName -ne 'Install') {
                     Write-Error -Message ('[{0}] Expected a file but found a directory: {1}' -f $Name, $TargetFile)
                 }
                 continue
@@ -632,7 +655,7 @@ Function Install-DotFilesComponentFile {
             # We found a file. We can't replace it so this is another conflict for the user.
             if ($ExistingTarget.LinkType -ne 'SymbolicLink') {
                 $Results += $false
-                if (!$Simulate) {
+                if ($PSCmdlet.ParameterSetName -ne 'Install') {
                     Write-Error -Message ('[{0}] Unable to create symlink as a file already exists: {1}' -f $Name, $TargetFile)
                 }
                 continue
@@ -646,26 +669,37 @@ Function Install-DotFilesComponentFile {
                 Write-Debug -Message ('[{0}] Valid file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
             } else {
                 $Results += $false
-                if (!$Simulate) {
+                if ($PSCmdlet.ParameterSetName -ne 'Install') {
                     Write-Error -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
                 }
             }
         } catch {
-            # Nothing exists at the target path so we can create the symlink
-            if (!$Simulate) {
-                Write-Verbose -Message ('[{0}] Symlinking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
-                $Symlink = New-Symlink -Path $TargetFile -Target $File.FullName
+            # Missing file on a verification means the component is not/partially installed
+            if ($Verify) {
+                $Results += $false
+                continue
+            }
 
-                # Set the hidden and system attributes if requested
-                if ($Component.HideSymlinks) {
-                    $Attributes = Set-SymlinkAttributes -Symlink $Symlink
+            # Missing file on a simulation means this file will be symlinked on install
+            if ($Simulate) {
+                Write-Verbose -Message ('[{0}] Will symlink file: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
+                $Results += $true
+                continue
+            }
 
-                    # TODO: Can this ever actually fail?
-                    if (!$Attributes) {
-                        $Results += $true
-                        Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on file symlink: "{1}"' -f $Name, $TargetFile)
-                        continue
-                    }
+            # Nothing exists at the target path so we can create the file symlink
+            Write-Verbose -Message ('[{0}] Symlinking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
+            $Symlink = New-Symlink -Path $TargetFile -Target $File.FullName
+
+            # Set the hidden and system attributes if requested
+            if ($Component.HideSymlinks) {
+                $Attributes = Set-SymlinkAttributes -Symlink $Symlink
+
+                # TODO: Can this ever actually fail?
+                if (!$Attributes) {
+                    $Results += $true
+                    Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on file symlink: "{1}"' -f $Name, $TargetFile)
+                    continue
                 }
             }
 
