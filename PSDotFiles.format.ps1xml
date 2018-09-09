@@ -7,20 +7,6 @@
                 <TypeName>PSDotFiles.Component</TypeName>
             </ViewSelectedBy>
             <TableControl>
-                <TableHeaders>
-                    <TableColumnHeader>
-                        <Label>Directory</Label>
-                    </TableColumnHeader>
-                    <TableColumnHeader>
-                        <Label>Name</Label>
-                    </TableColumnHeader>
-                    <TableColumnHeader>
-                        <Label>Availability</Label>
-                    </TableColumnHeader>
-                    <TableColumnHeader>
-                        <Label>State</Label>
-                    </TableColumnHeader>
-                </TableHeaders>
                 <TableRowEntries>
                     <TableRowEntry>
                         <TableColumnItems>
