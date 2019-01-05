@@ -509,8 +509,10 @@ Function Install-DotFilesComponentDirectory {
         # can adjust the target installation directory appropriately. Further, subdirectories may be
         # ignored by an <IgnorePaths> configuration, so also check this before proceeding further.
         if ($Directory.FullName -eq $SourcePath.FullName) {
+            $ComponentRootDir = $true
             $TargetDirectory = $InstallPath
         } else {
+            $ComponentRootDir = $false
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
 
             if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
@@ -592,6 +594,17 @@ Function Install-DotFilesComponentDirectory {
                 Write-Verbose -Message ('[{0}] Will symlink directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
                 $Results += $true
                 continue
+            }
+
+            # When operating on the top-level directory of a component we need to check that the
+            # parent directory of the target path actually exists. If not, we'll create it.
+            if ($ComponentRootDir) {
+                $TargetParentDirectory = Split-Path -Path $TargetDirectory -Parent
+
+                if (!(Test-Path -Path $TargetParentDirectory -PathType Container)) {
+                    Write-Verbose -Message ('[{0}] Creating parent directory for target symlink: {1}' -f $Name, $TargetParentDirectory)
+                    $null = New-Item -Path $TargetParentDirectory -ItemType Directory
+                }
             }
 
             # Nothing exists at the target path so we can create the directory symlink
