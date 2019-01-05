@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.5.1
+------
+
+- Ensure the parent directory of the target path exists when operating on the top-level directory of a component during an install operation
+
 v0.5
 ----
 
