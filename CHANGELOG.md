@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.5.2
+------
+
+- Add support for handling nested symlinks (i.e. handling of symlinks not related to a component)
+
 v0.5.1
 ------
 
