@@ -306,6 +306,13 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose -Message ('Automatic component detection: {0}' -f $DotFilesAutodetect)
 
+    if (Get-Variable -Name 'DotFilesAllowNestedSymlinks' -Scope Global -ErrorAction Ignore) {
+        $script:DotFilesAllowNestedSymlinks = $global:DotFilesAllowNestedSymlinks
+    } else {
+        $script:DotFilesAllowNestedSymlinks = $false
+    }
+    Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $DotFilesAllowNestedSymlinks)
+
     # Cache these results for usage later
     $script:IsAdministrator = Test-IsAdministrator
     $script:IsWin10DevMode = Test-IsWin10DevMode
@@ -537,24 +544,30 @@ Function Install-DotFilesComponentDirectory {
                 continue
             }
 
-            # We found a symbolic link. Either it points where we expect it to and all is well, or
-            # it points somewhere unexpected, and the user will need to investigate why that is.
+            # We found a symbolic link. Either:
+            # - It points where we expect -> nothing to do
+            # - It points somewhere else -> recurse into it (AllowNestedSymlinks)
+            # - It points somewhere unexpected -> unable to symlink this path element
             if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
                 $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
                 if ($Directory.FullName -eq $SymlinkTarget) {
                     $Results += $true
                     Write-Debug -Message ('[{0}] Valid directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                    continue
+                } elseif ($DotFilesAllowNestedSymlinks) {
+                    Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                 } else {
                     $Results += $false
                     if ($PSCmdlet.ParameterSetName -ne 'Install') {
                         Write-Error -Message ('[{0}] Found a directory symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     }
+                    continue
                 }
-                continue
             }
 
-            # We found a regular directory. As we can't create a directory symlink, we'll recurse
-            # into the source path and attempt to symlink each file into the target.
+            # We found a regular directory or a directory symlink to an unexpected target. As we
+            # can't create a directory symlink recurse into the source path and attempt to symlink
+            # each file into the target.
             $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
             if ($NextFiles) {
                 if ($Verify) {
@@ -788,36 +801,46 @@ Function Remove-DotFilesComponentDirectory {
                 continue
             }
 
-            # We found a symbolic link. Either it points where we expect it to and we'll remove it,
-            # or it points somewhere unexpected, and the user will need to investigate why that is.
+            # We found a symbolic link. Either:
+            # - It points where we expect -> remove it
+            # - It points somewhere else -> recurse into it (AllowNestedSymlinks)
+            # - It points somewhere unexpected -> unable to remove this path element
             if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
                 $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
-                # The symlink points to an unexpected target. This could be an error or completely
-                # fine. As we won't make any changes warn the user and let them decide what to do.
+                # The symlink points somewhere other than the expected target. If nested symlinks
+                # are permitted we'll recurse into it. Otherwise, this could be completely fine or
+                # an error. We won't remove it so just warn the user of this potential issue.
                 if ($Directory.FullName -ne $SymlinkTarget) {
-                    if (!$Simulate) {
-                        Write-Warning -Message ('[{0}] Found a directory symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                    if ($DotFilesAllowNestedSymlinks) {
+                        if (!$Simulate) {
+                            Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                        }
+                    } else {
+                        if (!$Simulate) {
+                            Write-Warning -Message ('[{0}] Found a directory symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                        }
+                        continue
                     }
+                } else {
+                    # The symlink points where we expect so we're good to proceed with its removal
+                    if ($Simulate) {
+                        Write-Verbose -Message ('[{0}] Will remove directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
+                    } else {
+                        Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
+
+                        # Remove-Item doesn't correctly handle deleting directory symbolic links
+                        # See: https://github.com/PowerShell/PowerShell/issues/621
+                        [IO.Directory]::Delete($TargetDirectory)
+                    }
+
+                    $Results += $true
                     continue
                 }
-
-                # The symlink points where we expect so we're good to proceed with its removal
-                if ($Simulate) {
-                    Write-Verbose -Message ('[{0}] Will remove directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
-                } else {
-                    Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
-
-                    # Remove-Item doesn't correctly handle deleting directory symbolic links
-                    # See: https://github.com/PowerShell/PowerShell/issues/621
-                    [IO.Directory]::Delete($TargetDirectory)
-                }
-
-                $Results += $true
-                continue
             }
 
-            # We found a regular directory. Recurse into it looking for file symlinks to remove.
+            # We found a regular directory or a directory symlink to an unexpected target. As we
+            # can't remove the directory recurse into it looking for file symlinks to remove.
             $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
             if ($NextFiles) {
                 if ($Simulate) {
