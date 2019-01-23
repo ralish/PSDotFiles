@@ -11,15 +11,20 @@ Function Get-DotFiles {
 
         For each component a Component object is returned which specifies the component's basic details, availability, installation state, and other configuration settings.
 
-        .PARAMETER Path
-        Use the specified directory as the dotfiles directory.
+        .PARAMETER AllowNestedSymlinks
+        Toggles allowing directory symlinks to destinations outside of the source component path earlier in the path hierarchy.
 
-        This overrides any default specified in $DotFilesPath.
+        This overrides any default specified in $DotFilesAllowNestedSymlinks. If neither is specified the default is disabled.
 
         .PARAMETER Autodetect
         Toggles automatic detection of available components without any metadata.
 
         This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled.
+
+        .PARAMETER Path
+        Use the specified directory as the dotfiles directory.
+
+        This overrides any default specified in $DotFilesPath.
 
         .EXAMPLE
         Get-DotFiles
@@ -38,7 +43,8 @@ Function Get-DotFiles {
     [CmdletBinding(ConfirmImpact='Low', SupportsShouldProcess)]
     Param(
         [String]$Path,
-        [Switch]$Autodetect
+        [Switch]$Autodetect,
+        [Switch]$AllowNestedSymlinks
     )
 
     Initialize-PSDotFiles @PSBoundParameters
@@ -56,10 +62,10 @@ Function Install-DotFiles {
 
         For each installed component a Component object is returned which specifies the component's basic details, availability, installation state, and other configuration settings.
 
-        .PARAMETER Path
-        Use the specified directory as the dotfiles directory.
+        .PARAMETER AllowNestedSymlinks
+        Toggles allowing directory symlinks to destinations outside of the source component path earlier in the path hierarchy.
 
-        This overrides any default specified in $DotFilesPath.
+        This overrides any default specified in $DotFilesAllowNestedSymlinks. If neither is specified the default is disabled.
 
         .PARAMETER Autodetect
         Toggles automatic detection of available components without any metadata.
@@ -70,6 +76,11 @@ Function Install-DotFiles {
         A collection of Component objects to be installed as previously returned by Get-DotFiles.
 
         Note that only the Component objects with an appropriate Availability state will be installed.
+
+        .PARAMETER Path
+        Use the specified directory as the dotfiles directory.
+
+        This overrides any default specified in $DotFilesPath.
 
         .EXAMPLE
         Install-DotFiles
@@ -94,7 +105,9 @@ Function Install-DotFiles {
         [Switch]$Autodetect,
 
         [Parameter(ParameterSetName='Pipeline', Mandatory, ValueFromPipeline)]
-        [Component[]]$Components
+        [Component[]]$Components,
+
+        [Switch]$AllowNestedSymlinks
     )
 
     Begin {
@@ -157,10 +170,10 @@ Function Remove-DotFiles {
 
         For each removed component a Component object is returned which specifies the component's basic details, availability, installation state, and other configuration settings.
 
-        .PARAMETER Path
-        Use the specified directory as the dotfiles directory.
+        .PARAMETER AllowNestedSymlinks
+        Toggles allowing directory symlinks to destinations outside of the source component path earlier in the path hierarchy.
 
-        This overrides any default specified in $DotFilesPath.
+        This overrides any default specified in $DotFilesAllowNestedSymlinks. If neither is specified the default is disabled.
 
         .PARAMETER Autodetect
         Toggles automatic detection of available components without any metadata.
@@ -171,6 +184,11 @@ Function Remove-DotFiles {
         A collection of Component objects to be removed as previously returned by Get-DotFiles.
 
         Note that only the Component objects with an appropriate Installed state will be removed.
+
+        .PARAMETER Path
+        Use the specified directory as the dotfiles directory.
+
+        This overrides any default specified in $DotFilesPath.
 
         .EXAMPLE
         Remove-DotFiles
@@ -195,7 +213,9 @@ Function Remove-DotFiles {
         [Switch]$Autodetect,
 
         [Parameter(ParameterSetName='Pipeline', Mandatory, ValueFromPipeline)]
-        [Component[]]$Components
+        [Component[]]$Components,
+
+        [Switch]$AllowNestedSymlinks
     )
 
     Begin {
@@ -241,7 +261,8 @@ Function Get-DotFilesInternal {
     [CmdletBinding(SupportsShouldProcess)]
     Param(
         [String]$Path,
-        [Switch]$Autodetect
+        [Switch]$Autodetect,
+        [Switch]$AllowNestedSymlinks
     )
 
     [Component[]]$Components = @()
@@ -267,7 +288,8 @@ Function Initialize-PSDotFiles {
     [CmdletBinding(SupportsShouldProcess)]
     Param(
         [String]$Path,
-        [Switch]$Autodetect
+        [Switch]$Autodetect,
+        [Switch]$AllowNestedSymlinks
     )
 
     if ($PSBoundParameters.ContainsKey('Path')) {
@@ -306,7 +328,9 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose -Message ('Automatic component detection: {0}' -f $DotFilesAutodetect)
 
-    if (Get-Variable -Name 'DotFilesAllowNestedSymlinks' -Scope Global -ErrorAction Ignore) {
+    if ($PSBoundParameters.ContainsKey('AllowNestedSymlinks')) {
+        $script:DotFilesAllowNestedSymlinks = $AllowNestedSymlinks
+    } elseif (Get-Variable -Name 'DotFilesAllowNestedSymlinks' -Scope Global -ErrorAction Ignore) {
         $script:DotFilesAllowNestedSymlinks = $global:DotFilesAllowNestedSymlinks
     } else {
         $script:DotFilesAllowNestedSymlinks = $false
