@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.5.3
+------
+
+- Add support for toggling nested symlink support via parameter: `-AllowNestedSymlinks`
+
 v0.5.2
 ------
 
