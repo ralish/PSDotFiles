@@ -374,6 +374,11 @@ Function Initialize-DotFilesComponent {
         $Component.FriendlyName = $Metadata.Component.Friendlyname
     }
 
+    # Append any base path to the source path
+    if ($Metadata.SelectSingleNode('//Component/BasePath')) {
+        $Component.SourcePath = Join-Path -Path $Component.SourcePath -ChildPath $Metadata.Component.BasePath
+    }
+
     # Determine the detection method
     if ($Metadata.SelectSingleNode('//Component/Detection')) {
         $DetectionMethod = $Metadata.Component.Detection.Method
@@ -455,7 +460,7 @@ Function Initialize-DotFilesComponent {
         $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
     }
 
-    # Configure installation settings
+    # Configure install path
     if ($Metadata.SelectSingleNode('//Component/InstallPath')) {
         $SpecialFolder = $false
         $Destination = $false
@@ -545,6 +550,17 @@ Function Install-DotFilesComponentDirectory {
         if ($Directory.FullName -eq $SourcePath.FullName) {
             $ComponentRootDir = $true
             $TargetDirectory = $InstallPath
+
+            # We need to check the source directory does actually exist. There are some edge cases
+            # where this may not be the case, with a common case being an invalid BasePath setting.
+            $SourceDirectory = Get-Item -Path $SourcePath.FullName -Force -ErrorAction Ignore
+            if ($SourceDirectory -isnot [IO.DirectoryInfo]) {
+                $Results += $false
+                if ($PSCmdlet.ParameterSetName -ne 'Install') {
+                    Write-Error -Message ('[{0}] Unable to retrieve source directory: {1}' -f $Name, $SourcePath.FullName)
+                }
+                continue
+            }
         } else {
             $ComponentRootDir = $false
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
@@ -803,6 +819,15 @@ Function Remove-DotFilesComponentDirectory {
         # ignored by an <IgnorePaths> configuration, so also check this before proceeding further.
         if ($Directory.FullName -eq $SourcePath.FullName) {
             $TargetDirectory = $InstallPath
+
+            # We need to check the source directory does actually exist. There are some edge cases
+            # where this may not be the case, with a common case being an invalid BasePath setting.
+            $SourceDirectory = Get-Item -Path $SourcePath.FullName -Force -ErrorAction Ignore
+            if ($SourceDirectory -isnot [IO.DirectoryInfo]) {
+                $Results += $false
+                Write-Error -Message ('[{0}] Unable to retrieve source directory: {1}' -f $Name, $SourcePath.FullName)
+                continue
+            }
         } else {
             $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
 

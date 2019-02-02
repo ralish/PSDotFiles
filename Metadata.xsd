@@ -52,6 +52,7 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="FriendlyName" type="xs:string" minOccurs="0" />
+                <xs:element name="BasePath" type="xs:string" minOccurs="0" />
                 <xs:element name="Detection" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
