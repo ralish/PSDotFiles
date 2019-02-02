@@ -307,11 +307,21 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose -Message ('dotfiles directory: {0}' -f $DotFilesPath)
 
-    $MetadataSchemaPath = Join-Path -Path $PSScriptRoot -ChildPath 'Metadata.xsd'
-    $script:MetadataSchema = New-Object -TypeName Xml.Schema.XmlSchemaSet
-    $null = $MetadataSchema.Add($null, (Get-Item -Path $MetadataSchemaPath))
-    $MetadataSchema.Compile() # Implied on the first validation but do so now to ensure it's sane.
-    Write-Debug -Message ('Metadata schema: {0}' -f $MetadataSchemaPath)
+    if (Get-Variable -Name 'DotFilesSkipMetadataSchemaChecks' -Scope Global -ErrorAction Ignore) {
+        $script:DotFilesSkipMetadataSchemaChecks = $global:DotFilesSkipMetadataSchemaChecks
+    } else {
+        $script:DotFilesSkipMetadataSchemaChecks = $false
+    }
+
+    if (!$DotFilesSkipMetadataSchemaChecks) {
+        $MetadataSchemaPath = Join-Path -Path $PSScriptRoot -ChildPath 'Metadata.xsd'
+        $script:MetadataSchema = New-Object -TypeName Xml.Schema.XmlSchemaSet
+        $null = $MetadataSchema.Add($null, (Get-Item -Path $MetadataSchemaPath))
+        $MetadataSchema.Compile() # Implied on the first validation but do so now to ensure it's sane.
+        Write-Debug -Message ('Metadata schema: {0}' -f $MetadataSchemaPath)
+    } else {
+        Write-Warning -Message 'Skipping validation of metadata files against XML schema.'
+    }
 
     $script:GlobalMetadataPath = Join-Path -Path $PSScriptRoot -ChildPath 'metadata'
     Write-Debug -Message ('Global metadata: {0}' -f $GlobalMetadataPath)
@@ -1101,12 +1111,14 @@ Function Get-ComponentMetadata {
         throw $_
     }
 
-    $Metadata.Schemas = $MetadataSchema
-    try {
-        $Metadata.Validate($null)
-    } catch {
-        Write-Warning -Message ('Unable to validate metadata file: {0}' -f $Path)
-        throw $_
+    if (!$DotFilesSkipMetadataSchemaChecks) {
+        $Metadata.Schemas = $MetadataSchema
+        try {
+            $Metadata.Validate($null)
+        } catch {
+            Write-Warning -Message ('Unable to validate metadata file: {0}' -f $Path)
+            throw $_
+        }
     }
 
     return $Metadata
