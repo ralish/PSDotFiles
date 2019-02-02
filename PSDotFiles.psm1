@@ -526,6 +526,13 @@ Function Initialize-DotFilesComponent {
         }
     }
 
+    # Configure rename paths
+    if ($Metadata.SelectSingleNode('//Component/RenamePaths')) {
+        foreach ($Path in $Metadata.Component.RenamePaths.RenamePath) {
+            $Component.RenamePaths[$Path.source] = $Path.symlink
+        }
+    }
+
     return $Component
 }
 
@@ -721,14 +728,21 @@ Function Install-DotFilesComponentFile {
 
     foreach ($File in $Files) {
         # We always need to determine the relative path of files from the top-level directory of the
-        # component so we can adjust the target installation path appropriately. Like directories,
-        # files may also be ignored by an <IgnorePaths> configuration.
+        # component so we can adjust the target installation path appropriately.
         $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
+
+        # Like directories, files may also be ignored by an <IgnorePaths> configuration.
         if ($SourceFileRelative -in $Component.IgnorePaths) {
             Write-Debug -Message ('[{0}] Ignoring file: {1}' -f $Name, $SourceFileRelative)
             continue
         }
-        $TargetFile = Join-Path -Path $InstallPath -ChildPath $SourceFileRelative
+
+        # Determine the target symlink with reference to any defined renamed path.
+        if ($Component.RenamePaths.ContainsKey($SourceFileRelative)) {
+            $TargetFile = Join-Path -Path $InstallPath -ChildPath $Component.RenamePaths[$SourceFileRelative]
+        } else {
+            $TargetFile = Join-Path -Path $InstallPath -ChildPath $SourceFileRelative
+        }
 
         # We've got the file source and target paths and have confirmed the source path is not
         # ignored. Start by trying to retrieve any item which may already exist at the target path.
@@ -953,14 +967,21 @@ Function Remove-DotFilesComponentFile {
 
     foreach ($File in $Files) {
         # We always need to determine the relative path of files from the top-level directory of the
-        # component so we can adjust the target installation path appropriately. Like directories,
-        # files may also be ignored by an <IgnorePaths> configuration.
+        # component so we can adjust the target installation path appropriately.
         $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
+
+        # Like directories, files may also be ignored by an <IgnorePaths> configuration.
         if ($SourceFileRelative -in $Component.IgnorePaths) {
             Write-Debug -Message ('[{0}] Ignoring file: {1}' -f $Name, $SourceFileRelative)
             continue
         }
-        $TargetFile = Join-Path -Path $InstallPath -ChildPath $SourceFileRelative
+
+        # Determine the target symlink with reference to any defined renamed path.
+        if ($Component.RenamePaths.ContainsKey($SourceFileRelative)) {
+            $TargetFile = Join-Path -Path $InstallPath -ChildPath $Component.RenamePaths[$SourceFileRelative]
+        } else {
+            $TargetFile = Join-Path -Path $InstallPath -ChildPath $SourceFileRelative
+        }
 
         # We've got the file source and target paths and have confirmed the source path is not
         # ignored. Start by trying to retrieve any item which may already exist at the target path.
@@ -1473,6 +1494,10 @@ Class Component {
     # Source paths to be ignored
     # Note: Set by <Path> elements under <IgnorePaths>
     [String[]]$IgnorePaths
+
+    # Source paths with renamed target symlink paths
+    # Note: Set by <RenamePath> elements under <RenamePaths>
+    [Hashtable]$RenamePaths = @{}
 
     Component ([String]$Name, [IO.DirectoryInfo]$DotFilesPath) {
         $this.Name = $Name

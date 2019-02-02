@@ -82,6 +82,18 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="RenamePaths" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="RenamePath" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:attribute name="source" type="xs:string" use="required" />
+                                    <xs:attribute name="symlink" type="xs:string" use="required" />
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
