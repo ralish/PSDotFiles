@@ -357,6 +357,11 @@ Function Initialize-DotFilesComponent {
         [Xml]$Metadata
     )
 
+    # Ensures XML methods are always available
+    if (!$PSBoundParameters.ContainsKey('Metadata')) {
+        $Metadata = New-Object -TypeName Xml.XmlDocument
+    }
+
     # Create the component if we're not overriding
     if ($PSCmdlet.ParameterSetName -eq 'New') {
         $Component = [Component]::new($Name, $DotFilesPath)
@@ -365,12 +370,12 @@ Function Initialize-DotFilesComponent {
     }
 
     # Set the friendly name if one was provided
-    if ($Metadata -and $Metadata.SelectSingleNode('//Component/FriendlyName')) {
+    if ($Metadata.SelectSingleNode('//Component/FriendlyName')) {
         $Component.FriendlyName = $Metadata.Component.Friendlyname
     }
 
     # Determine the detection method
-    if ($Metadata -and $Metadata.SelectSingleNode('//Component/Detection')) {
+    if ($Metadata.SelectSingleNode('//Component/Detection')) {
         $DetectionMethod = $Metadata.Component.Detection.Method
     } elseif ($PSCmdlet.ParameterSetName -eq 'New') {
         $DetectionMethod = 'Automatic'
@@ -386,22 +391,20 @@ Function Initialize-DotFilesComponent {
             'CaseSensitive'=$false
         }
 
-        if ($Metadata) {
-            if ($Metadata.SelectSingleNode('//Component/Detection/MatchRegEx')) {
-                if ($Metadata.Component.Detection.MatchRegEx -eq 'true') {
-                    $Parameters['RegularExpression'] = $true
-                }
+        if ($Metadata.SelectSingleNode('//Component/Detection/MatchRegEx')) {
+            if ($Metadata.Component.Detection.MatchRegEx -eq 'true') {
+                $Parameters['RegularExpression'] = $true
             }
+        }
 
-            if ($Metadata.SelectSingleNode('//Component/Detection/MatchCase')) {
-                if ($Metadata.Component.Detection.MatchCase -eq 'true') {
-                    $Parameters['CaseSensitive'] = $true
-                }
+        if ($Metadata.SelectSingleNode('//Component/Detection/MatchCase')) {
+            if ($Metadata.Component.Detection.MatchCase -eq 'true') {
+                $Parameters['CaseSensitive'] = $true
             }
+        }
 
-            if ($Metadata.SelectSingleNode('//Component/Detection/MatchPattern')) {
-                $Parameters['Pattern'] = $Metadata.Component.Detection.MatchPattern
-            }
+        if ($Metadata.SelectSingleNode('//Component/Detection/MatchPattern')) {
+            $Parameters['Pattern'] = $Metadata.Component.Detection.MatchPattern
         }
 
         $MatchingPrograms = Find-DotFilesComponent @Parameters
@@ -453,7 +456,7 @@ Function Initialize-DotFilesComponent {
     }
 
     # Configure installation settings
-    if ($Metadata -and $Metadata.SelectSingleNode('//Component/InstallPath')) {
+    if ($Metadata.SelectSingleNode('//Component/InstallPath')) {
         $SpecialFolder = $false
         $Destination = $false
 
@@ -502,7 +505,7 @@ Function Initialize-DotFilesComponent {
     }
 
     # Configure ignore paths
-    if ($Metadata -and $Metadata.SelectSingleNode('//Component/IgnorePaths')) {
+    if ($Metadata.SelectSingleNode('//Component/IgnorePaths')) {
         foreach ($Path in $Metadata.Component.IgnorePaths.Path) {
             $Component.IgnorePaths += $Path
         }
