@@ -136,8 +136,8 @@
         If <BasePath> is set these paths are relative to the specified base path.
     -->
     <IgnorePaths>
-        <!-- Each relative path to ignore should be placed in a <Path> element -->
-        <Path></Path>
+        <!-- Each relative path to ignore should be placed in a <IgnorePath> element -->
+        <IgnorePath></IgnorePath>
     </IgnorePaths>
 
     <!--

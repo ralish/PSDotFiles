@@ -521,7 +521,7 @@ Function Initialize-DotFilesComponent {
 
     # Configure ignore paths
     if ($Metadata.SelectSingleNode('//Component/IgnorePaths')) {
-        foreach ($Path in $Metadata.Component.IgnorePaths.Path) {
+        foreach ($Path in $Metadata.Component.IgnorePaths.IgnorePath) {
             $Component.IgnorePaths += $Path
         }
     }

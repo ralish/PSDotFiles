@@ -78,7 +78,7 @@
                 <xs:element name="IgnorePaths" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="Path" type="xs:string" maxOccurs="unbounded" />
+                            <xs:element name="IgnorePath" type="xs:string" maxOccurs="unbounded" />
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
