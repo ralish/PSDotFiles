@@ -1,6 +1,14 @@
 Changelog
 =========
 
+v0.6
+----
+
+- **Breaking Change**: The `<Path>` element under `<IgnorePaths>` is now `<IgnorePath>`
+- Added new `<BasePath>` metadata element to specify a component subfolder as source path
+- Added new `<RenamePaths>` metadata element to rename target symlink path by source file path
+- Added global setting to disable XML metadata schema validation: `$DotFilesDisableMetadataSchemaChecks`
+
 v0.5.3
 ------
 
