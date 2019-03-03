@@ -105,6 +105,7 @@ Function Install-DotFiles {
         [Switch]$Autodetect,
 
         [Parameter(ParameterSetName='Pipeline', Mandatory, ValueFromPipeline)]
+        [AllowEmptyCollection()]
         [Component[]]$Components,
 
         [Switch]$AllowNestedSymlinks
@@ -213,6 +214,7 @@ Function Remove-DotFiles {
         [Switch]$Autodetect,
 
         [Parameter(ParameterSetName='Pipeline', Mandatory, ValueFromPipeline)]
+        [AllowEmptyCollection()]
         [Component[]]$Components,
 
         [Switch]$AllowNestedSymlinks
@@ -279,7 +281,7 @@ Function Get-DotFilesInternal {
         $Components += $Component
     }
 
-    return $Components
+    return ,$Components
 }
 
 Function Initialize-PSDotFiles {
