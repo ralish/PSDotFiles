@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.6.1
+------
+
+- Correctly handle the case where `Get-DotFiles` returns an empty collection and warn the user
+
 v0.6
 ----
 
