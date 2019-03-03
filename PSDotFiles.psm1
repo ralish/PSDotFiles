@@ -281,6 +281,10 @@ Function Get-DotFilesInternal {
         $Components += $Component
     }
 
+    if (!$Components) {
+        Write-Warning -Message 'Get-DotFiles returned no results. Are you sure your $DotFilesPath is set correctly?'
+    }
+
     return ,$Components
 }
 
