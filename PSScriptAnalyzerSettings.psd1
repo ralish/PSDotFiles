@@ -39,15 +39,18 @@
             Enable                      = $true
             IndentationSize             = 4
             Kind                        = 'space'
+            PipelineIndentation         = 'IncreaseIndentationForFirstPipeline'
         }
 
         # CheckOperator doesn't work with aligned hashtable assignment
         # statements (GitHub Issue #769).
         PSUseConsistentWhitespace = @{
             Enable                      = $true
+            CheckInnerBrace             = $true
             CheckOpenBrace              = $true
             CheckOpenParen              = $true
             CheckOperator               = $false
+            CheckPipe                   = $true
             CheckSeparator              = $true
         }
     }
