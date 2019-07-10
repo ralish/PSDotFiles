@@ -128,12 +128,12 @@ Function Install-DotFiles {
 
         [Component[]]$Processed = @()
         if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-            $Components = Get-DotFilesInternal @PSBoundParameters
+            [Component[]]$Components = Get-DotFilesInternal @PSBoundParameters
         }
     }
 
     Process {
-        $ToInstall = $Components | Where-Object { $_.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall) }
+        [Component[]]$ToInstall = $Components | Where-Object { $_.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall) }
 
         foreach ($Component in $ToInstall) {
             $Name = $Component.Name
@@ -225,12 +225,12 @@ Function Remove-DotFiles {
 
         [Component[]]$Processed = @()
         if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-            $Components = Get-DotFilesInternal @PSBoundParameters
+            [Component[]]$Components = Get-DotFilesInternal @PSBoundParameters
         }
     }
 
     Process {
-        $ToInstall = $Components | Where-Object { $_.State -in ([InstallState]::Installed, [InstallState]::PartialInstall) }
+        [Component[]]$ToInstall = $Components | Where-Object { $_.State -in ([InstallState]::Installed, [InstallState]::PartialInstall) }
 
         foreach ($Component in $ToInstall) {
             $Name = $Component.Name
@@ -285,7 +285,7 @@ Function Get-DotFilesInternal {
         Write-Warning -Message 'Get-DotFiles returned no results. Are you sure your $DotFilesPath is set correctly?'
     }
 
-    return ,$Components
+    return $Components
 }
 
 Function Initialize-PSDotFiles {
