@@ -1101,7 +1101,7 @@ Function Get-ComponentInstallResult {
 
     if ($Results.Count) {
         $TotalResults = $Results.Count
-        $SuccessCount = ($Results | Where-Object { $_ -eq $true  } | Measure-Object).Count
+        $SuccessCount = ($Results | Where-Object { $_ -eq $true } | Measure-Object).Count
         $FailureCount = ($Results | Where-Object { $_ -eq $false } | Measure-Object).Count
 
         if ($SuccessCount -eq $TotalResults) {
@@ -1503,7 +1503,7 @@ Class Component {
 
     # Source paths with renamed target symlink paths
     # Note: Set by <RenamePath> elements under <RenamePaths>
-    [Hashtable]$RenamePaths = @{}
+    [Hashtable]$RenamePaths = @{ }
 
     Component ([String]$Name, [IO.DirectoryInfo]$DotFilesPath) {
         $this.Name = $Name
