@@ -431,10 +431,15 @@ Function Initialize-DotFilesComponent {
         $MatchingPrograms = Find-DotFilesComponent @Parameters
         if ($MatchingPrograms) {
             $NumMatchingPrograms = ($MatchingPrograms | Measure-Object).Count
-            if ($NumMatchingPrograms -eq 1) {
+            if ($NumMatchingPrograms -ge 1) {
+                if ($NumMatchingPrograms -gt 1) {
+                    Write-Warning -Message ('[{0}] Automatic detection found {1} matching programs.' -f $Name, $NumMatchingPrograms)
+                }
+
                 $Component.Availability = [Availability]::Available
+
                 if (!$Component.FriendlyName -and $MatchingPrograms.Name) {
-                    $Component.FriendlyName = $MatchingPrograms.Name
+                    $Component.FriendlyName = [String]::Join(', ', ($MatchingPrograms.Name | Where-Object { ![String]::IsNullOrWhiteSpace($_) } | Sort-Object ))
                 }
             } else {
                 Write-Error -Message ('[{0}] Automatic detection found {1} matching programs.' -f $Name, $NumMatchingPrograms)
@@ -1086,6 +1091,7 @@ Function Remove-DotFilesComponentFile {
 
 Function Find-DotFilesComponent {
     [CmdletBinding()]
+    [OutputType([Object[]])]
     Param(
         [Parameter(Mandatory)]
         [String]$Name,
@@ -1121,12 +1127,9 @@ Function Find-DotFilesComponent {
         $Parameters['ILike'] = $true
     }
 
-    $MatchingPrograms = $InstalledPrograms | Where-Object @Parameters
-    if ($MatchingPrograms) {
-        return $MatchingPrograms
-    }
+    $MatchingPrograms = @($InstalledPrograms | Where-Object @Parameters)
 
-    return $false
+    return (, $MatchingPrograms)
 }
 
 Function Get-ComponentInstallResult {
@@ -1240,6 +1243,7 @@ Function Get-DotFilesComponent {
 
 Function Get-InstalledPrograms {
     [CmdletBinding()]
+    [OutputType([Object[]])]
     Param()
 
     $Hives = @('HKLM', 'HKCU')
@@ -1303,8 +1307,8 @@ Function Get-InstalledPrograms {
         }
     }
 
-    Write-Debug -Message ('Registry scan found {0} installed programs.' -f ($InstalledPrograms | Measure-Object).Count)
-    return $InstalledPrograms
+    Write-Debug -Message ('Found {0} installed programs.' -f ($InstalledPrograms | Measure-Object).Count)
+    return (, $InstalledPrograms)
 }
 
 Function Get-SymlinkTarget {
