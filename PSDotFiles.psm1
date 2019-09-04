@@ -141,7 +141,7 @@ Function Install-DotFiles {
 
             $Parameters = @{
                 'Component'=$Component
-                'Directories'=$Component.SourcePath
+                'SourceDirectories'=$Component.SourcePath
             }
 
             if (!($PSCmdlet.ShouldProcess($Name, 'Install'))) {
@@ -274,7 +274,7 @@ Function Get-DotFilesInternal {
 
         if ($Component.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall)) {
             [Boolean[]]$Results = @()
-            $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $Component.SourcePath -Verify
+            $Results += Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $Component.SourcePath -Verify
             $Component.State = Get-ComponentInstallResult -Results $Results
         }
 
@@ -549,7 +549,7 @@ Function Install-DotFilesComponentDirectory {
         [Component]$Component,
 
         [Parameter(Mandatory)]
-        [IO.DirectoryInfo[]]$Directories,
+        [IO.DirectoryInfo[]]$SourceDirectories,
 
         [Parameter(ParameterSetName='Simulate')]
         [Switch]$Simulate,
@@ -565,12 +565,12 @@ Function Install-DotFilesComponentDirectory {
     $InstallPath = $Component.InstallPath
     [Boolean[]]$Results = @()
 
-    foreach ($Directory in $Directories) {
+    foreach ($SourceDirectory in $SourceDirectories) {
         # Check if we're operating on the top-level directory of a component or have recursed into a
         # subdirectory. If the latter, we need the relative path from the top-level directory so we
         # can adjust the target installation directory appropriately. Further, subdirectories may be
         # ignored by an <IgnorePaths> configuration, so also check this before proceeding further.
-        if ($Directory.FullName -eq $SourcePath.FullName) {
+        if ($SourceDirectory.FullName -eq $SourcePath.FullName) {
             $ComponentRootDir = $true
             $TargetDirectory = $InstallPath
 
@@ -586,7 +586,7 @@ Function Install-DotFilesComponentDirectory {
             }
         } else {
             $ComponentRootDir = $false
-            $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
+            $SourceDirectoryRelative = $SourceDirectory.FullName.Substring($SourcePath.FullName.Length + 1)
 
             if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
                 Write-Debug -Message ('[{0}] Ignoring directory: {1}' -f $Name, $SourceDirectoryRelative)
@@ -616,7 +616,7 @@ Function Install-DotFilesComponentDirectory {
             # - It points somewhere unexpected -> unable to symlink this path element
             if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
                 $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
-                if ($Directory.FullName -eq $SymlinkTarget) {
+                if ($SourceDirectory.FullName -eq $SymlinkTarget) {
                     $Results += $true
                     Write-Debug -Message ('[{0}] Valid directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     continue
@@ -634,26 +634,26 @@ Function Install-DotFilesComponentDirectory {
             # We found a regular directory or a directory symlink to an unexpected target. As we
             # can't create a directory symlink recurse into the source path and attempt to symlink
             # each file into the target.
-            $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
+            $NextFiles = Get-ChildItem -Path $SourceDirectory.FullName -File -Force
             if ($NextFiles) {
                 if ($Verify) {
-                    $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Verify
+                    $Results += Install-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles -Verify
                 } elseif ($Simulate) {
-                    $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate
+                    $Results += Install-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles -Simulate
                 } else {
-                    $Results += Install-DotFilesComponentFile -Component $Component -Files $NextFiles
+                    $Results += Install-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles
                 }
             }
 
             # As above, but now symlink each of the directories
-            $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
+            $NextDirectories = Get-ChildItem -Path $SourceDirectory.FullName -Directory -Force
             if ($NextDirectories) {
                 if ($Verify) {
-                    $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Verify
+                    $Results += Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories -Verify
                 } elseif ($Simulate) {
-                    $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate
+                    $Results += Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories -Simulate
                 } else {
-                    $Results += Install-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
+                    $Results += Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories
                 }
             }
 
@@ -670,7 +670,7 @@ Function Install-DotFilesComponentDirectory {
 
             # Missing directory on a simulation means this directory will be symlinked on install
             if ($Simulate) {
-                Write-Verbose -Message ('[{0}] Will symlink directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
+                Write-Verbose -Message ('[{0}] Will symlink directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
                 $Results += $true
                 continue
             }
@@ -687,8 +687,8 @@ Function Install-DotFilesComponentDirectory {
             }
 
             # Nothing exists at the target path so we can create the directory symlink
-            Write-Verbose -Message ('[{0}] Symlinking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
-            $Symlink = New-Symlink -Path $TargetDirectory -Target $Directory.FullName
+            Write-Verbose -Message ('[{0}] Symlinking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
+            $Symlink = New-Symlink -Path $TargetDirectory -Target $SourceDirectory.FullName
 
             # Set the hidden and system attributes if requested
             if ($Component.HideSymlinks) {
@@ -716,7 +716,7 @@ Function Install-DotFilesComponentFile {
         [Component]$Component,
 
         [Parameter(Mandatory)]
-        [IO.FileInfo[]]$Files,
+        [IO.FileInfo[]]$SourceFiles,
 
         [Parameter(ParameterSetName='Simulate')]
         [Switch]$Simulate,
@@ -732,10 +732,10 @@ Function Install-DotFilesComponentFile {
     $InstallPath = $Component.InstallPath
     [Boolean[]]$Results = @()
 
-    foreach ($File in $Files) {
+    foreach ($SourceFile in $SourceFiles) {
         # We always need to determine the relative path of files from the top-level directory of the
         # component so we can adjust the target installation path appropriately.
-        $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
+        $SourceFileRelative = $SourceFile.FullName.Substring($SourcePath.FullName.Length + 1)
 
         # Like directories, files may also be ignored by an <IgnorePaths> configuration.
         if ($SourceFileRelative -in $Component.IgnorePaths) {
@@ -776,7 +776,7 @@ Function Install-DotFilesComponentFile {
             # We found a symbolic link. Either it points where we expect it to and all is well, or
             # it points somewhere unexpected, and the user will need to investigate why that is.
             $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
-            if ($File.FullName -eq $SymlinkTarget) {
+            if ($SourceFile.FullName -eq $SymlinkTarget) {
                 $Results += $true
                 Write-Debug -Message ('[{0}] Valid file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
             } else {
@@ -794,14 +794,14 @@ Function Install-DotFilesComponentFile {
 
             # Missing file on a simulation means this file will be symlinked on install
             if ($Simulate) {
-                Write-Verbose -Message ('[{0}] Will symlink file: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
+                Write-Verbose -Message ('[{0}] Will symlink file: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
                 $Results += $true
                 continue
             }
 
             # Nothing exists at the target path so we can create the file symlink
-            Write-Verbose -Message ('[{0}] Symlinking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
-            $Symlink = New-Symlink -Path $TargetFile -Target $File.FullName
+            Write-Verbose -Message ('[{0}] Symlinking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
+            $Symlink = New-Symlink -Path $TargetFile -Target $SourceFile.FullName
 
             # Set the hidden and system attributes if requested
             if ($Component.HideSymlinks) {
@@ -830,7 +830,7 @@ Function Remove-DotFilesComponentDirectory {
         [Component]$Component,
 
         [Parameter(Mandatory)]
-        [IO.DirectoryInfo[]]$Directories,
+        [IO.DirectoryInfo[]]$SourceDirectories,
 
         [Switch]$Simulate
     )
@@ -842,12 +842,12 @@ Function Remove-DotFilesComponentDirectory {
     $InstallPath = $Component.InstallPath
     [Boolean[]]$Results = @()
 
-    foreach ($Directory in $Directories) {
+    foreach ($SourceDirectory in $SourceDirectories) {
         # Check if we're operating on the top-level directory of a component or have recursed into a
         # subdirectory. If the latter, we need the relative path from the top-level directory so we
         # can adjust the target installation directory appropriately. Further, subdirectories may be
         # ignored by an <IgnorePaths> configuration, so also check this before proceeding further.
-        if ($Directory.FullName -eq $SourcePath.FullName) {
+        if ($SourceDirectory.FullName -eq $SourcePath.FullName) {
             $TargetDirectory = $InstallPath
 
             # We need to check the source directory does actually exist. There are some edge cases
@@ -859,7 +859,7 @@ Function Remove-DotFilesComponentDirectory {
                 continue
             }
         } else {
-            $SourceDirectoryRelative = $Directory.FullName.Substring($SourcePath.FullName.Length + 1)
+            $SourceDirectoryRelative = $SourceDirectory.FullName.Substring($SourcePath.FullName.Length + 1)
 
             if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
                 Write-Debug -Message ('[{0}] Ignoring directory: {1}' -f $Name, $SourceDirectoryRelative)
@@ -893,7 +893,7 @@ Function Remove-DotFilesComponentDirectory {
                 # The symlink points somewhere other than the expected target. If nested symlinks
                 # are permitted we'll recurse into it. Otherwise, this could be completely fine or
                 # an error. We won't remove it so just warn the user of this potential issue.
-                if ($Directory.FullName -ne $SymlinkTarget) {
+                if ($SourceDirectory.FullName -ne $SymlinkTarget) {
                     if ($DotFilesAllowNestedSymlinks) {
                         if (!$Simulate) {
                             Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
@@ -907,9 +907,9 @@ Function Remove-DotFilesComponentDirectory {
                 } else {
                     # The symlink points where we expect so we're good to proceed with its removal
                     if ($Simulate) {
-                        Write-Verbose -Message ('[{0}] Will remove directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
+                        Write-Verbose -Message ('[{0}] Will remove directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
                     } else {
-                        Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $Directory.FullName)
+                        Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
 
                         # Remove-Item doesn't correctly handle deleting directory symbolic links
                         # See: https://github.com/PowerShell/PowerShell/issues/621
@@ -923,22 +923,22 @@ Function Remove-DotFilesComponentDirectory {
 
             # We found a regular directory or a directory symlink to an unexpected target. As we
             # can't remove the directory recurse into it looking for file symlinks to remove.
-            $NextFiles = Get-ChildItem -Path $Directory.FullName -File -Force
+            $NextFiles = Get-ChildItem -Path $SourceDirectory.FullName -File -Force
             if ($NextFiles) {
                 if ($Simulate) {
-                    $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles -Simulate
+                    $Results += Remove-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles -Simulate
                 } else {
-                    $Results += Remove-DotFilesComponentFile -Component $Component -Files $NextFiles
+                    $Results += Remove-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles
                 }
             }
 
             # As above, but now for directory symlinks
-            $NextDirectories = Get-ChildItem -Path $Directory.FullName -Directory -Force
+            $NextDirectories = Get-ChildItem -Path $SourceDirectory.FullName -Directory -Force
             if ($NextDirectories) {
                 if ($Simulate) {
-                    $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories -Simulate
+                    $Results += Remove-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories -Simulate
                 } else {
-                    $Results += Remove-DotFilesComponentDirectory -Component $Component -Directories $NextDirectories
+                    $Results += Remove-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories
                 }
             }
         } catch {
@@ -959,7 +959,7 @@ Function Remove-DotFilesComponentFile {
         [Component]$Component,
 
         [Parameter(Mandatory)]
-        [IO.FileInfo[]]$Files,
+        [IO.FileInfo[]]$SourceFiles,
 
         [Switch]$Simulate
     )
@@ -971,10 +971,10 @@ Function Remove-DotFilesComponentFile {
     $InstallPath = $Component.InstallPath
     [Boolean[]]$Results = @()
 
-    foreach ($File in $Files) {
+    foreach ($SourceFile in $SourceFiles) {
         # We always need to determine the relative path of files from the top-level directory of the
         # component so we can adjust the target installation path appropriately.
-        $SourceFileRelative = $File.FullName.Substring($SourcePath.FullName.Length + 1)
+        $SourceFileRelative = $SourceFile.FullName.Substring($SourcePath.FullName.Length + 1)
 
         # Like directories, files may also be ignored by an <IgnorePaths> configuration.
         if ($SourceFileRelative -in $Component.IgnorePaths) {
@@ -1018,7 +1018,7 @@ Function Remove-DotFilesComponentFile {
 
             # The symlink points to an unexpected target. This could be an error or completely fine.
             # As we won't make any changes warn the user and let them decide what to do.
-            if ($File.FullName -ne $SymlinkTarget) {
+            if ($SourceFile.FullName -ne $SymlinkTarget) {
                 if (!$Simulate) {
                     Write-Warning -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
                 }
@@ -1027,9 +1027,9 @@ Function Remove-DotFilesComponentFile {
 
             # The symlink points where we expect so we're good to proceed with its removal
             if ($Simulate) {
-                Write-Verbose -Message ('[{0}] Will remove file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
+                Write-Verbose -Message ('[{0}] Will remove file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
             } else {
-                Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $File.FullName)
+                Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
                 Remove-Item -Path $TargetFile -Force
             }
 
