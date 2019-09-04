@@ -20,9 +20,11 @@
             Can be one of:
              - Automatic:   The default method when none is specified. Attempts to automatically
                             detect the component by retrieving the list of installed programs from
-                            the Windows Registry and searching for a case insensitive wildcard match
-                            against the component name. The matching logic can be customised via the
-                            optional <MatchRegEx>, <MatchCase> and <MatchPattern> elements.
+                            the Windows Registry. Installed app packages are also retrieved via the
+                            Appx PowerShell module on supported systems. A case insensitive search
+                            on the results for any application name containing the component name is
+                            then performed. The matching logic can be customised via the optional
+                            <MatchRegEx>, <MatchCase> and <MatchPattern> elements.
              - FindInPath:  Determines the availability based on the presence of a nominated binary
                             located in a directory found in the system's PATH. Defaults to searching
                             for a binary with the same name as the component directory but this can
@@ -54,8 +56,8 @@
         <!--
             Automatic Method
 
-            The pattern used for matching against the Windows Registry keys. If undefined or blank
-            we'll match against any Registry key where the component name is a substring of the key.
+            The pattern used for matching against the list of retrieved programs. If undefined or
+            blank we'll match against any program name where the component name is a substring.
         -->
         <MatchPattern></MatchPattern>
 

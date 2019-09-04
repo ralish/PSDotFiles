@@ -1104,6 +1104,16 @@ Function Find-DotFilesComponent {
     if ($RefreshInstalledPrograms) {
         Write-Verbose -Message 'Refreshing installed programs ...'
         $script:InstalledPrograms = Get-InstalledPrograms
+
+        if (Get-Module -Name Appx -ListAvailable) {
+            Write-Verbose -Message 'Refreshing installed app packages ...'
+            $AppPackages = Get-AppxPackage
+            $script:InstalledPrograms += $AppPackages
+            Write-Debug -Message ('Found {0} app packages.' -f ($AppPackages | Measure-Object).Count)
+        } else {
+            Write-Verbose -Message 'Not retrieving app packages as Appx module not available.'
+        }
+
         $script:RefreshInstalledPrograms = $false
     }
 
