@@ -88,9 +88,9 @@ Function Install-DotFiles {
         Installs all available dotfiles components and returns a collection of Component objects representing the status of each.
 
         .EXAMPLE
-        Get-DotFiles | ? { $_.Name -in ('git', 'vim') } | Install-DotFiles
+        Get-DotFiles | ? Name -in git, vim | Install-DotFiles
 
-        Installs only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
+        Installs only the git and vim dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
 
         .LINK
         https://github.com/ralish/PSDotFiles
@@ -197,9 +197,9 @@ Function Remove-DotFiles {
         Removes all installed dotfiles components and returns a collection of Component objects representing the status of each.
 
         .EXAMPLE
-        Get-DotFiles | ? { $_.Name -in ('git', 'vim') } | Remove-DotFiles
+        Get-DotFiles | ? Name -in git, vim | Remove-DotFiles
 
-        Removes only the 'git' and 'vim' dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
+        Removes only the git and vim dotfiles components, as provided by a filtered set of the components returned by Get-DotFiles.
 
         .LINK
         https://github.com/ralish/PSDotFiles
