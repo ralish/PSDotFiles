@@ -433,7 +433,6 @@ Function Initialize-DotFilesComponent {
             $NumMatchingPrograms = ($MatchingPrograms | Measure-Object).Count
             if ($NumMatchingPrograms -eq 1) {
                 $Component.Availability = [Availability]::Available
-                $Component.UninstallKey = $MatchingPrograms.Uninstall
                 if (!$Component.FriendlyName -and $MatchingPrograms.Name) {
                     $Component.FriendlyName = $MatchingPrograms.Name
                 }
@@ -1521,9 +1520,6 @@ Class Component {
 
     # Friendly name if one was provided or could be determined
     [String]$FriendlyName
-
-    # Uninstall registry key if located by Find-DotFilesComponent
-    [String]$UninstallKey
 
     # The availability state per the Availability enumeration
     [Availability]$Availability = [Availability]::DetectionFailure
