@@ -141,6 +141,22 @@
     </IgnorePaths>
 
     <!--
+        Optional configuration of relative source paths which should have additional symlinks
+        created under a different path than a straight mapping of the relative source path.
+
+        Currently only file paths are supported. Directory paths will not be processed.
+
+        If <BasePath> is set these paths are relative to the specified base path.
+
+        If a matching <IgnorePaths> element is present it will take precedence.
+    -->
+    <AdditionalPaths>
+        <AdditionalPath source="">
+            <TargetPath symlink="" />
+        </AdditionalPath>
+    </AdditionalPaths>
+
+    <!--
         Optional configuration of relative source paths which should have their target symlink
         created under a different path than a straight mapping of the relative source path.
 

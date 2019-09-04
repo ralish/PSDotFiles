@@ -532,6 +532,13 @@ Function Initialize-DotFilesComponent {
         }
     }
 
+    # Configure additional paths
+    if ($Metadata.SelectSingleNode('//Component/AdditionalPaths')) {
+        foreach ($Path in $Metadata.Component.AdditionalPaths.AdditionalPath) {
+            $Component.AdditionalPaths[$Path.source] += @($Path.TargetPath.symlink)
+        }
+    }
+
     # Configure rename paths
     if ($Metadata.SelectSingleNode('//Component/RenamePaths')) {
         foreach ($Path in $Metadata.Component.RenamePaths.RenamePath) {
@@ -744,6 +751,16 @@ Function Install-DotFilesComponentFile {
         }
 
         Write-Debug -Message ('[{0}] Processing file: {1}' -f $Name, $SourceFileRelative)
+        [String[]]$TargetFiles = @()
+
+        # Determine additional target symlink paths.
+        if ($Component.AdditionalPaths.ContainsKey($SourceFileRelative)) {
+            foreach ($AdditionalPath in $Component.AdditionalPaths[$SourceFileRelative]) {
+                $TargetFile = Join-Path -Path $InstallPath -ChildPath $AdditionalPath
+                Write-Debug -Message ('[{0}] Adding additional path: {1}' -f $Name, $TargetFile)
+                $TargetFiles += $TargetFile
+            }
+        }
 
         # Determine the target symlink with reference to any defined renamed path.
         if ($Component.RenamePaths.ContainsKey($SourceFileRelative)) {
@@ -753,73 +770,76 @@ Function Install-DotFilesComponentFile {
             $TargetFile = Join-Path -Path $InstallPath -ChildPath $SourceFileRelative
             Write-Debug -Message ('[{0}] Using target path: {1}' -f $Name, $TargetFile)
         }
+        $TargetFiles += $TargetFile
 
-        # We've got the file source and target paths and have confirmed the source path is not
-        # ignored. Start by trying to retrieve any item which may already exist at the target path.
-        try {
-            $ExistingTarget = Get-Item -Path $TargetFile -Force -ErrorAction Stop
+        foreach ($TargetFile in $TargetFiles) {
+            # We've got the file source and target paths and have confirmed the source path is not
+            # ignored. Start by trying to retrieve any item which may already exist at the target path.
+            try {
+                $ExistingTarget = Get-Item -Path $TargetFile -Force -ErrorAction Stop
 
-            # We found an item but it's not a file! The user will need to fix this conflict.
-            if ($ExistingTarget -isnot [IO.FileInfo]) {
-                $Results += $false
-                if ($PSCmdlet.ParameterSetName -ne 'Install') {
-                    Write-Error -Message ('[{0}] Expected a file but found a directory: {1}' -f $Name, $TargetFile)
-                }
-                continue
-            }
-
-            # We found a file. We can't replace it so this is another conflict for the user.
-            if ($ExistingTarget.LinkType -ne 'SymbolicLink') {
-                $Results += $false
-                if ($PSCmdlet.ParameterSetName -ne 'Install') {
-                    Write-Error -Message ('[{0}] Unable to create symlink as a file already exists: {1}' -f $Name, $TargetFile)
-                }
-                continue
-            }
-
-            # We found a symbolic link. Either it points where we expect it to and all is well, or
-            # it points somewhere unexpected, and the user will need to investigate why that is.
-            $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
-            if ($SourceFile.FullName -eq $SymlinkTarget) {
-                $Results += $true
-                Write-Debug -Message ('[{0}] Valid file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
-            } else {
-                $Results += $false
-                if ($PSCmdlet.ParameterSetName -ne 'Install') {
-                    Write-Error -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
-                }
-            }
-        } catch {
-            # Missing file on a verification means the component is not/partially installed
-            if ($Verify) {
-                $Results += $false
-                continue
-            }
-
-            # Missing file on a simulation means this file will be symlinked on install
-            if ($Simulate) {
-                Write-Verbose -Message ('[{0}] Will symlink file: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
-                $Results += $true
-                continue
-            }
-
-            # Nothing exists at the target path so we can create the file symlink
-            Write-Verbose -Message ('[{0}] Symlinking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
-            $Symlink = New-Symlink -Path $TargetFile -Target $SourceFile.FullName
-
-            # Set the hidden and system attributes if requested
-            if ($Component.HideSymlinks) {
-                $Attributes = Set-SymlinkAttributes -Symlink $Symlink
-
-                # TODO: Can this ever actually fail?
-                if (!$Attributes) {
-                    $Results += $true
-                    Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on file symlink: "{1}"' -f $Name, $TargetFile)
+                # We found an item but it's not a file! The user will need to fix this conflict.
+                if ($ExistingTarget -isnot [IO.FileInfo]) {
+                    $Results += $false
+                    if ($PSCmdlet.ParameterSetName -ne 'Install') {
+                        Write-Error -Message ('[{0}] Expected a file but found a directory: {1}' -f $Name, $TargetFile)
+                    }
                     continue
                 }
-            }
 
-            $Results += $true
+                # We found a file. We can't replace it so this is another conflict for the user.
+                if ($ExistingTarget.LinkType -ne 'SymbolicLink') {
+                    $Results += $false
+                    if ($PSCmdlet.ParameterSetName -ne 'Install') {
+                        Write-Error -Message ('[{0}] Unable to create symlink as a file already exists: {1}' -f $Name, $TargetFile)
+                    }
+                    continue
+                }
+
+                # We found a symbolic link. Either it points where we expect it to and all is well, or
+                # it points somewhere unexpected, and the user will need to investigate why that is.
+                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
+                if ($SourceFile.FullName -eq $SymlinkTarget) {
+                    $Results += $true
+                    Write-Debug -Message ('[{0}] Valid file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
+                } else {
+                    $Results += $false
+                    if ($PSCmdlet.ParameterSetName -ne 'Install') {
+                        Write-Error -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
+                    }
+                }
+            } catch {
+                # Missing file on a verification means the component is not/partially installed
+                if ($Verify) {
+                    $Results += $false
+                    continue
+                }
+
+                # Missing file on a simulation means this file will be symlinked on install
+                if ($Simulate) {
+                    Write-Verbose -Message ('[{0}] Will symlink file: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
+                    $Results += $true
+                    continue
+                }
+
+                # Nothing exists at the target path so we can create the file symlink
+                Write-Verbose -Message ('[{0}] Symlinking file: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
+                $Symlink = New-Symlink -Path $TargetFile -Target $SourceFile.FullName
+
+                # Set the hidden and system attributes if requested
+                if ($Component.HideSymlinks) {
+                    $Attributes = Set-SymlinkAttributes -Symlink $Symlink
+
+                    # TODO: Can this ever actually fail?
+                    if (!$Attributes) {
+                        $Results += $true
+                        Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on file symlink: "{1}"' -f $Name, $TargetFile)
+                        continue
+                    }
+                }
+
+                $Results += $true
+            }
         }
     }
 
@@ -987,6 +1007,16 @@ Function Remove-DotFilesComponentFile {
         }
 
         Write-Debug -Message ('[{0}] Processing file: {1}' -f $Name, $SourceFileRelative)
+        [String[]]$TargetFiles = @()
+
+        # Determine additional target symlink paths.
+        if ($Component.AdditionalPaths.ContainsKey($SourceFileRelative)) {
+            foreach ($AdditionalPath in $Component.AdditionalPaths[$SourceFileRelative]) {
+                $TargetFile = Join-Path -Path $InstallPath -ChildPath $AdditionalPath
+                Write-Debug -Message ('[{0}] Adding additional path: {1}' -f $Name, $TargetFile)
+                $TargetFiles += $TargetFile
+            }
+        }
 
         # Determine the target symlink with reference to any defined renamed path.
         if ($Component.RenamePaths.ContainsKey($SourceFileRelative)) {
@@ -996,55 +1026,58 @@ Function Remove-DotFilesComponentFile {
             $TargetFile = Join-Path -Path $InstallPath -ChildPath $SourceFileRelative
             Write-Debug -Message ('[{0}] Using target path: {1}' -f $Name, $TargetFile)
         }
+        $TargetFiles += $TargetFile
 
-        # We've got the file source and target paths and have confirmed the source path is not
-        # ignored. Start by trying to retrieve any item which may already exist at the target path.
-        try {
-            $ExistingTarget = Get-Item -Path $TargetFile -Force -ErrorAction Stop
+        foreach ($TargetFile in $TargetFiles) {
+            # We've got the file source and target paths and have confirmed the source path is not
+            # ignored. Start by trying to retrieve any item which may already exist at the target path.
+            try {
+                $ExistingTarget = Get-Item -Path $TargetFile -Force -ErrorAction Stop
 
-            # We found an item but it's not a file! This is unexpected, but as we're removing a
-            # component it's not an error. It will break if the user attempts to install it though.
-            if ($ExistingTarget -isnot [IO.FileInfo]) {
-                if (!$Simulate) {
-                    Write-Warning -Message ('[{0}] Expected a file but found a directory: {1}' -f $Name, $TargetFile)
+                # We found an item but it's not a file! This is unexpected, but as we're removing a
+                # component it's not an error. It will break if the user attempts to install it though.
+                if ($ExistingTarget -isnot [IO.FileInfo]) {
+                    if (!$Simulate) {
+                        Write-Warning -Message ('[{0}] Expected a file but found a directory: {1}' -f $Name, $TargetFile)
+                    }
+                    continue
                 }
-                continue
-            }
 
-            # We found a file but it's not a symbolic link! Like the above, this is unexpected but
-            # as we're removing a component we'll just warn the user (though an install won't work).
-            if ($ExistingTarget.LinkType -ne 'SymbolicLink') {
-                if (!$Simulate) {
-                    Write-Warning -Message ('[{0}] Found a file instead of a symbolic link: {1}' -f $Name, $TargetFile)
+                # We found a file but it's not a symbolic link! Like the above, this is unexpected but
+                # as we're removing a component we'll just warn the user (though an install won't work).
+                if ($ExistingTarget.LinkType -ne 'SymbolicLink') {
+                    if (!$Simulate) {
+                        Write-Warning -Message ('[{0}] Found a file instead of a symbolic link: {1}' -f $Name, $TargetFile)
+                    }
+                    continue
                 }
-                continue
-            }
 
-            # We found a symbolic link. Either it points where we expect it to and we'll remove it,
-            # or it points somewhere unexpected, and the user will need to investigate why that is.
-            $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
+                # We found a symbolic link. Either it points where we expect it to and we'll remove it,
+                # or it points somewhere unexpected, and the user will need to investigate why that is.
+                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
 
-            # The symlink points to an unexpected target. This could be an error or completely fine.
-            # As we won't make any changes warn the user and let them decide what to do.
-            if ($SourceFile.FullName -ne $SymlinkTarget) {
-                if (!$Simulate) {
-                    Write-Warning -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
+                # The symlink points to an unexpected target. This could be an error or completely fine.
+                # As we won't make any changes warn the user and let them decide what to do.
+                if ($SourceFile.FullName -ne $SymlinkTarget) {
+                    if (!$Simulate) {
+                        Write-Warning -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
+                    }
+                    continue
                 }
-                continue
-            }
 
-            # The symlink points where we expect so we're good to proceed with its removal
-            if ($Simulate) {
-                Write-Verbose -Message ('[{0}] Will remove file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
-            } else {
-                Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
-                Remove-Item -Path $TargetFile -Force
-            }
+                # The symlink points where we expect so we're good to proceed with its removal
+                if ($Simulate) {
+                    Write-Verbose -Message ('[{0}] Will remove file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
+                } else {
+                    Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
+                    Remove-Item -Path $TargetFile -Force
+                }
 
-            $Results += $true
-        } catch {
-            if (!$Simulate) {
-                Write-Warning -Message ('[{0}] Expected a file but found nothing: {1}' -f $Name, $TargetFile)
+                $Results += $true
+            } catch {
+                if (!$Simulate) {
+                    Write-Warning -Message ('[{0}] Expected a file but found nothing: {1}' -f $Name, $TargetFile)
+                }
             }
         }
     }
@@ -1508,6 +1541,10 @@ Class Component {
     # Source paths to be ignored
     # Note: Set by <Path> elements under <IgnorePaths>
     [String[]]$IgnorePaths
+
+    # Source paths with additional target symlink paths
+    # Note: Set by <AdditionalPath> elements under <AdditionalPaths>
+    [Hashtable]$AdditionalPaths = @{ }
 
     # Source paths with renamed target symlink paths
     # Note: Set by <RenamePath> elements under <RenamePaths>
