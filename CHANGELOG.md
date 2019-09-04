@@ -1,6 +1,13 @@
 Changelog
 =========
 
+v0.7
+----
+
+- Added new `<AdditionalPaths>` metadata element for additional target symlinks paths
+- `Get-DotFiles`: Ensure an unpacked `Component` array is returned
+- Miscellaneous refactoring & additional debug output
+
 v0.6.1
 ------
 
