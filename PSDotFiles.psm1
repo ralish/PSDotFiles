@@ -743,11 +743,15 @@ Function Install-DotFilesComponentFile {
             continue
         }
 
+        Write-Debug -Message ('[{0}] Processing file: {1}' -f $Name, $SourceFileRelative)
+
         # Determine the target symlink with reference to any defined renamed path.
         if ($Component.RenamePaths.ContainsKey($SourceFileRelative)) {
             $TargetFile = Join-Path -Path $InstallPath -ChildPath $Component.RenamePaths[$SourceFileRelative]
+            Write-Debug -Message ('[{0}] Using renamed target path: {1}' -f $Name, $TargetFile)
         } else {
             $TargetFile = Join-Path -Path $InstallPath -ChildPath $SourceFileRelative
+            Write-Debug -Message ('[{0}] Using target path: {1}' -f $Name, $TargetFile)
         }
 
         # We've got the file source and target paths and have confirmed the source path is not
@@ -982,11 +986,15 @@ Function Remove-DotFilesComponentFile {
             continue
         }
 
+        Write-Debug -Message ('[{0}] Processing file: {1}' -f $Name, $SourceFileRelative)
+
         # Determine the target symlink with reference to any defined renamed path.
         if ($Component.RenamePaths.ContainsKey($SourceFileRelative)) {
             $TargetFile = Join-Path -Path $InstallPath -ChildPath $Component.RenamePaths[$SourceFileRelative]
+            Write-Debug -Message ('[{0}] Using renamed target path: {1}' -f $Name, $TargetFile)
         } else {
             $TargetFile = Join-Path -Path $InstallPath -ChildPath $SourceFileRelative
+            Write-Debug -Message ('[{0}] Using target path: {1}' -f $Name, $TargetFile)
         }
 
         # We've got the file source and target paths and have confirmed the source path is not
