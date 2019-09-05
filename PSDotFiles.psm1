@@ -238,7 +238,7 @@ Function Remove-DotFiles {
 
             $Parameters = @{
                 'Component'=$Component
-                'Directories'=$Component.SourcePath
+                'SourceDirectories'=$Component.SourcePath
             }
 
             if (!($PSCmdlet.ShouldProcess($Name, 'Remove'))) {
