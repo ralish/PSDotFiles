@@ -1,6 +1,14 @@
 Changelog
 =========
 
+v0.8
+----
+
+- **Breaking Change**: Removed the `UninstallKey` property from the `Component` class
+- Added support for enumerating app packages (*AppX*) during automatic component detection
+- Treat multiple matches in automatic component detection as a warning (previously was error)
+- `Remove-DotFiles`: Fixed stupid oversight introduced in *v0.7* which broke this command
+
 v0.7
 ----
 
