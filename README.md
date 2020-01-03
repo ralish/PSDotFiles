@@ -6,7 +6,7 @@ A simple *dotfiles* management framework for Windows built on PowerShell.
 Purpose
 -------
 
-PSDotFiles aims to provide a simple yet powerful and flexible framework for managing your *dotfiles* on Windows systems. The design is heavily influenced by [GNU Stow](https://www.gnu.org/software/stow/), which works by symlinking the contents of one or more folders into another folder. In this way, a collection of *dotfiles* can be easily divided into per-application folders (e.g. `git`, `sublime`, `vim`, etc...).
+PSDotFiles aims to provide a simple yet powerful and flexible framework for managing your dotfiles on Windows systems. The design is heavily influenced by [GNU Stow](https://www.gnu.org/software/stow/), which works by symlinking the contents of one or more folders into another folder. In this way, a collection of dotfiles can be easily divided into per-application folders (e.g. `git`, `sublime`, `vim`, etc...).
 
 PSDotFiles implements this basic design but with a PowerShell-centric approach using a simple set of cmdlets.
 
@@ -50,7 +50,7 @@ Get-Module PSDotFiles -ListAvailable
 Quickstart
 ----------
 
-The module only exports three commands through which all *dotfiles* management occurs:
+The module exports three commands through which all dotfiles management occurs:
 
 ```posh
 # Enumerates available dotfiles components
@@ -72,9 +72,9 @@ Both `Install-DotFiles` and `Remove-DotFiles` support PowerShell's standard `-Wh
 Folder Structure
 ----------------
 
-PSDotFiles expects a *dotfiles* folder to be structured as multiple folders each containing the files and folders comprising a particular application's configuration. These top-level folders are referred to by PSDotFiles as **components**. The files and folders in each component's folder should be relative to a well-known top-level folder (e.g. your profile folder, which is the default target in PSDotFiles). The actual list of well-known folders are those in the [`Environment.SpecialFolder`](https://msdn.microsoft.com/en-us/library/system.environment.specialfolder.aspx) enumeration.
+PSDotFiles expects a dotfiles folder to be structured as multiple folders each containing the files and folders comprising a particular application's configuration. These top-level folders are referred to by PSDotFiles as **components**. The files and folders in each component's folder should be relative to a well-known top-level folder (e.g. your profile folder, which is the default target in PSDotFiles). The actual list of well-known folders are those in the [`Environment.SpecialFolder`](https://docs.microsoft.com/en-us/dotnet/api/system.environment.specialfolder) enumeration.
 
-A simple *dotfiles* folder structure might look like this:
+A simple dotfiles folder structure might look like this:
 
 ```fundamental
 dotfiles
@@ -99,7 +99,7 @@ dotfiles
 Configuring
 -----------
 
-Before you can use PSDotFiles you should set the `$DotFilesPath` variable to the location of your *dotfiles* folder. For example:
+Before you can use PSDotFiles you should set the `$DotFilesPath` variable to the location of your dotfiles folder. For example:
 
 ```posh
 $DotFilesPath = "C:\Users\<your.account>\dotfiles"

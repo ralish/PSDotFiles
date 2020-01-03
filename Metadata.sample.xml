@@ -110,7 +110,7 @@
              - If a <Destination> folder is specified without a <SpecialFolder> then *no* special
                folder is used and <Destination> is considered to be an absolute path.
 
-            See: https://msdn.microsoft.com/en-us/library/system.environment.specialfolder.aspx
+            See: https://docs.microsoft.com/en-us/dotnet/api/system.environment.specialfolder
         -->
         <SpecialFolder></SpecialFolder>
 
