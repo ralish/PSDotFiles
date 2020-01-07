@@ -1352,7 +1352,11 @@ Function New-Symlink {
     )
 
     if ($IsAdministrator) {
-        $Symlink = New-Item -ItemType SymbolicLink -Path $Path -Value $Target
+        try {
+            $Symlink = New-Item -ItemType SymbolicLink -Path $Path -Value $Target -ErrorAction Stop
+        } catch {
+            throw $_
+        }
     } elseif ($IsWin10DevMode) {
         $TargetItem = Get-Item -Path $Target
         $QuotedPath = '"{0}"' -f $Path
@@ -1366,7 +1370,15 @@ Function New-Symlink {
             throw ('Symlink target is not a file or directory: {0}' -f $Target)
         }
 
-        $Symlink = Get-Item -Path $Path
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning -Message ('mklink returned unexpected exit code: {0}' -f $LASTEXITCODE)
+        }
+
+        try {
+            $Symlink = Get-Item -Path $Path -ErrorAction Stop
+        } catch {
+            throw ('Expected symlink from mklink invocation not found: {0}' -f $Path)
+        }
     } else {
         throw 'Missing symbolic link creation privileges.'
     }
