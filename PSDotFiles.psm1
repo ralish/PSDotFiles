@@ -1355,11 +1355,13 @@ Function New-Symlink {
         $Symlink = New-Item -ItemType SymbolicLink -Path $Path -Value $Target
     } elseif ($IsWin10DevMode) {
         $TargetItem = Get-Item -Path $Target
+        $QuotedPath = '"{0}"' -f $Path
+        $QuotedTarget = '"{0}"' -f $Target
 
         if ($TargetItem -is [IO.FileInfo]) {
-            Start-Process -FilePath cmd.exe -ArgumentList @('/D', '/C', 'mklink', $Path, $Target, '>nul') -NoNewWindow -Wait
+            Start-Process -FilePath cmd.exe -ArgumentList @('/D', '/C', 'mklink', $QuotedPath, $QuotedTarget, '>nul') -NoNewWindow -Wait
         } elseif ($TargetItem -is [IO.DirectoryInfo]) {
-            Start-Process -FilePath cmd.exe -ArgumentList @('/D', '/C', 'mklink', '/D', $Path, $Target, '>nul') -NoNewWindow -Wait
+            Start-Process -FilePath cmd.exe -ArgumentList @('/D', '/C', 'mklink', '/D', $QuotedPath, $QuotedTarget, '>nul') -NoNewWindow -Wait
         } else {
             throw ('Symlink target is not a file or directory: {0}' -f $Target)
         }
