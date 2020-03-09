@@ -356,6 +356,7 @@ Function Initialize-PSDotFiles {
     # Cache these results for usage later
     $script:IsAdministrator = Test-IsAdministrator
     $script:IsWin10DevMode = Test-IsWin10DevMode
+    $script:IsMkLinkNeeded = Test-IsMkLinkNeeded
     $script:RefreshInstalledPrograms = $true
 }
 
@@ -1355,7 +1356,7 @@ Function New-Symlink {
         throw 'Missing symbolic link creation privileges.'
     }
 
-    if ($IsAdministrator) {
+    if (!$IsMkLinkNeeded) {
         try {
             $Symlink = New-Item -ItemType SymbolicLink -Path $Path -Value $Target -ErrorAction Stop
         } catch {
@@ -1456,15 +1457,33 @@ Function Test-IsAdministrator {
     return $false
 }
 
-Function Test-IsWin10DevMode {
+Function Test-IsMkLinkNeeded {
     [CmdletBinding()]
     Param()
 
-    # Note that PowerShell only permits symlinks to be created via New-Item if running with
-    # Administrator privileges (as of v5.1), even if we're running Creators Update or newer w/
-    # Developer Mode enabled. This appears to be due to New-Item assuming Administrator privileges
-    # are always required to create a symlink? The workaround is to call cmd and use its internal
-    # mklink command. This is unfortunately much slower, as we have to spawn a process per symlink.
+    # The support for creating symlinks without Administrator privileges depends on passing a new
+    # flag to the CreateSymbolicLink() API call. PowerShell didn't become aware of this flag until
+    # the PowerShell Core 6.2 release. Prior versions will fail to create symlinks on calling the
+    # New-Item command as the necessary flag won't be set.
+    #
+    # The workaround is to call mklink which is a built-in cmd command. It's *much* slower, as each
+    # symlink to create requires a separate process launch. That's still preferable though to not
+    # working at all. Currently no Windows version ships with a PowerShell release with the support.
+    #
+    # See: https://github.com/PowerShell/PowerShell/pull/8534
+    if (!$IsAdministrator) {
+        $MinPoshVersion = [Version]::new(6, 2)
+        if ($PSVersionTable.PSVersion -lt $MinPoshVersion) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+Function Test-IsWin10DevMode {
+    [CmdletBinding()]
+    Param()
 
     # Windows 10 Creators Update introduced support for creating symlinks without Administrator
     # privileges. The underlying support was introduced in Windows Insider Preview Build 14972.
