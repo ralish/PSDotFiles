@@ -1351,13 +1351,17 @@ Function New-Symlink {
         [String]$Target
     )
 
+    if (!($IsAdministrator -or $IsWin10DevMode)) {
+        throw 'Missing symbolic link creation privileges.'
+    }
+
     if ($IsAdministrator) {
         try {
             $Symlink = New-Item -ItemType SymbolicLink -Path $Path -Value $Target -ErrorAction Stop
         } catch {
             throw $_
         }
-    } elseif ($IsWin10DevMode) {
+    } else {
         $TargetItem = Get-Item -Path $Target
         $QuotedPath = '"{0}"' -f $Path
         $QuotedTarget = '"{0}"' -f $Target
@@ -1379,8 +1383,6 @@ Function New-Symlink {
         } catch {
             throw ('Expected symlink from mklink invocation not found: {0}' -f $Path)
         }
-    } else {
-        throw 'Missing symbolic link creation privileges.'
     }
 
     return $Symlink
