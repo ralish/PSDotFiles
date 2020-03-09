@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../Metadata.xsd">
-    <FriendlyName>PowerShell</FriendlyName>
+    <FriendlyName>Windows PowerShell</FriendlyName>
 
     <Detection>
         <Method>FindInPath</Method>
