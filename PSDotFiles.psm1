@@ -1333,12 +1333,21 @@ Function Get-SymlinkTarget {
         return $false
     }
 
-    $IsAbsolute = [IO.Path]::IsPathRooted($Symlink.Target[0])
-    if ($IsAbsolute) {
-        return $Symlink.Target[0]
+    # The type of the Target property differs by PowerShell version:
+    # -  <7: A String[] with a single element
+    # - >=7: A String
+    if ($Symlink.Target -is [Array]) {
+        $Target = $Symlink.Target[0]
+    } else {
+        $Target = $Symlink.Target
     }
 
-    return (Resolve-Path -Path (Join-Path -Path (Split-Path -Path $Symlink -Parent) -ChildPath $Symlink.Target[0])).Path
+    $IsAbsolute = [IO.Path]::IsPathRooted($Target)
+    if ($IsAbsolute) {
+        return $Target
+    }
+
+    return (Resolve-Path -Path (Join-Path -Path (Split-Path -Path $Symlink -Parent) -ChildPath $Target)).Path
 }
 
 Function New-Symlink {
