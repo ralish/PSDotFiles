@@ -1,6 +1,15 @@
 Changelog
 =========
 
+v0.9
+----
+
+- Handle change of `Target` property type in `FileSystemInfo` under PowerShell 7
+- Create symlinks natively via `New-Item` when unprivileged and PowerShell is 6.2+
+- Correctly quote paths passed to `mklink` & improved associated error handling
+- Update `FriendlyName` in `posh.xml` metadata definition to *Windows PowerShell*
+- Use precise Windows build number when testing for unprivileged symlinks support
+
 v0.8
 ----
 
