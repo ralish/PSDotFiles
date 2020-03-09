@@ -1465,9 +1465,9 @@ Function Test-IsWin10DevMode {
     # mklink command. This is unfortunately much slower, as we have to spawn a process per symlink.
 
     # Windows 10 Creators Update introduced support for creating symlinks without Administrator
-    # privileges. The corresponding release build number is 15063 (we ignore Insider builds).
+    # privileges. The underlying support was introduced in Windows Insider Preview Build 14972.
     $BuildNumber = [Int](Get-CimInstance -ClassName Win32_OperatingSystem -Verbose:$false).BuildNumber
-    if ($BuildNumber -lt 15063) {
+    if ($BuildNumber -lt 14972) {
         return $false
     }
 
