@@ -1,6 +1,12 @@
 Changelog
 =========
 
+v0.9.1
+------
+
+- Republishing with development files excluded to reduce package size
+- Updates to module manifest to indicate platform & PowerShell support
+
 v0.9
 ----
 
