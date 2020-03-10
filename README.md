@@ -7,6 +7,15 @@ PSDotFiles
 
 A simple *dotfiles* management framework for Windows built on PowerShell.
 
+- [Purpose](#purpose)
+- [Requirements](#requirements)
+- [Installing](#installing)
+- [Quickstart](#quickstart)
+- [Folder Structure](#folder-structure)
+- [Configuring](#configuring)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
 Purpose
 -------
 

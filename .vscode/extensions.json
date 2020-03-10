@@ -2,6 +2,7 @@
     "recommendations": [
         "davidanson.vscode-markdownlint",
         "editorconfig.editorconfig",
-        "ms-vscode.powershell"
+        "ms-vscode.powershell",
+        "yzhang.markdown-all-in-one"
     ]
 }
