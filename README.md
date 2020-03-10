@@ -1,7 +1,7 @@
 PSDotFiles
 ==========
 
-[![pwsh gv](https://img.shields.io/powershellgallery/v/PSDotFiles)](https://www.powershellgallery.com/packages/PSDotFiles)
+[![pwsh ver](https://img.shields.io/powershellgallery/v/PSDotFiles)](https://www.powershellgallery.com/packages/PSDotFiles)
 [![pwsh dl](https://img.shields.io/powershellgallery/dt/PSDotFiles)](https://www.powershellgallery.com/packages/PSDotFiles)
 [![license](https://img.shields.io/github/license/ralish/PSDotFiles)](https://choosealicense.com/licenses/mit/)
 
