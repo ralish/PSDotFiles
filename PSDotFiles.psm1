@@ -612,67 +612,6 @@ Function Install-DotFilesComponentDirectory {
         # ignored. Start by trying to retrieve any item which may already exist at the target path.
         try {
             $ExistingTarget = Get-Item -Path $TargetDirectory -Force -ErrorAction Stop
-
-            # We found an item but it's not a directory! The user will need to fix this conflict.
-            if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
-                $Results += $false
-                if ($PSCmdlet.ParameterSetName -ne 'Install') {
-                    Write-Error -Message ('[{0}] Expected a directory but found a file: {1}' -f $Name, $TargetDirectory)
-                }
-                continue
-            }
-
-            # We found a symbolic link. Either:
-            # - It points where we expect -> nothing to do
-            # - It points somewhere else -> recurse into it (AllowNestedSymlinks)
-            # - It points somewhere unexpected -> unable to symlink this path element
-            if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
-                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
-                if ($SourceDirectory.FullName -eq $SymlinkTarget) {
-                    $Results += $true
-                    Write-Debug -Message ('[{0}] Valid directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
-                    continue
-                } elseif ($DotFilesAllowNestedSymlinks) {
-                    Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
-                } else {
-                    $Results += $false
-                    if ($PSCmdlet.ParameterSetName -ne 'Install') {
-                        Write-Error -Message ('[{0}] Found a directory symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
-                    }
-                    continue
-                }
-            }
-
-            # We found a regular directory or a directory symlink to an unexpected target. As we
-            # can't create a directory symlink recurse into the source path and attempt to symlink
-            # each file into the target.
-            $NextFiles = Get-ChildItem -Path $SourceDirectory.FullName -File -Force
-            if ($NextFiles) {
-                if ($Verify) {
-                    $Results += Install-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles -Verify
-                } elseif ($Simulate) {
-                    $Results += Install-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles -Simulate
-                } else {
-                    $Results += Install-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles
-                }
-            }
-
-            # As above, but now symlink each of the directories
-            $NextDirectories = Get-ChildItem -Path $SourceDirectory.FullName -Directory -Force
-            if ($NextDirectories) {
-                if ($Verify) {
-                    $Results += Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories -Verify
-                } elseif ($Simulate) {
-                    $Results += Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories -Simulate
-                } else {
-                    $Results += Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories
-                }
-            }
-
-            # Warn if there were no items in the source path and we couldn't symlink the directory
-            if (!$NextFiles -and !$NextDirectories) {
-                Write-Warning -Message ('[{0}] Unable to symlink empty directory as target exists: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
-            }
         } catch {
             # Missing directory on a verification means the component is not/partially installed
             if ($Verify) {
@@ -715,6 +654,68 @@ Function Install-DotFilesComponentDirectory {
             }
 
             $Results += $true
+            continue
+        }
+
+        # We found an item but it's not a directory! The user will need to fix this conflict.
+        if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
+            $Results += $false
+            if ($PSCmdlet.ParameterSetName -ne 'Install') {
+                Write-Error -Message ('[{0}] Expected a directory but found a file: {1}' -f $Name, $TargetDirectory)
+            }
+            continue
+        }
+
+        # We found a symbolic link. Either:
+        # - It points where we expect -> nothing to do
+        # - It points somewhere else -> recurse into it (AllowNestedSymlinks)
+        # - It points somewhere unexpected -> unable to symlink this path element
+        if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
+            $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
+            if ($SourceDirectory.FullName -eq $SymlinkTarget) {
+                $Results += $true
+                Write-Debug -Message ('[{0}] Valid directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                continue
+            } elseif ($DotFilesAllowNestedSymlinks) {
+                Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+            } else {
+                $Results += $false
+                if ($PSCmdlet.ParameterSetName -ne 'Install') {
+                    Write-Error -Message ('[{0}] Found a directory symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                }
+                continue
+            }
+        }
+
+        # We found a regular directory or a directory symlink to an unexpected target. As we
+        # can't create a directory symlink recurse into the source path and attempt to symlink
+        # each file into the target.
+        $NextFiles = Get-ChildItem -Path $SourceDirectory.FullName -File -Force
+        if ($NextFiles) {
+            if ($Verify) {
+                $Results += Install-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles -Verify
+            } elseif ($Simulate) {
+                $Results += Install-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles -Simulate
+            } else {
+                $Results += Install-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles
+            }
+        }
+
+        # As above, but now symlink each of the directories
+        $NextDirectories = Get-ChildItem -Path $SourceDirectory.FullName -Directory -Force
+        if ($NextDirectories) {
+            if ($Verify) {
+                $Results += Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories -Verify
+            } elseif ($Simulate) {
+                $Results += Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories -Simulate
+            } else {
+                $Results += Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories
+            }
+        }
+
+        # Warn if there were no items in the source path and we couldn't symlink the directory
+        if (!$NextFiles -and !$NextDirectories) {
+            Write-Warning -Message ('[{0}] Unable to symlink empty directory as target exists: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
         }
     }
 
@@ -782,37 +783,6 @@ Function Install-DotFilesComponentFile {
             # ignored. Start by trying to retrieve any item which may already exist at the target path.
             try {
                 $ExistingTarget = Get-Item -Path $TargetFile -Force -ErrorAction Stop
-
-                # We found an item but it's not a file! The user will need to fix this conflict.
-                if ($ExistingTarget -isnot [IO.FileInfo]) {
-                    $Results += $false
-                    if ($PSCmdlet.ParameterSetName -ne 'Install') {
-                        Write-Error -Message ('[{0}] Expected a file but found a directory: {1}' -f $Name, $TargetFile)
-                    }
-                    continue
-                }
-
-                # We found a file. We can't replace it so this is another conflict for the user.
-                if ($ExistingTarget.LinkType -ne 'SymbolicLink') {
-                    $Results += $false
-                    if ($PSCmdlet.ParameterSetName -ne 'Install') {
-                        Write-Error -Message ('[{0}] Unable to create symlink as a file already exists: {1}' -f $Name, $TargetFile)
-                    }
-                    continue
-                }
-
-                # We found a symbolic link. Either it points where we expect it to and all is well, or
-                # it points somewhere unexpected, and the user will need to investigate why that is.
-                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
-                if ($SourceFile.FullName -eq $SymlinkTarget) {
-                    $Results += $true
-                    Write-Debug -Message ('[{0}] Valid file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
-                } else {
-                    $Results += $false
-                    if ($PSCmdlet.ParameterSetName -ne 'Install') {
-                        Write-Error -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
-                    }
-                }
             } catch {
                 # Missing file on a verification means the component is not/partially installed
                 if ($Verify) {
@@ -844,6 +814,38 @@ Function Install-DotFilesComponentFile {
                 }
 
                 $Results += $true
+                continue
+            }
+
+            # We found an item but it's not a file! The user will need to fix this conflict.
+            if ($ExistingTarget -isnot [IO.FileInfo]) {
+                $Results += $false
+                if ($PSCmdlet.ParameterSetName -ne 'Install') {
+                    Write-Error -Message ('[{0}] Expected a file but found a directory: {1}' -f $Name, $TargetFile)
+                }
+                continue
+            }
+
+            # We found a file. We can't replace it so this is another conflict for the user.
+            if ($ExistingTarget.LinkType -ne 'SymbolicLink') {
+                $Results += $false
+                if ($PSCmdlet.ParameterSetName -ne 'Install') {
+                    Write-Error -Message ('[{0}] Unable to create symlink as a file already exists: {1}' -f $Name, $TargetFile)
+                }
+                continue
+            }
+
+            # We found a symbolic link. Either it points where we expect it to and all is well, or
+            # it points somewhere unexpected, and the user will need to investigate why that is.
+            $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
+            if ($SourceFile.FullName -eq $SymlinkTarget) {
+                $Results += $true
+                Write-Debug -Message ('[{0}] Valid file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
+            } else {
+                $Results += $false
+                if ($PSCmdlet.ParameterSetName -ne 'Install') {
+                    Write-Error -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
+                }
             }
         }
     }
@@ -902,77 +904,78 @@ Function Remove-DotFilesComponentDirectory {
         # ignored. Start by trying to retrieve any item which may already exist at the target path.
         try {
             $ExistingTarget = Get-Item -Path $TargetDirectory -Force -ErrorAction Stop
-
-            # We found an item but it's not a directory! This is unexpected, but as we're removing a
-            # component it's not an error. It will break if the user attempts to install it though.
-            if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
-                if (!$Simulate) {
-                    Write-Warning -Message ('[{0}] Expected a directory but found a file: {1}' -f $Name, $TargetDirectory)
-                }
-                continue
-            }
-
-            # We found a symbolic link. Either:
-            # - It points where we expect -> remove it
-            # - It points somewhere else -> recurse into it (AllowNestedSymlinks)
-            # - It points somewhere unexpected -> unable to remove this path element
-            if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
-                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
-
-                # The symlink points somewhere other than the expected target. If nested symlinks
-                # are permitted we'll recurse into it. Otherwise, this could be completely fine or
-                # an error. We won't remove it so just warn the user of this potential issue.
-                if ($SourceDirectory.FullName -ne $SymlinkTarget) {
-                    if ($DotFilesAllowNestedSymlinks) {
-                        if (!$Simulate) {
-                            Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
-                        }
-                    } else {
-                        if (!$Simulate) {
-                            Write-Warning -Message ('[{0}] Found a directory symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
-                        }
-                        continue
-                    }
-                } else {
-                    # The symlink points where we expect so we're good to proceed with its removal
-                    if ($Simulate) {
-                        Write-Verbose -Message ('[{0}] Will remove directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
-                    } else {
-                        Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
-
-                        # Remove-Item doesn't correctly handle deleting directory symbolic links
-                        # See: https://github.com/PowerShell/PowerShell/issues/621
-                        [IO.Directory]::Delete($TargetDirectory)
-                    }
-
-                    $Results += $true
-                    continue
-                }
-            }
-
-            # We found a regular directory or a directory symlink to an unexpected target. As we
-            # can't remove the directory recurse into it looking for file symlinks to remove.
-            $NextFiles = Get-ChildItem -Path $SourceDirectory.FullName -File -Force
-            if ($NextFiles) {
-                if ($Simulate) {
-                    $Results += Remove-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles -Simulate
-                } else {
-                    $Results += Remove-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles
-                }
-            }
-
-            # As above, but now for directory symlinks
-            $NextDirectories = Get-ChildItem -Path $SourceDirectory.FullName -Directory -Force
-            if ($NextDirectories) {
-                if ($Simulate) {
-                    $Results += Remove-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories -Simulate
-                } else {
-                    $Results += Remove-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories
-                }
-            }
         } catch {
             if (!$Simulate) {
                 Write-Warning -Message ('[{0}] Expected a directory but found nothing: {1}' -f $Name, $TargetDirectory)
+            }
+            continue
+        }
+
+        # We found an item but it's not a directory! This is unexpected, but as we're removing a
+        # component it's not an error. It will break if the user attempts to install it though.
+        if ($ExistingTarget -isnot [IO.DirectoryInfo]) {
+            if (!$Simulate) {
+                Write-Warning -Message ('[{0}] Expected a directory but found a file: {1}' -f $Name, $TargetDirectory)
+            }
+            continue
+        }
+
+        # We found a symbolic link. Either:
+        # - It points where we expect -> remove it
+        # - It points somewhere else -> recurse into it (AllowNestedSymlinks)
+        # - It points somewhere unexpected -> unable to remove this path element
+        if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
+            $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
+
+            # The symlink points somewhere other than the expected target. If nested symlinks
+            # are permitted we'll recurse into it. Otherwise, this could be completely fine or
+            # an error. We won't remove it so just warn the user of this potential issue.
+            if ($SourceDirectory.FullName -ne $SymlinkTarget) {
+                if ($DotFilesAllowNestedSymlinks) {
+                    if (!$Simulate) {
+                        Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                    }
+                } else {
+                    if (!$Simulate) {
+                        Write-Warning -Message ('[{0}] Found a directory symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                    }
+                    continue
+                }
+            } else {
+                # The symlink points where we expect so we're good to proceed with its removal
+                if ($Simulate) {
+                    Write-Verbose -Message ('[{0}] Will remove directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
+                } else {
+                    Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
+
+                    # Remove-Item doesn't correctly handle deleting directory symbolic links
+                    # See: https://github.com/PowerShell/PowerShell/issues/621
+                    [IO.Directory]::Delete($TargetDirectory)
+                }
+
+                $Results += $true
+                continue
+            }
+        }
+
+        # We found a regular directory or a directory symlink to an unexpected target. As we
+        # can't remove the directory recurse into it looking for file symlinks to remove.
+        $NextFiles = Get-ChildItem -Path $SourceDirectory.FullName -File -Force
+        if ($NextFiles) {
+            if ($Simulate) {
+                $Results += Remove-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles -Simulate
+            } else {
+                $Results += Remove-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles
+            }
+        }
+
+        # As above, but now for directory symlinks
+        $NextDirectories = Get-ChildItem -Path $SourceDirectory.FullName -Directory -Force
+        if ($NextDirectories) {
+            if ($Simulate) {
+                $Results += Remove-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories -Simulate
+            } else {
+                $Results += Remove-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories
             }
         }
     }
@@ -1038,52 +1041,53 @@ Function Remove-DotFilesComponentFile {
             # ignored. Start by trying to retrieve any item which may already exist at the target path.
             try {
                 $ExistingTarget = Get-Item -Path $TargetFile -Force -ErrorAction Stop
-
-                # We found an item but it's not a file! This is unexpected, but as we're removing a
-                # component it's not an error. It will break if the user attempts to install it though.
-                if ($ExistingTarget -isnot [IO.FileInfo]) {
-                    if (!$Simulate) {
-                        Write-Warning -Message ('[{0}] Expected a file but found a directory: {1}' -f $Name, $TargetFile)
-                    }
-                    continue
-                }
-
-                # We found a file but it's not a symbolic link! Like the above, this is unexpected but
-                # as we're removing a component we'll just warn the user (though an install won't work).
-                if ($ExistingTarget.LinkType -ne 'SymbolicLink') {
-                    if (!$Simulate) {
-                        Write-Warning -Message ('[{0}] Found a file instead of a symbolic link: {1}' -f $Name, $TargetFile)
-                    }
-                    continue
-                }
-
-                # We found a symbolic link. Either it points where we expect it to and we'll remove it,
-                # or it points somewhere unexpected, and the user will need to investigate why that is.
-                $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
-
-                # The symlink points to an unexpected target. This could be an error or completely fine.
-                # As we won't make any changes warn the user and let them decide what to do.
-                if ($SourceFile.FullName -ne $SymlinkTarget) {
-                    if (!$Simulate) {
-                        Write-Warning -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
-                    }
-                    continue
-                }
-
-                # The symlink points where we expect so we're good to proceed with its removal
-                if ($Simulate) {
-                    Write-Verbose -Message ('[{0}] Will remove file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
-                } else {
-                    Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
-                    Remove-Item -Path $TargetFile -Force
-                }
-
-                $Results += $true
             } catch {
                 if (!$Simulate) {
                     Write-Warning -Message ('[{0}] Expected a file but found nothing: {1}' -f $Name, $TargetFile)
                 }
+                continue
             }
+
+            # We found an item but it's not a file! This is unexpected, but as we're removing a
+            # component it's not an error. It will break if the user attempts to install it though.
+            if ($ExistingTarget -isnot [IO.FileInfo]) {
+                if (!$Simulate) {
+                    Write-Warning -Message ('[{0}] Expected a file but found a directory: {1}' -f $Name, $TargetFile)
+                }
+                continue
+            }
+
+            # We found a file but it's not a symbolic link! Like the above, this is unexpected but
+            # as we're removing a component we'll just warn the user (though an install won't work).
+            if ($ExistingTarget.LinkType -ne 'SymbolicLink') {
+                if (!$Simulate) {
+                    Write-Warning -Message ('[{0}] Found a file instead of a symbolic link: {1}' -f $Name, $TargetFile)
+                }
+                continue
+            }
+
+            # We found a symbolic link. Either it points where we expect it to and we'll remove it,
+            # or it points somewhere unexpected, and the user will need to investigate why that is.
+            $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
+
+            # The symlink points to an unexpected target. This could be an error or completely fine.
+            # As we won't make any changes warn the user and let them decide what to do.
+            if ($SourceFile.FullName -ne $SymlinkTarget) {
+                if (!$Simulate) {
+                    Write-Warning -Message ('[{0}] Found a file symlink to an unexpected target: "{1}" -> "{2}"' -f $Name, $TargetFile, $SymlinkTarget)
+                }
+                continue
+            }
+
+            # The symlink points where we expect so we're good to proceed with its removal
+            if ($Simulate) {
+                Write-Verbose -Message ('[{0}] Will remove file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
+            } else {
+                Write-Verbose -Message ('[{0}] Removing file symlink: "{1}" -> "{2}"' -f $Name, $TargetFile, $SourceFile.FullName)
+                Remove-Item -Path $TargetFile -Force
+            }
+
+            $Results += $true
         }
     }
 
