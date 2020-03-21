@@ -396,6 +396,34 @@ Function Initialize-DotFilesComponent {
         $Component.SourcePath = Join-Path -Path $Component.SourcePath -ChildPath $Metadata.Component.BasePath
     }
 
+    # Configure ignore paths
+    if ($Metadata.SelectSingleNode('//Component/IgnorePaths')) {
+        foreach ($Path in $Metadata.Component.IgnorePaths.IgnorePath) {
+            $Component.IgnorePaths += $Path
+        }
+    }
+
+    # Configure additional paths
+    if ($Metadata.SelectSingleNode('//Component/AdditionalPaths')) {
+        foreach ($Path in $Metadata.Component.AdditionalPaths.AdditionalPath) {
+            $Component.AdditionalPaths[$Path.source] += @($Path.TargetPath.symlink)
+        }
+    }
+
+    # Configure rename paths
+    if ($Metadata.SelectSingleNode('//Component/RenamePaths')) {
+        foreach ($Path in $Metadata.Component.RenamePaths.RenamePath) {
+            $Component.RenamePaths[$Path.source] = $Path.symlink
+        }
+    }
+
+    # Configure symlink hiding
+    if ($Metadata.SelectSingleNode('//Component/InstallPath/HideSymlinks')) {
+        if ($Metadata.Component.InstallPath.HideSymlinks -eq 'true') {
+            $Component.HideSymlinks = $true
+        }
+    }
+
     # Determine the detection method
     if ($Metadata.SelectSingleNode('//Component/Detection')) {
         $DetectionMethod = $Metadata.Component.Detection.Method
@@ -520,34 +548,6 @@ Function Initialize-DotFilesComponent {
             }
         } elseif ($SpecialFolder -and !$Destination) {
             $Component.InstallPath = [Environment]::GetFolderPath($SpecialFolder)
-        }
-
-        # Configure symlink hiding
-        if ($Metadata.SelectSingleNode('//Component/InstallPath/HideSymlinks')) {
-            if ($Metadata.Component.InstallPath.HideSymlinks -eq 'true') {
-                $Component.HideSymlinks = $true
-            }
-        }
-    }
-
-    # Configure ignore paths
-    if ($Metadata.SelectSingleNode('//Component/IgnorePaths')) {
-        foreach ($Path in $Metadata.Component.IgnorePaths.IgnorePath) {
-            $Component.IgnorePaths += $Path
-        }
-    }
-
-    # Configure additional paths
-    if ($Metadata.SelectSingleNode('//Component/AdditionalPaths')) {
-        foreach ($Path in $Metadata.Component.AdditionalPaths.AdditionalPath) {
-            $Component.AdditionalPaths[$Path.source] += @($Path.TargetPath.symlink)
-        }
-    }
-
-    # Configure rename paths
-    if ($Metadata.SelectSingleNode('//Component/RenamePaths')) {
-        foreach ($Path in $Metadata.Component.RenamePaths.RenamePath) {
-            $Component.RenamePaths[$Path.source] = $Path.symlink
         }
     }
 
