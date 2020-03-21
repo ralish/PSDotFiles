@@ -644,8 +644,6 @@ Function Install-DotFilesComponentDirectory {
             # Set the hidden and system attributes if requested
             if ($Component.HideSymlinks) {
                 $Attributes = Set-SymlinkAttributes -Symlink $Symlink
-
-                # TODO: Can this ever actually fail?
                 if (!$Attributes) {
                     $Results += $false
                     Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
@@ -804,8 +802,6 @@ Function Install-DotFilesComponentFile {
                 # Set the hidden and system attributes if requested
                 if ($Component.HideSymlinks) {
                     $Attributes = Set-SymlinkAttributes -Symlink $Symlink
-
-                    # TODO: Can this ever actually fail?
                     if (!$Attributes) {
                         $Results += $true
                         Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on file symlink: "{1}"' -f $Name, $TargetFile)
@@ -1419,17 +1415,21 @@ Function Set-SymlinkAttributes {
     $Hidden = [IO.FileAttributes]::Hidden
     $System = [IO.FileAttributes]::System
 
-    if ($Remove) {
-        if ($Symlink.Attributes -band $System) {
-            $Symlink.Attributes = $Symlink.Attributes -bxor $System
-        }
+    try {
+        if ($Remove) {
+            if ($Symlink.Attributes -band $System) {
+                $Symlink.Attributes = $Symlink.Attributes -bxor $System
+            }
 
-        if ($Symlink.Attributes -band $Hidden) {
-            $Symlink.Attributes = $Symlink.Attributes -bxor $Hidden
+            if ($Symlink.Attributes -band $Hidden) {
+                $Symlink.Attributes = $Symlink.Attributes -bxor $Hidden
+            }
+        } else {
+            $Symlink.Attributes = $Symlink.Attributes -bor $System
+            $Symlink.Attributes = $Symlink.Attributes -bor $Hidden
         }
-    } else {
-        $Symlink.Attributes = $Symlink.Attributes -bor $System
-        $Symlink.Attributes = $Symlink.Attributes -bor $Hidden
+    } catch {
+        return $false
     }
 
     return $true
