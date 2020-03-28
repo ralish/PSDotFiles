@@ -1,6 +1,13 @@
 Changelog
 =========
 
+v0.9.2
+------
+
+- Populate most `Component` metadata even when not available
+- Handle failure to set symlink attributes when hidden
+- Minor documentation updates & miscellaneous fixes
+
 v0.9.1
 ------
 
