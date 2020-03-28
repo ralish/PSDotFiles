@@ -1556,8 +1556,8 @@ Enum InstallState {
     # The component is partially installed
     #
     # After Get-DotFiles this typically means either:
-    #  - Additional files have been added since it was last installed
-    #  - A previous installation attempt was only partially successful
+    # - Additional files have been added since it was last installed
+    # - A previous installation attempt was only partially successful
     #
     # After Install-DotFiles or Remove-DotFiles this typically means errors were
     # encountered during the installation or removal operation (or simulation).

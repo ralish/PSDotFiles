@@ -18,24 +18,24 @@
             Specifies the method used to detect the availability of the component
 
             Can be one of:
-             - Automatic:   The default method when none is specified. Attempts to automatically
-                            detect the component by retrieving the list of installed programs from
-                            the Windows Registry. Installed app packages are also retrieved via the
-                            Appx PowerShell module on supported systems. A case insensitive search
-                            on the results for any application name containing the component name is
-                            then performed. The matching logic can be customised via the optional
-                            <MatchRegEx>, <MatchCase> and <MatchPattern> elements.
-             - FindInPath:  Determines the availability based on the presence of a nominated binary
-                            located in a directory found in the system's PATH. Defaults to searching
-                            for a binary with the same name as the component directory but this can
-                            be customised via the <FindInPath> element.
-             - PathExists:  Determines the availability based on the existence of a nominated path
-                            specified in the <TestPath> element. The path must be absolute and would
-                            typically test that a file or directory exists. However, any absolute
-                            path that corresponds to an available PowerShell provider is valid (see
-                            Get-PSProvider for more details). As such, testing against a Registry
-                            path or more esoteric data stores is valid (e.g. the Certificate store).
-             - Static:      Use the availability state provided in the <Availability> element.
+            - Automatic:   The default method when none is specified. Attempts to automatically
+                           detect the component by retrieving the list of installed programs from
+                           the Windows Registry. Installed app packages are also retrieved via the
+                           Appx PowerShell module on supported systems. A case insensitive search on
+                           the results for any application name containing the component name is
+                           then performed. The matching logic can be customised via the optional
+                           <MatchRegEx>, <MatchCase> and <MatchPattern> elements.
+            - FindInPath:  Determines the availability based on the presence of a nominated binary
+                           located in a directory found in the system's PATH. Defaults to searching
+                           for a binary with the same name as the component directory but this can
+                           be customised via the <FindInPath> element.
+            - PathExists:  Determines the availability based on the existence of a nominated path
+                           specified in the <TestPath> element. The path must be absolute and would
+                           typically test that a file or directory exists. However, any absolute
+                           path that corresponds to an available PowerShell provider is valid (see
+                           Get-PSProvider for more details). As such, testing against a Registry
+                           path or more esoteric data stores is valid (e.g. the Certificate store).
+            - Static:      Use the availability state provided in the <Availability> element.
         -->
         <Method></Method>
 
@@ -81,15 +81,15 @@
             Availability state to always return for this component per the below options.
 
             Can be one of:
-             - Available:           The component was detected
-             - Unavailable:         The component was not detected
-             - Ignored:             The component will be ignored. This is distinct from the
-                                    "Unavailable" state as it indicates the component is not
-                                    available for the platform.
-             - AlwaysInstall:       The component will always be installed
-             - NeverInstall:        The component will never be installed
-             - DetectionFailure:    A failure occurred during component detection
-             - NoLogic:             No detection logic was available
+            - Available:           The component was detected
+            - Unavailable:         The component was not detected
+            - Ignored:             The component will be ignored. This is distinct from the
+                                   "Unavailable" state as it indicates the component is not
+                                   available for the platform.
+            - AlwaysInstall:       The component will always be installed
+            - NeverInstall:        The component will never be installed
+            - DetectionFailure:    A failure occurred during component detection
+            - NoLogic:             No detection logic was available
         -->
         <Availability></Availability>
     </Detection>
@@ -100,15 +100,15 @@
             Specifies a special folder from the Environment.SpecialFolder enumeration
 
             This setting can be used in two ways to modify the destination for symlinking:
-             - If no <Destination> is specified the component will be symlinked directly into the
-               specified special folder.
-             - If a <Destination> is specified it will be used as a *suffix* to the nominated
-               special folder. That is, the <Destination> path is relative to the special folder.
+            - If no <Destination> is specified the component will be symlinked directly into the
+              specified special folder.
+            - If a <Destination> is specified it will be used as a *suffix* to the nominated special
+              folder. That is, the <Destination> path is relative to the special folder.
 
             The default behaviour is particularly important to note:
-             - If not specified the default is to use the "UserProfile" special folder ($HOME).
-             - If a <Destination> folder is specified without a <SpecialFolder> then *no* special
-               folder is used and <Destination> is considered to be an absolute path.
+            - If not specified the default is to use the "UserProfile" special folder ($HOME).
+            - If a <Destination> folder is specified without a <SpecialFolder> then *no* special
+              folder is used and <Destination> is considered to be an absolute path.
 
             See: https://docs.microsoft.com/en-us/dotnet/api/system.environment.specialfolder
         -->
