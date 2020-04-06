@@ -2,7 +2,6 @@
     IncludeRules = @('*')
 
     ExcludeRules = @(
-        'PSUseSingularNouns',
         'PSUseOutputTypeCorrectly'
     )
 

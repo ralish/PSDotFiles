@@ -40,6 +40,7 @@ Function Get-DotFiles {
         https://github.com/ralish/PSDotFiles
     #>
 
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding(ConfirmImpact='Low', SupportsShouldProcess)]
     Param(
         [String]$Path,
@@ -96,6 +97,7 @@ Function Install-DotFiles {
         https://github.com/ralish/PSDotFiles
     #>
 
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding(DefaultParameterSetName='Retrieve', ConfirmImpact='Low', SupportsShouldProcess)]
     Param(
         [Parameter(ParameterSetName='Retrieve')]
@@ -206,6 +208,7 @@ Function Remove-DotFiles {
         https://github.com/ralish/PSDotFiles
     #>
 
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding(DefaultParameterSetName='Retrieve', ConfirmImpact='Low', SupportsShouldProcess)]
     Param(
         [Parameter(ParameterSetName='Retrieve')]
@@ -294,6 +297,7 @@ Function Get-DotFilesInternal {
 Function Initialize-PSDotFiles {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding(SupportsShouldProcess)]
     Param(
         [String]$Path,
@@ -1263,6 +1267,7 @@ Function Get-DotFilesComponent {
 }
 
 Function Get-InstalledPrograms {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding()]
     Param()
 
@@ -1409,6 +1414,7 @@ Function New-Symlink {
 
 Function Set-SymlinkAttributes {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)]
