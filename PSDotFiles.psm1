@@ -1283,7 +1283,7 @@ Function Get-InstalledPrograms {
         }
     }
 
-    $InstalledPrograms = @()
+    $InstalledPrograms = [Collections.ArrayList]::new()
     foreach ($UninstallKey in $UninstallKeys) {
         $Program = Get-ItemProperty -Path $UninstallKey.PSPath
         if ($Program.PSObject.Properties['DisplayName'] -and
@@ -1325,7 +1325,7 @@ Function Get-InstalledPrograms {
                 $InstalledProgram.Uninstall = $Program.UninstallString
             }
 
-            $InstalledPrograms += $InstalledProgram
+            $null = $InstalledPrograms.Add($InstalledProgram)
         }
     }
 
