@@ -1103,7 +1103,6 @@ Function Remove-DotFilesComponentFile {
 
 Function Find-DotFilesComponent {
     [CmdletBinding()]
-    [OutputType([Object[]])]
     Param(
         [Parameter(Mandatory)]
         [String]$Name,
@@ -1265,7 +1264,6 @@ Function Get-DotFilesComponent {
 
 Function Get-InstalledPrograms {
     [CmdletBinding()]
-    [OutputType([Object[]])]
     Param()
 
     $Hives = @('HKLM', 'HKCU')
