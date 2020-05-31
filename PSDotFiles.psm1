@@ -1,6 +1,10 @@
 # See the help for Set-StrictMode for the full details on what this enables.
 Set-StrictMode -Version 2.0
 
+$DefaultGlobalIgnorePaths = @(
+    '.stow-local-ignore'
+)
+
 Function Get-DotFiles {
     <#
         .SYNOPSIS
@@ -360,6 +364,13 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $DotFilesAllowNestedSymlinks)
 
+    if (Get-Variable -Name 'DotFilesGlobalIgnorePaths' -Scope Global -ErrorAction Ignore) {
+        $script:DotFilesGlobalIgnorePaths = $global:DotFilesGlobalIgnorePaths
+    } else {
+        $script:DotFilesGlobalIgnorePaths = $DefaultGlobalIgnorePaths
+    }
+    Write-Verbose -Message ('Global ignore paths: {0}' -f [String]::Join(', ', $DotFilesGlobalIgnorePaths))
+
     # Cache these results for usage later
     $script:IsAdministrator = Test-IsAdministrator
     $script:IsWin10DevMode = Test-IsWin10DevMode
@@ -607,7 +618,8 @@ Function Install-DotFilesComponentDirectory {
             $ComponentRootDir = $false
             $SourceDirectoryRelative = $SourceDirectory.FullName.Substring($SourcePath.FullName.Length + 1)
 
-            if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
+            if ($SourceDirectoryRelative -in $DotFilesGlobalIgnorePaths -or
+                $SourceDirectoryRelative -in $Component.IgnorePaths) {
                 Write-Debug -Message ('[{0}] Ignoring directory: {1}' -f $Name, $SourceDirectoryRelative)
                 continue
             }
@@ -760,7 +772,8 @@ Function Install-DotFilesComponentFile {
         $SourceFileRelative = $SourceFile.FullName.Substring($SourcePath.FullName.Length + 1)
 
         # Like directories, files may also be ignored by an <IgnorePaths> configuration.
-        if ($SourceFileRelative -in $Component.IgnorePaths) {
+        if ($SourceFileRelative -in $DotFilesGlobalIgnorePaths -or
+            $SourceFileRelative -in $Component.IgnorePaths) {
             Write-Debug -Message ('[{0}] Ignoring file: {1}' -f $Name, $SourceFileRelative)
             continue
         }
@@ -899,7 +912,8 @@ Function Remove-DotFilesComponentDirectory {
         } else {
             $SourceDirectoryRelative = $SourceDirectory.FullName.Substring($SourcePath.FullName.Length + 1)
 
-            if ($SourceDirectoryRelative -in $Component.IgnorePaths) {
+            if ($SourceDirectoryRelative -in $DotFilesGlobalIgnorePaths -or
+                $SourceDirectoryRelative -in $Component.IgnorePaths) {
                 Write-Debug -Message ('[{0}] Ignoring directory: {1}' -f $Name, $SourceDirectoryRelative)
                 continue
             }
@@ -1020,7 +1034,8 @@ Function Remove-DotFilesComponentFile {
         $SourceFileRelative = $SourceFile.FullName.Substring($SourcePath.FullName.Length + 1)
 
         # Like directories, files may also be ignored by an <IgnorePaths> configuration.
-        if ($SourceFileRelative -in $Component.IgnorePaths) {
+        if ($SourceFileRelative -in $DotFilesGlobalIgnorePaths -or
+            $SourceFileRelative -in $Component.IgnorePaths) {
             Write-Debug -Message ('[{0}] Ignoring file: {1}' -f $Name, $SourceFileRelative)
             continue
         }
