@@ -153,7 +153,7 @@ Function Install-DotFiles {
             Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
             Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
             $Result = Install-DotFilesComponentDirectory @Parameters
-            if ($Result) { $Results.Add($Result) }
+            $Results.AddRange($Result)
             $Component.State = Get-ComponentInstallResult -Results $Results
             $Processed.Add($Component)
         }
@@ -252,7 +252,7 @@ Function Remove-DotFiles {
             Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
             Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
             $Result = Remove-DotFilesComponentDirectory @Parameters
-            if ($Result) { $Results.Add($Result) }
+            $Results.AddRange($Result)
             $Component.State = Get-ComponentInstallResult -Results $Results -Removal
             $Processed.Add($Component)
         }
@@ -280,7 +280,7 @@ Function Get-DotFilesInternal {
         if ($Component.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall)) {
             $Results = [Collections.Generic.List[Boolean]]::new()
             $Result = Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $Component.SourcePath -Verify
-            if ($Result) { $Results.Add($Result) }
+            $Results.AddRange($Result)
             $Component.State = Get-ComponentInstallResult -Results $Results
         }
 
@@ -705,7 +705,7 @@ Function Install-DotFilesComponentDirectory {
                 $Result = Install-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles
             }
 
-            if ($Result) { $Results.Add($Result) }
+            $Results.AddRange($Result)
         }
 
         # As above, but now symlink each of the directories
@@ -719,7 +719,7 @@ Function Install-DotFilesComponentDirectory {
                 $Result = Install-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories
             }
 
-            if ($Result) { $Results.Add($Result) }
+            $Results.AddRange($Result)
         }
 
         # Warn if there were no items in the source path and we couldn't symlink the directory
@@ -728,7 +728,7 @@ Function Install-DotFilesComponentDirectory {
         }
     }
 
-    return $Results
+    return , $Results
 }
 
 Function Install-DotFilesComponentFile {
@@ -857,7 +857,7 @@ Function Install-DotFilesComponentFile {
         }
     }
 
-    return $Results
+    return , $Results
 }
 
 Function Remove-DotFilesComponentDirectory {
@@ -975,7 +975,7 @@ Function Remove-DotFilesComponentDirectory {
                 $Result = Remove-DotFilesComponentFile -Component $Component -SourceFiles $NextFiles
             }
 
-            if ($Result) { $Results.Add($Result) }
+            $Results.AddRange($Result)
         }
 
         # As above, but now for directory symlinks
@@ -987,11 +987,11 @@ Function Remove-DotFilesComponentDirectory {
                 $Result = Remove-DotFilesComponentDirectory -Component $Component -SourceDirectories $NextDirectories
             }
 
-            if ($Result) { $Results.Add($Result) }
+            $Results.AddRange($Result)
         }
     }
 
-    return $Results
+    return , $Results
 }
 
 Function Remove-DotFilesComponentFile {
@@ -1102,7 +1102,7 @@ Function Remove-DotFilesComponentFile {
         }
     }
 
-    return $Results
+    return , $Results
 }
 
 Function Find-DotFilesComponent {
@@ -1154,7 +1154,7 @@ Function Find-DotFilesComponent {
 
     $MatchingPrograms = @($InstalledPrograms | Where-Object @Parameters)
 
-    return (, $MatchingPrograms)
+    return , $MatchingPrograms
 }
 
 Function Get-ComponentInstallResult {
@@ -1333,7 +1333,7 @@ Function Get-InstalledPrograms {
     }
 
     Write-Debug -Message ('Found {0} installed programs.' -f ($InstalledPrograms | Measure-Object).Count)
-    return (, $InstalledPrograms)
+    return , $InstalledPrograms
 }
 
 Function Get-SymlinkTarget {
