@@ -325,12 +325,12 @@ Function Initialize-PSDotFiles {
     Write-Verbose -Message ('dotfiles directory: {0}' -f $DotFilesPath)
 
     if (Get-Variable -Name 'DotFilesSkipMetadataSchemaChecks' -Scope Global -ErrorAction Ignore) {
-        $script:DotFilesSkipMetadataSchemaChecks = $global:DotFilesSkipMetadataSchemaChecks
+        $script:SkipMetadataSchemaChecks = $global:DotFilesSkipMetadataSchemaChecks
     } else {
-        $script:DotFilesSkipMetadataSchemaChecks = $false
+        $script:SkipMetadataSchemaChecks = $false
     }
 
-    if (!$DotFilesSkipMetadataSchemaChecks) {
+    if (!$SkipMetadataSchemaChecks) {
         $MetadataSchemaPath = Join-Path -Path $PSScriptRoot -ChildPath 'Metadata.xsd'
         $script:MetadataSchema = New-Object -TypeName Xml.Schema.XmlSchemaSet
         $null = $MetadataSchema.Add($null, (Get-Item -Path $MetadataSchemaPath))
@@ -356,20 +356,20 @@ Function Initialize-PSDotFiles {
     Write-Verbose -Message ('Automatic component detection: {0}' -f $DotFilesAutodetect)
 
     if ($PSBoundParameters.ContainsKey('AllowNestedSymlinks')) {
-        $script:DotFilesAllowNestedSymlinks = $AllowNestedSymlinks
+        $script:AllowNestedSymlinks = $AllowNestedSymlinks
     } elseif (Get-Variable -Name 'DotFilesAllowNestedSymlinks' -Scope Global -ErrorAction Ignore) {
-        $script:DotFilesAllowNestedSymlinks = $global:DotFilesAllowNestedSymlinks
+        $script:AllowNestedSymlinks = $global:DotFilesAllowNestedSymlinks
     } else {
-        $script:DotFilesAllowNestedSymlinks = $false
+        $script:AllowNestedSymlinks = $false
     }
-    Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $DotFilesAllowNestedSymlinks)
+    Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $AllowNestedSymlinks)
 
     if (Get-Variable -Name 'DotFilesGlobalIgnorePaths' -Scope Global -ErrorAction Ignore) {
-        $script:DotFilesGlobalIgnorePaths = $global:DotFilesGlobalIgnorePaths
+        $script:GlobalIgnorePaths = $global:DotFilesGlobalIgnorePaths
     } else {
-        $script:DotFilesGlobalIgnorePaths = $DefaultGlobalIgnorePaths
+        $script:GlobalIgnorePaths = $DefaultGlobalIgnorePaths
     }
-    Write-Verbose -Message ('Global ignore paths: {0}' -f [String]::Join(', ', $DotFilesGlobalIgnorePaths))
+    Write-Verbose -Message ('Global ignore paths: {0}' -f [String]::Join(', ', $GlobalIgnorePaths))
 
     # Cache these results for usage later
     $script:IsAdministrator = Test-IsAdministrator
@@ -618,7 +618,7 @@ Function Install-DotFilesComponentDirectory {
             $ComponentRootDir = $false
             $SourceDirectoryRelative = $SourceDirectory.FullName.Substring($SourcePath.FullName.Length + 1)
 
-            if ($SourceDirectoryRelative -in $DotFilesGlobalIgnorePaths -or
+            if ($SourceDirectoryRelative -in $GlobalIgnorePaths -or
                 $SourceDirectoryRelative -in $Component.IgnorePaths) {
                 Write-Debug -Message ('[{0}] Ignoring directory: {1}' -f $Name, $SourceDirectoryRelative)
                 continue
@@ -693,7 +693,7 @@ Function Install-DotFilesComponentDirectory {
                 $Results.Add($true)
                 Write-Debug -Message ('[{0}] Valid directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                 continue
-            } elseif ($DotFilesAllowNestedSymlinks) {
+            } elseif ($AllowNestedSymlinks) {
                 Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
             } else {
                 $Results.Add($false)
@@ -772,7 +772,7 @@ Function Install-DotFilesComponentFile {
         $SourceFileRelative = $SourceFile.FullName.Substring($SourcePath.FullName.Length + 1)
 
         # Like directories, files may also be ignored by an <IgnorePaths> configuration.
-        if ($SourceFileRelative -in $DotFilesGlobalIgnorePaths -or
+        if ($SourceFileRelative -in $GlobalIgnorePaths -or
             $SourceFileRelative -in $Component.IgnorePaths) {
             Write-Debug -Message ('[{0}] Ignoring file: {1}' -f $Name, $SourceFileRelative)
             continue
@@ -912,7 +912,7 @@ Function Remove-DotFilesComponentDirectory {
         } else {
             $SourceDirectoryRelative = $SourceDirectory.FullName.Substring($SourcePath.FullName.Length + 1)
 
-            if ($SourceDirectoryRelative -in $DotFilesGlobalIgnorePaths -or
+            if ($SourceDirectoryRelative -in $GlobalIgnorePaths -or
                 $SourceDirectoryRelative -in $Component.IgnorePaths) {
                 Write-Debug -Message ('[{0}] Ignoring directory: {1}' -f $Name, $SourceDirectoryRelative)
                 continue
@@ -952,7 +952,7 @@ Function Remove-DotFilesComponentDirectory {
             # are permitted we'll recurse into it. Otherwise, this could be completely fine or
             # an error. We won't remove it so just warn the user of this potential issue.
             if ($SourceDirectory.FullName -ne $SymlinkTarget) {
-                if ($DotFilesAllowNestedSymlinks) {
+                if ($AllowNestedSymlinks) {
                     if (!$Simulate) {
                         Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     }
@@ -1034,7 +1034,7 @@ Function Remove-DotFilesComponentFile {
         $SourceFileRelative = $SourceFile.FullName.Substring($SourcePath.FullName.Length + 1)
 
         # Like directories, files may also be ignored by an <IgnorePaths> configuration.
-        if ($SourceFileRelative -in $DotFilesGlobalIgnorePaths -or
+        if ($SourceFileRelative -in $GlobalIgnorePaths -or
             $SourceFileRelative -in $Component.IgnorePaths) {
             Write-Debug -Message ('[{0}] Ignoring file: {1}' -f $Name, $SourceFileRelative)
             continue
@@ -1221,7 +1221,7 @@ Function Get-ComponentMetadata {
         throw $_
     }
 
-    if (!$DotFilesSkipMetadataSchemaChecks) {
+    if (!$SkipMetadataSchemaChecks) {
         $Metadata.Schemas = $MetadataSchema
         try {
             $Metadata.Validate($null)
