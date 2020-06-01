@@ -123,6 +123,17 @@ So that you don't have to enter this into every new PowerShell session it's a go
 
 If you're unsure which to use, just choose the first.
 
+There are some additional variables you can set in your profile which modify default behaviour:
+
+- `$DotFilesAllowNestedSymlinks` (default: `$false`)  
+  Allow directory symlinks to destinations outside of the source component path earlier in the path hierarchy.
+- `$DotFilesAutodetect` (default: `$false`)  
+  Perform automatic detection for components with no metadata file.
+- `$DotFilesGlobalIgnorePaths` (default: `@('.stow-local-ignore')`)  
+  Paths to ignore for all components in addition to any explicit `<IgnorePath>` elements in the metadata.
+- `$DotFilesSkipMetadataSchemaChecks` (default: `$false`)  
+  Skip validating metadata files against the metadata schema. Generally only useful in development.
+
 Troubleshooting
 ---------------
 
