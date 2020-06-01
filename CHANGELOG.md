@@ -1,6 +1,14 @@
 Changelog
 =========
 
+v0.9.3
+------
+
+- Add documentation on global variables
+- Add support for global ignore paths via `$DotFilesGlobalIgnorePaths`
+- Switch most arrays to `Collections.Generic.List<T>` types
+- Performance optimisations around array use
+
 v0.9.2
 ------
 
