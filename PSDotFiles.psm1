@@ -45,7 +45,7 @@ Function Get-DotFiles {
     #>
 
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
-    [CmdletBinding(ConfirmImpact='Low', SupportsShouldProcess)]
+    [CmdletBinding(ConfirmImpact = 'Low', SupportsShouldProcess)]
     Param(
         [String]$Path,
         [Switch]$Autodetect,
@@ -102,15 +102,15 @@ Function Install-DotFiles {
     #>
 
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
-    [CmdletBinding(DefaultParameterSetName='Retrieve', ConfirmImpact='Low', SupportsShouldProcess)]
+    [CmdletBinding(DefaultParameterSetName = 'Retrieve', ConfirmImpact = 'Low', SupportsShouldProcess)]
     Param(
-        [Parameter(ParameterSetName='Retrieve')]
+        [Parameter(ParameterSetName = 'Retrieve')]
         [String]$Path,
 
-        [Parameter(ParameterSetName='Retrieve')]
+        [Parameter(ParameterSetName = 'Retrieve')]
         [Switch]$Autodetect,
 
-        [Parameter(ParameterSetName='Pipeline', Mandatory, ValueFromPipeline)]
+        [Parameter(ParameterSetName = 'Pipeline', Mandatory, ValueFromPipeline)]
         [AllowEmptyCollection()]
         [Component[]]$Components,
 
@@ -146,8 +146,8 @@ Function Install-DotFiles {
             $Results = [Collections.Generic.List[Boolean]]::new()
 
             $Parameters = @{
-                'Component'=$Component
-                'SourceDirectories'=$Component.SourcePath
+                Component         = $Component
+                SourceDirectories = $Component.SourcePath
             }
 
             if (!($PSCmdlet.ShouldProcess($Name, 'Install'))) {
@@ -213,15 +213,15 @@ Function Remove-DotFiles {
     #>
 
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
-    [CmdletBinding(DefaultParameterSetName='Retrieve', ConfirmImpact='Low', SupportsShouldProcess)]
+    [CmdletBinding(DefaultParameterSetName = 'Retrieve', ConfirmImpact = 'Low', SupportsShouldProcess)]
     Param(
-        [Parameter(ParameterSetName='Retrieve')]
+        [Parameter(ParameterSetName = 'Retrieve')]
         [String]$Path,
 
-        [Parameter(ParameterSetName='Retrieve')]
+        [Parameter(ParameterSetName = 'Retrieve')]
         [Switch]$Autodetect,
 
-        [Parameter(ParameterSetName='Pipeline', Mandatory, ValueFromPipeline)]
+        [Parameter(ParameterSetName = 'Pipeline', Mandatory, ValueFromPipeline)]
         [AllowEmptyCollection()]
         [Component[]]$Components,
 
@@ -245,8 +245,8 @@ Function Remove-DotFiles {
             $Results = [Collections.Generic.List[Boolean]]::new()
 
             $Parameters = @{
-                'Component'=$Component
-                'SourceDirectories'=$Component.SourcePath
+                Component         = $Component
+                SourceDirectories = $Component.SourcePath
             }
 
             if (!($PSCmdlet.ShouldProcess($Name, 'Remove'))) {
@@ -381,14 +381,14 @@ Function Initialize-PSDotFiles {
 Function Initialize-DotFilesComponent {
     [CmdletBinding()]
     Param(
-        [Parameter(ParameterSetName='New', Mandatory)]
+        [Parameter(ParameterSetName = 'New', Mandatory)]
         [String]$Name,
 
-        [Parameter(ParameterSetName='Override', Mandatory)]
+        [Parameter(ParameterSetName = 'Override', Mandatory)]
         [Component]$Component,
 
-        [Parameter(ParameterSetName='New')]
-        [Parameter(ParameterSetName='Override', Mandatory)]
+        [Parameter(ParameterSetName = 'New')]
+        [Parameter(ParameterSetName = 'Override', Mandatory)]
         [Xml]$Metadata
     )
 
@@ -454,9 +454,9 @@ Function Initialize-DotFilesComponent {
     # Run component detection
     if ($DetectionMethod -eq 'Automatic') {
         $Parameters = @{
-            'Name'=$Name
-            'RegularExpression'=$false
-            'CaseSensitive'=$false
+            Name              = $Name
+            RegularExpression = $false
+            CaseSensitive     = $false
         }
 
         if ($Metadata.SelectSingleNode('//Component/Detection/MatchRegEx')) {
@@ -573,7 +573,7 @@ Function Initialize-DotFilesComponent {
 }
 
 Function Install-DotFilesComponentDirectory {
-    [CmdletBinding(DefaultParameterSetName='Install')]
+    [CmdletBinding(DefaultParameterSetName = 'Install')]
     Param(
         [Parameter(Mandatory)]
         [Component]$Component,
@@ -581,10 +581,10 @@ Function Install-DotFilesComponentDirectory {
         [Parameter(Mandatory)]
         [IO.DirectoryInfo[]]$SourceDirectories,
 
-        [Parameter(ParameterSetName='Simulate')]
+        [Parameter(ParameterSetName = 'Simulate')]
         [Switch]$Simulate,
 
-        [Parameter(ParameterSetName='Verify')]
+        [Parameter(ParameterSetName = 'Verify')]
         [Switch]$Verify
     )
 
@@ -744,7 +744,7 @@ Function Install-DotFilesComponentDirectory {
 }
 
 Function Install-DotFilesComponentFile {
-    [CmdletBinding(DefaultParameterSetName='Install')]
+    [CmdletBinding(DefaultParameterSetName = 'Install')]
     Param(
         [Parameter(Mandatory)]
         [Component]$Component,
@@ -752,10 +752,10 @@ Function Install-DotFilesComponentFile {
         [Parameter(Mandatory)]
         [IO.FileInfo[]]$SourceFiles,
 
-        [Parameter(ParameterSetName='Simulate')]
+        [Parameter(ParameterSetName = 'Simulate')]
         [Switch]$Simulate,
 
-        [Parameter(ParameterSetName='Verify')]
+        [Parameter(ParameterSetName = 'Verify')]
         [Switch]$Verify
     )
 
@@ -1148,7 +1148,7 @@ Function Find-DotFilesComponent {
     }
 
     $Parameters = @{
-        'Property'='Name'
+        Property = 'Name'
     }
 
     if ($Pattern) {
@@ -1310,13 +1310,13 @@ Function Get-InstalledPrograms {
             !$Program.PSObject.Properties['ParentKeyName'] -and
             ($Program.PSObject.Properties['UninstallString'] -or $Program.PSObject.Properties['NoRemove'])) {
             $InstalledProgram = [PSCustomObject]@{
-                Name = $Program.DisplayName
-                Publisher = $null
-                InstallDate = $null
+                Name          = $Program.DisplayName
+                Publisher     = $null
+                InstallDate   = $null
                 EstimatedSize = $null
-                Version = $null
-                Location = $null
-                Uninstall = $null
+                Version       = $null
+                Location      = $null
+                Uninstall     = $null
             }
 
             if ($Program.PSObject.Properties['Publisher']) {
