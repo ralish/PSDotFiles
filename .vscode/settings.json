@@ -5,7 +5,7 @@
 
     // Markdown table of contents generation
     "markdown.extension.toc.levels": "2..2",
-    "markdown.extension.toc.githubCompatibility": true,
+    "markdown.extension.toc.slugifyMode": "github",
 
     "powershell.scriptAnalysis.settingsPath": "PSScriptAnalyzerSettings.psd1"
 }
