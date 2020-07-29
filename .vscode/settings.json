@@ -16,8 +16,7 @@
     "powershell.codeFormatting.pipelineIndentationStyle": "IncreaseIndentationForFirstPipeline",
     "powershell.codeFormatting.trimWhitespaceAroundPipe": true,
     "powershell.codeFormatting.useCorrectCasing": true,
-    // Broken with interpolated strings pending fix (GH PR #1498)
-    //"powershell.codeFormatting.whitespaceBetweenParameters": true,
+    "powershell.codeFormatting.whitespaceBetweenParameters": true,
 
     "[powershell]": {
         "editor.formatOnSave": true

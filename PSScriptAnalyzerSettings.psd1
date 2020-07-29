@@ -70,8 +70,7 @@
             CheckOpenParen                  = $true
             # Incompatible with aligned hashtable assignment (GH #769)
             CheckOperator                   = $false
-            # Broken with interpolated strings pending fix (GH PR #1498)
-            CheckParameter                  = $false
+            CheckParameter                  = $true
             CheckPipe                       = $true
             CheckPipeForRedundantWhitespace = $true
             CheckSeparator                  = $true
