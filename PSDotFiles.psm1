@@ -310,13 +310,13 @@ Function Initialize-PSDotFiles {
     )
 
     if ($PSBoundParameters.ContainsKey('Path')) {
-        $script:DotFilesPath = Test-DotFilesPath -Path $Path
-        if (!$script:DotFilesPath) {
+        $Script:DotFilesPath = Test-DotFilesPath -Path $Path
+        if (!$Script:DotFilesPath) {
             throw "The provided dotfiles path is either not a directory or it can't be accessed."
         }
     } elseif (Get-Variable -Name 'DotFilesPath' -Scope Global -ErrorAction Ignore) {
-        $script:DotFilesPath = Test-DotFilesPath -Path $global:DotFilesPath
-        if (!$script:DotFilesPath) {
+        $Script:DotFilesPath = Test-DotFilesPath -Path $Global:DotFilesPath
+        if (!$Script:DotFilesPath) {
             throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
         }
     } else {
@@ -325,14 +325,14 @@ Function Initialize-PSDotFiles {
     Write-Verbose -Message ('dotfiles directory: {0}' -f $DotFilesPath)
 
     if (Get-Variable -Name 'DotFilesSkipMetadataSchemaChecks' -Scope Global -ErrorAction Ignore) {
-        $script:SkipMetadataSchemaChecks = $global:DotFilesSkipMetadataSchemaChecks
+        $Script:SkipMetadataSchemaChecks = $Global:DotFilesSkipMetadataSchemaChecks
     } else {
-        $script:SkipMetadataSchemaChecks = $false
+        $Script:SkipMetadataSchemaChecks = $false
     }
 
     if (!$SkipMetadataSchemaChecks) {
         $MetadataSchemaPath = Join-Path -Path $PSScriptRoot -ChildPath 'Metadata.xsd'
-        $script:MetadataSchema = New-Object -TypeName Xml.Schema.XmlSchemaSet
+        $Script:MetadataSchema = New-Object -TypeName Xml.Schema.XmlSchemaSet
         $null = $MetadataSchema.Add($null, (Get-Item -Path $MetadataSchemaPath))
         $MetadataSchema.Compile() # Implied on the first validation but do so now to ensure it's sane.
         Write-Debug -Message ('Metadata schema: {0}' -f $MetadataSchemaPath)
@@ -340,43 +340,43 @@ Function Initialize-PSDotFiles {
         Write-Warning -Message 'Skipping validation of metadata files against XML schema.'
     }
 
-    $script:GlobalMetadataPath = Join-Path -Path $PSScriptRoot -ChildPath 'metadata'
+    $Script:GlobalMetadataPath = Join-Path -Path $PSScriptRoot -ChildPath 'metadata'
     Write-Debug -Message ('Global metadata: {0}' -f $GlobalMetadataPath)
 
-    $script:DotFilesMetadataPath = Join-Path -Path $DotFilesPath -ChildPath 'metadata'
+    $Script:DotFilesMetadataPath = Join-Path -Path $DotFilesPath -ChildPath 'metadata'
     Write-Debug -Message ('Dotfiles metadata: {0}' -f $DotFilesMetadataPath)
 
     if ($PSBoundParameters.ContainsKey('Autodetect')) {
-        $script:DotFilesAutodetect = $Autodetect
+        $Script:DotFilesAutodetect = $Autodetect
     } elseif (Get-Variable -Name 'DotFilesAutodetect' -Scope Global -ErrorAction Ignore) {
-        $script:DotFilesAutodetect = $global:DotFilesAutodetect
+        $Script:DotFilesAutodetect = $Global:DotFilesAutodetect
     } else {
-        $script:DotFilesAutodetect = $false
+        $Script:DotFilesAutodetect = $false
     }
     Write-Verbose -Message ('Automatic component detection: {0}' -f $DotFilesAutodetect)
 
     if ($PSBoundParameters.ContainsKey('AllowNestedSymlinks')) {
-        $script:AllowNestedSymlinks = $AllowNestedSymlinks
+        $Script:AllowNestedSymlinks = $AllowNestedSymlinks
     } elseif (Get-Variable -Name 'DotFilesAllowNestedSymlinks' -Scope Global -ErrorAction Ignore) {
-        $script:AllowNestedSymlinks = $global:DotFilesAllowNestedSymlinks
+        $Script:AllowNestedSymlinks = $Global:DotFilesAllowNestedSymlinks
     } else {
-        $script:AllowNestedSymlinks = $false
+        $Script:AllowNestedSymlinks = $false
     }
-    Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $script:AllowNestedSymlinks)
+    Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $AllowNestedSymlinks)
 
     if (Get-Variable -Name 'DotFilesGlobalIgnorePaths' -Scope Global -ErrorAction Ignore) {
-        $script:GlobalIgnorePaths = $global:DotFilesGlobalIgnorePaths
+        $Script:GlobalIgnorePaths = $Global:DotFilesGlobalIgnorePaths
     } else {
-        $script:GlobalIgnorePaths = $DefaultGlobalIgnorePaths
+        $Script:GlobalIgnorePaths = $DefaultGlobalIgnorePaths
     }
     Write-Verbose -Message ('Global ignore paths: {0}' -f [String]::Join(', ', $GlobalIgnorePaths))
 
     # Cache these results for usage later
-    $script:IsAdministrator = Test-IsAdministrator
-    $script:IsAppxCompatNeeded = Test-IsAppxCompatNeeded
-    $script:IsMkLinkNeeded = Test-IsMkLinkNeeded
-    $script:IsWin10DevMode = Test-IsWin10DevMode
-    $script:RefreshInstalledPrograms = $true
+    $Script:IsAdministrator = Test-IsAdministrator
+    $Script:IsAppxCompatNeeded = Test-IsAppxCompatNeeded
+    $Script:IsMkLinkNeeded = Test-IsMkLinkNeeded
+    $Script:IsWin10DevMode = Test-IsWin10DevMode
+    $Script:RefreshInstalledPrograms = $true
 }
 
 Function Initialize-DotFilesComponent {
@@ -1134,7 +1134,7 @@ Function Find-DotFilesComponent {
 
     if ($RefreshInstalledPrograms) {
         Write-Verbose -Message 'Refreshing installed programs ...'
-        $script:InstalledPrograms = Get-InstalledPrograms
+        $Script:InstalledPrograms = Get-InstalledPrograms
 
         if (Get-Module -Name Appx -ListAvailable) {
             if ($IsAppxCompatNeeded) {
@@ -1144,13 +1144,13 @@ Function Find-DotFilesComponent {
 
             Write-Verbose -Message 'Refreshing installed app packages ...'
             $AppPackages = Get-AppxPackage
-            $script:InstalledPrograms += $AppPackages
+            $Script:InstalledPrograms += $AppPackages
             Write-Debug -Message ('Found {0} app packages.' -f ($AppPackages | Measure-Object).Count)
         } else {
             Write-Verbose -Message 'Not retrieving app packages as Appx module not available.'
         }
 
-        $script:RefreshInstalledPrograms = $false
+        $Script:RefreshInstalledPrograms = $false
     }
 
     $Parameters = @{
