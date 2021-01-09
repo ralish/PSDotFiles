@@ -362,7 +362,7 @@ Function Initialize-PSDotFiles {
     } else {
         $script:AllowNestedSymlinks = $false
     }
-    Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $AllowNestedSymlinks)
+    Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $script:AllowNestedSymlinks)
 
     if (Get-Variable -Name 'DotFilesGlobalIgnorePaths' -Scope Global -ErrorAction Ignore) {
         $script:GlobalIgnorePaths = $global:DotFilesGlobalIgnorePaths
