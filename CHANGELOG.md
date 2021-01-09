@@ -1,6 +1,13 @@
 Changelog
 =========
 
+v0.9.4
+------
+
+- Add workaround for failure to import `Appx` module under PowerShell 7.1
+- Fix potentially incorrect verbose output on nested symlinks state
+- Miscellaneous code style changes & development tooling updates
+
 v0.9.3
 ------
 
