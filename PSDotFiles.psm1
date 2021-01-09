@@ -373,8 +373,9 @@ Function Initialize-PSDotFiles {
 
     # Cache these results for usage later
     $script:IsAdministrator = Test-IsAdministrator
-    $script:IsWin10DevMode = Test-IsWin10DevMode
+    $script:IsAppxCompatNeeded = Test-IsAppxCompatNeeded
     $script:IsMkLinkNeeded = Test-IsMkLinkNeeded
+    $script:IsWin10DevMode = Test-IsWin10DevMode
     $script:RefreshInstalledPrograms = $true
 }
 
@@ -1136,6 +1137,11 @@ Function Find-DotFilesComponent {
         $script:InstalledPrograms = Get-InstalledPrograms
 
         if (Get-Module -Name Appx -ListAvailable) {
+            if ($IsAppxCompatNeeded) {
+                Write-Verbose -Message 'Loading Appx module in Windows PowerShell session ...'
+                Import-Module -Name Appx -UseWindowsPowerShell -WarningAction Ignore -Verbose:$false
+            }
+
             Write-Verbose -Message 'Refreshing installed app packages ...'
             $AppPackages = Get-AppxPackage
             $script:InstalledPrograms += $AppPackages
@@ -1497,6 +1503,24 @@ Function Test-IsAdministrator {
     if ($User.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         return $true
     }
+    return $false
+}
+
+Function Test-IsAppxCompatNeeded {
+    [CmdletBinding()]
+    Param()
+
+    # PowerShell 7.1 introduced a breaking change which results in the Appx module failing to load.
+    # The workaround is to import the module using Windows Powershell compatibility. This does have
+    # side-effects as it means objects are serialised as they're returned to the PowerShell session.
+    # Fortunately, our usage of the module should mean none of these effects will have any impact.
+    #
+    # See: https://github.com/PowerShell/PowerShell/issues/13138
+    $AffectedVersion = [Version]::new(7, 1)
+    if ($PSVersionTable.PSVersion -ge $AffectedVersion) {
+        return $true
+    }
+
     return $false
 }
 
