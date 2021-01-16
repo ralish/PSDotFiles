@@ -1292,65 +1292,47 @@ Function Get-InstalledPrograms {
     [CmdletBinding()]
     Param()
 
-    $Hives = @('HKLM', 'HKCU')
-    $NativeRegPath = 'Software\Microsoft\Windows\CurrentVersion\Uninstall'
-    $Wow6432RegPath = 'Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+    $ComputerNativeRegPath = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
+    $ComputerWow64RegPath = 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+    $UserRegPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
 
-    $UninstallKeys = @()
-    foreach ($Hive in $Hives) {
-        $HiveNativeRegPath = '{0}:\{1}' -f $Hive, $NativeRegPath
-        $UninstallKeys += Get-ChildItem -Path $HiveNativeRegPath
-
-        $HiveWow6432RegPath = '{0}:\{1}' -f $Hive, $Wow6432RegPath
-        if (Test-Path -Path $HiveWow6432RegPath -PathType Container) {
-            $UninstallKeys += Get-ChildItem -Path $HiveWow6432RegPath
-        }
+    $UninstallKeys = Get-ChildItem -Path $ComputerNativeRegPath
+    if (Test-Path -Path $ComputerWow64RegPath -PathType Container) {
+        $UninstallKeys += Get-ChildItem -Path $ComputerWow64RegPath
+    }
+    if (Test-Path -Path $UserRegPath -PathType Container) {
+        $UninstallKeys += Get-ChildItem -Path $UserRegPath
     }
 
     $InstalledPrograms = [Collections.ArrayList]::new()
     foreach ($UninstallKey in $UninstallKeys) {
         $Program = Get-ItemProperty -Path $UninstallKey.PSPath
-        if ($Program.PSObject.Properties['DisplayName'] -and
-            !$Program.PSObject.Properties['SystemComponent'] -and
-            !$Program.PSObject.Properties['ReleaseType'] -and
-            !$Program.PSObject.Properties['ParentKeyName'] -and
-            ($Program.PSObject.Properties['UninstallString'] -or $Program.PSObject.Properties['NoRemove'])) {
-            $InstalledProgram = [PSCustomObject]@{
-                Name          = $Program.DisplayName
-                Publisher     = $null
-                InstallDate   = $null
-                EstimatedSize = $null
-                Version       = $null
-                Location      = $null
-                Uninstall     = $null
-            }
 
-            if ($Program.PSObject.Properties['Publisher']) {
-                $InstalledProgram.Publisher = $Program.Publisher
-            }
-
-            if ($Program.PSObject.Properties['InstallDate']) {
-                $InstalledProgram.InstallDate = $Program.InstallDate
-            }
-
-            if ($Program.PSObject.Properties['EstimatedSize']) {
-                $InstalledProgram.EstimatedSize = $Program.EstimatedSize
-            }
-
-            if ($Program.PSObject.Properties['DisplayVersion']) {
-                $InstalledProgram.Version = $Program.DisplayVersion
-            }
-
-            if ($Program.PSObject.Properties['InstallLocation']) {
-                $InstalledProgram.Location = $Program.InstallLocation
-            }
-
-            if ($Program.PSObject.Properties['UninstallString']) {
-                $InstalledProgram.Uninstall = $Program.UninstallString
-            }
-
-            $null = $InstalledPrograms.Add($InstalledProgram)
+        if (!$Program.PSObject.Properties['DisplayName']) {
+            continue
         }
+
+        if (!($Program.PSObject.Properties['UninstallString'] -or ($Program.PSObject.Properties['NoRemove'] -and $Program.NoRemove -eq 1))) {
+            continue
+        }
+
+        if ($Program.PSObject.Properties['ParentKeyName'] -or $Program.PSObject.Properties['ParentDisplayName']) {
+            continue
+        }
+
+        if ($Program.PSObject.Properties['SystemComponent'] -and $Program.SystemComponent -eq 1) {
+            continue
+        }
+
+        if ($Program.PSObject.Properties['ReleaseType']) {
+            continue
+        }
+
+        $InstalledProgram = [PSCustomObject]@{
+            Name = $Program.DisplayName
+        }
+
+        $null = $InstalledPrograms.Add($InstalledProgram)
     }
 
     Write-Debug -Message ('Found {0} installed programs.' -f ($InstalledPrograms | Measure-Object).Count)
