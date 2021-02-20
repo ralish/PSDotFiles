@@ -356,13 +356,13 @@ Function Initialize-PSDotFiles {
     Write-Verbose -Message ('Automatic component detection: {0}' -f $DotFilesAutodetect)
 
     if ($PSBoundParameters.ContainsKey('AllowNestedSymlinks')) {
-        $Script:AllowNestedSymlinks = $AllowNestedSymlinks
+        $Script:NestedSymlinks = $AllowNestedSymlinks
     } elseif (Get-Variable -Name 'DotFilesAllowNestedSymlinks' -Scope Global -ErrorAction Ignore) {
-        $Script:AllowNestedSymlinks = $Global:DotFilesAllowNestedSymlinks
+        $Script:NestedSymlinks = $Global:DotFilesAllowNestedSymlinks
     } else {
-        $Script:AllowNestedSymlinks = $false
+        $Script:NestedSymlinks = $false
     }
-    Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $AllowNestedSymlinks)
+    Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $NestedSymlinks)
 
     if (Get-Variable -Name 'DotFilesGlobalIgnorePaths' -Scope Global -ErrorAction Ignore) {
         $Script:GlobalIgnorePaths = $Global:DotFilesGlobalIgnorePaths
@@ -686,7 +686,7 @@ Function Install-DotFilesComponentDirectory {
 
         # We found a symbolic link. Either:
         # - It points where we expect -> nothing to do
-        # - It points somewhere else -> recurse into it (AllowNestedSymlinks)
+        # - It points somewhere else -> recurse into it (NestedSymlinks)
         # - It points somewhere unexpected -> unable to symlink this path element
         if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
             $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
@@ -694,7 +694,7 @@ Function Install-DotFilesComponentDirectory {
                 $Results.Add($true)
                 Write-Debug -Message ('[{0}] Valid directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                 continue
-            } elseif ($AllowNestedSymlinks) {
+            } elseif ($NestedSymlinks) {
                 Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
             } else {
                 $Results.Add($false)
@@ -944,7 +944,7 @@ Function Remove-DotFilesComponentDirectory {
 
         # We found a symbolic link. Either:
         # - It points where we expect -> remove it
-        # - It points somewhere else -> recurse into it (AllowNestedSymlinks)
+        # - It points somewhere else -> recurse into it (NestedSymlinks)
         # - It points somewhere unexpected -> unable to remove this path element
         if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
             $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
@@ -953,7 +953,7 @@ Function Remove-DotFilesComponentDirectory {
             # are permitted we'll recurse into it. Otherwise, this could be completely fine or
             # an error. We won't remove it so just warn the user of this potential issue.
             if ($SourceDirectory.FullName -ne $SymlinkTarget) {
-                if ($AllowNestedSymlinks) {
+                if ($NestedSymlinks) {
                     if (!$Simulate) {
                         Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                     }
