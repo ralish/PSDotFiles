@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.9.5
+------
+
+- Fix incorrect handling of `$DotFilesAllowNestedSymlinks` preference
+
 v0.9.4
 ------
 
