@@ -5,6 +5,8 @@ PSDotFiles
 [![pwsh dl](https://img.shields.io/powershellgallery/dt/PSDotFiles)](https://www.powershellgallery.com/packages/PSDotFiles)
 [![license](https://img.shields.io/github/license/ralish/PSDotFiles)](https://choosealicense.com/licenses/mit/)
 
+[![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/ralish/PSDotFiles)
+
 A simple *dotfiles* management framework for Windows built on PowerShell.
 
 - [Purpose](#purpose)
