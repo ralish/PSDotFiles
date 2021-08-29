@@ -1214,6 +1214,7 @@ Function Get-ComponentInstallResult {
 }
 
 Function Get-ComponentMetadata {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)]
