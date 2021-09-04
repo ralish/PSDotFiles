@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.9.6
+------
+
+- Add progress bar support to all commands
+
 v0.9.5
 ------
 
