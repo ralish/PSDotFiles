@@ -132,38 +132,52 @@ Function Install-DotFiles {
             }
         }
 
+        $WriteProgressParams = @{
+            Activity = 'Installing dotfiles components'
+        }
+
         $Processed = [Collections.Generic.List[Component]]::new()
         if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-            [Component[]]$Components = Get-DotFilesInternal @PSBoundParameters
+            Write-Progress @WriteProgressParams -Status 'Running Get-DotFiles'
+            [Component[]]$Components = Get-DotFilesInternal @PSBoundParameters -ProgressId 1
         }
     }
 
     Process {
         [Component[]]$ToInstall = $Components | Where-Object { $_.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall) }
 
-        foreach ($Component in $ToInstall) {
-            $Name = $Component.Name
-            $Results = [Collections.Generic.List[Boolean]]::new()
+        for ($Index = 0; $Index -lt $ToInstall.Count; $Index++) {
+            $Component = $ToInstall[$Index]
+
+            $WriteProgressParams['Status'] = 'Installing {0}' -f $Component.Name
+            if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
+                $WriteProgressParams['PercentComplete'] = $Index / $ToInstall.Count * 100
+            }
+
+            Write-Progress @WriteProgressParams
+            Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Component.Name, $Component.SourcePath)
+            Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Component.Name, $Component.InstallPath)
 
             $Parameters = @{
                 Component         = $Component
                 SourceDirectories = $Component.SourcePath
             }
 
-            if (!($PSCmdlet.ShouldProcess($Name, 'Install'))) {
+            if (!($PSCmdlet.ShouldProcess($Component.Name, 'Install'))) {
                 $Parameters['Simulate'] = $true
             }
 
-            Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
-            Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
+            $Results = [Collections.Generic.List[Boolean]]::new()
             $Result = Install-DotFilesComponentDirectory @Parameters
             $Results.AddRange($Result)
+
             $Component.State = Get-ComponentInstallResult -Results $Results
             $Processed.Add($Component)
         }
     }
 
     End {
+        Write-Progress @WriteProgressParams -Completed
         return $Processed
     }
 }
@@ -231,38 +245,52 @@ Function Remove-DotFiles {
     Begin {
         Initialize-PSDotFiles @PSBoundParameters
 
+        $WriteProgressParams = @{
+            Activity = 'Removing dotfiles components'
+        }
+
         $Processed = [Collections.Generic.List[Component]]::new()
         if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
-            [Component[]]$Components = Get-DotFilesInternal @PSBoundParameters
+            Write-Progress @WriteProgressParams -Status 'Running Get-DotFiles'
+            [Component[]]$Components = Get-DotFilesInternal @PSBoundParameters -ProgressId 1
         }
     }
 
     Process {
-        [Component[]]$ToInstall = $Components | Where-Object { $_.State -in ([InstallState]::Installed, [InstallState]::PartialInstall) }
+        [Component[]]$ToRemove = $Components | Where-Object { $_.State -in ([InstallState]::Installed, [InstallState]::PartialInstall) }
 
-        foreach ($Component in $ToInstall) {
-            $Name = $Component.Name
-            $Results = [Collections.Generic.List[Boolean]]::new()
+        for ($Index = 0; $Index -lt $ToRemove.Count; $Index++) {
+            $Component = $ToRemove[$Index]
+
+            $WriteProgressParams['Status'] = 'Removing {0}' -f $Component.Name
+            if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
+                $WriteProgressParams['PercentComplete'] = $Index / $ToRemove.Count * 100
+            }
+
+            Write-Progress @WriteProgressParams
+            Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Component.Name, $Component.SourcePath)
+            Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Component.Name, $Component.InstallPath)
 
             $Parameters = @{
                 Component         = $Component
                 SourceDirectories = $Component.SourcePath
             }
 
-            if (!($PSCmdlet.ShouldProcess($Name, 'Remove'))) {
+            if (!($PSCmdlet.ShouldProcess($Component.Name, 'Remove'))) {
                 $Parameters['Simulate'] = $true
             }
 
-            Write-Debug -Message ('[{0}] Source directory is: {1}' -f $Name, $Component.SourcePath)
-            Write-Debug -Message ('[{0}] Installation path is: {1}' -f $Name, $Component.InstallPath)
+            $Results = [Collections.Generic.List[Boolean]]::new()
             $Result = Remove-DotFilesComponentDirectory @Parameters
             $Results.AddRange($Result)
+
             $Component.State = Get-ComponentInstallResult -Results $Results -Removal
             $Processed.Add($Component)
         }
     }
 
     End {
+        Write-Progress @WriteProgressParams -Completed
         return $Processed
     }
 }
@@ -273,12 +301,26 @@ Function Get-DotFilesInternal {
     Param(
         [String]$Path,
         [Switch]$Autodetect,
-        [Switch]$AllowNestedSymlinks
+        [Switch]$AllowNestedSymlinks,
+        [Int]$ProgressId = 0
     )
 
+    $WriteProgressParams = @{
+        Id       = $ProgressId
+        Activity = 'Getting dotfiles components'
+    }
+
+    Write-Progress @WriteProgressParams -Status 'Enumerating components' -PercentComplete 0
     $Components = [Collections.Generic.List[Component]]::new()
     $Directories = Get-ChildItem -Path $DotFilesPath -Directory
-    foreach ($Directory in $Directories) {
+
+    for ($Index = 0; $Index -lt $Directories.Count; $Index++) {
+        $Directory = $Directories[$Index]
+
+        $WriteProgressParams['Status'] = 'Retrieving: {0}' -f $Directory.Name
+        $WriteProgressParams['PercentComplete'] = $Index / $Directories.Count * 100
+        Write-Progress @WriteProgressParams
+
         $Component = Get-DotFilesComponent -Directory $Directory
 
         if ($Component.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall)) {
@@ -290,6 +332,8 @@ Function Get-DotFilesInternal {
 
         $Components.Add($Component)
     }
+
+    Write-Progress @WriteProgressParams -Completed
 
     if (!$Components) {
         Write-Warning -Message 'Get-DotFiles returned no results. Are you sure your $DotFilesPath is set correctly?'
