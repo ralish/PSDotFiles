@@ -1683,11 +1683,11 @@ Class Component {
 
     # Source paths with additional target symlink paths
     # Note: Set by <AdditionalPath> elements under <AdditionalPaths>
-    [Hashtable]$AdditionalPaths = @{ }
+    [Hashtable]$AdditionalPaths = @{}
 
     # Source paths with renamed target symlink paths
     # Note: Set by <RenamePath> elements under <RenamePaths>
-    [Hashtable]$RenamePaths = @{ }
+    [Hashtable]$RenamePaths = @{}
 
     Component ([String]$Name, [IO.DirectoryInfo]$DotFilesPath) {
         $this.Name = $Name
