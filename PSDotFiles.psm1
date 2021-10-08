@@ -144,7 +144,7 @@ Function Install-DotFiles {
     }
 
     Process {
-        [Component[]]$ToInstall = $Components | Where-Object { $_.Availability -in ([Availability]::Available, [Availability]::AlwaysInstall) }
+        [Component[]]$ToInstall = $Components | Where-Object Availability -In ([Availability]::Available, [Availability]::AlwaysInstall)
 
         for ($Index = 0; $Index -lt $ToInstall.Count; $Index++) {
             $Component = $ToInstall[$Index]
@@ -257,7 +257,7 @@ Function Remove-DotFiles {
     }
 
     Process {
-        [Component[]]$ToRemove = $Components | Where-Object { $_.State -in ([InstallState]::Installed, [InstallState]::PartialInstall) }
+        [Component[]]$ToRemove = $Components | Where-Object State -In ([InstallState]::Installed, [InstallState]::PartialInstall)
 
         for ($Index = 0; $Index -lt $ToRemove.Count; $Index++) {
             $Component = $ToRemove[$Index]
