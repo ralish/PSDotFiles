@@ -296,7 +296,6 @@ Function Remove-DotFiles {
 }
 
 Function Get-DotFilesInternal {
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '')]
     [CmdletBinding(SupportsShouldProcess)]
     Param(
         [String]$Path,
