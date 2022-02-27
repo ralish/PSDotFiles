@@ -1,6 +1,12 @@
 Changelog
 =========
 
+v0.9.7
+------
+
+- Explicitly check if the `ToInstall`/`ToRemove` array is empty
+- Simplify several `Where-Object` clauses
+
 v0.9.6
 ------
 
