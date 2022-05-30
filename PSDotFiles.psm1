@@ -54,7 +54,7 @@ Function Get-DotFiles {
 
     Initialize-PSDotFiles @PSBoundParameters
 
-    return Get-DotFilesInternal @PSBoundParameters
+    return (Get-DotFilesInternal @PSBoundParameters).ToArray()
 }
 
 Function Install-DotFiles {
@@ -139,7 +139,7 @@ Function Install-DotFiles {
         $Processed = [Collections.Generic.List[Component]]::new()
         if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
             Write-Progress @WriteProgressParams -Status 'Running Get-DotFiles'
-            [Component[]]$Components = Get-DotFilesInternal @PSBoundParameters -ProgressId 1
+            $Components = Get-DotFilesInternal @PSBoundParameters -ProgressId 1
         }
     }
 
@@ -184,7 +184,7 @@ Function Install-DotFiles {
 
     End {
         Write-Progress @WriteProgressParams -Completed
-        return $Processed
+        return $Processed.ToArray()
     }
 }
 
@@ -258,7 +258,7 @@ Function Remove-DotFiles {
         $Processed = [Collections.Generic.List[Component]]::new()
         if ($PSCmdlet.ParameterSetName -eq 'Retrieve') {
             Write-Progress @WriteProgressParams -Status 'Running Get-DotFiles'
-            [Component[]]$Components = Get-DotFilesInternal @PSBoundParameters -ProgressId 1
+            $Components = Get-DotFilesInternal @PSBoundParameters -ProgressId 1
         }
     }
 
@@ -303,7 +303,7 @@ Function Remove-DotFiles {
 
     End {
         Write-Progress @WriteProgressParams -Completed
-        return $Processed
+        return $Processed.ToArray()
     }
 }
 
@@ -350,7 +350,7 @@ Function Get-DotFilesInternal {
         Write-Warning -Message 'Get-DotFiles returned no results. Are you sure your $DotFilesPath is set correctly?'
     }
 
-    return $Components
+    return , $Components
 }
 
 Function Initialize-PSDotFiles {
@@ -364,12 +364,12 @@ Function Initialize-PSDotFiles {
         [Switch]$AllowNestedSymlinks
     )
 
-    if ($PSBoundParameters.ContainsKey('Path')) {
+    if ($Path) {
         $Script:DotFilesPath = Test-DotFilesPath -Path $Path
         if (!$Script:DotFilesPath) {
             throw "The provided dotfiles path is either not a directory or it can't be accessed."
         }
-    } elseif (Get-Variable -Name 'DotFilesPath' -Scope Global -ErrorAction Ignore) {
+    } elseif (Get-Variable -Name DotFilesPath -Scope Global -ErrorAction Ignore) {
         $Script:DotFilesPath = Test-DotFilesPath -Path $Global:DotFilesPath
         if (!$Script:DotFilesPath) {
             throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
@@ -379,7 +379,7 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose -Message ('dotfiles directory: {0}' -f $DotFilesPath)
 
-    if (Get-Variable -Name 'DotFilesSkipMetadataSchemaChecks' -Scope Global -ErrorAction Ignore) {
+    if (Get-Variable -Name DotFilesSkipMetadataSchemaChecks -Scope Global -ErrorAction Ignore) {
         $Script:SkipMetadataSchemaChecks = $Global:DotFilesSkipMetadataSchemaChecks
     } else {
         $Script:SkipMetadataSchemaChecks = $false
@@ -403,7 +403,7 @@ Function Initialize-PSDotFiles {
 
     if ($PSBoundParameters.ContainsKey('Autodetect')) {
         $Script:DotFilesAutodetect = $Autodetect
-    } elseif (Get-Variable -Name 'DotFilesAutodetect' -Scope Global -ErrorAction Ignore) {
+    } elseif (Get-Variable -Name DotFilesAutodetect -Scope Global -ErrorAction Ignore) {
         $Script:DotFilesAutodetect = $Global:DotFilesAutodetect
     } else {
         $Script:DotFilesAutodetect = $false
@@ -412,14 +412,14 @@ Function Initialize-PSDotFiles {
 
     if ($PSBoundParameters.ContainsKey('AllowNestedSymlinks')) {
         $Script:NestedSymlinks = $AllowNestedSymlinks
-    } elseif (Get-Variable -Name 'DotFilesAllowNestedSymlinks' -Scope Global -ErrorAction Ignore) {
+    } elseif (Get-Variable -Name DotFilesAllowNestedSymlinks -Scope Global -ErrorAction Ignore) {
         $Script:NestedSymlinks = $Global:DotFilesAllowNestedSymlinks
     } else {
         $Script:NestedSymlinks = $false
     }
     Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $NestedSymlinks)
 
-    if (Get-Variable -Name 'DotFilesGlobalIgnorePaths' -Scope Global -ErrorAction Ignore) {
+    if (Get-Variable -Name DotFilesGlobalIgnorePaths -Scope Global -ErrorAction Ignore) {
         $Script:GlobalIgnorePaths = $Global:DotFilesGlobalIgnorePaths
     } else {
         $Script:GlobalIgnorePaths = $DefaultGlobalIgnorePaths
@@ -449,7 +449,7 @@ Function Initialize-DotFilesComponent {
     )
 
     # Ensures XML methods are always available
-    if (!$PSBoundParameters.ContainsKey('Metadata')) {
+    if (!$Metadata) {
         $Metadata = New-Object -TypeName Xml.XmlDocument
     }
 
@@ -1191,7 +1191,7 @@ Function Find-DotFilesComponent {
         Write-Verbose -Message 'Refreshing installed programs ...'
         $Script:InstalledPrograms = Get-InstalledPrograms
 
-        if (Get-Module -Name Appx -ListAvailable) {
+        if (Get-Module -Name Appx -ListAvailable -Verbose:$false) {
             if ($IsAppxCompatNeeded) {
                 Write-Verbose -Message 'Loading Appx module in Windows PowerShell session ...'
                 Import-Module -Name Appx -UseWindowsPowerShell -WarningAction Ignore -Verbose:$false
@@ -1360,7 +1360,7 @@ Function Get-InstalledPrograms {
         $UninstallKeys += Get-ChildItem -Path $UserRegPath
     }
 
-    $InstalledPrograms = [Collections.ArrayList]::new()
+    $InstalledPrograms = [Collections.Generic.List[PSCustomObject]]::new()
     foreach ($UninstallKey in $UninstallKeys) {
         $Program = Get-ItemProperty -Path $UninstallKey.PSPath
 
@@ -1388,11 +1388,11 @@ Function Get-InstalledPrograms {
             Name = $Program.DisplayName
         }
 
-        $null = $InstalledPrograms.Add($InstalledProgram)
+        $InstalledPrograms.Add($InstalledProgram)
     }
 
     Write-Debug -Message ('Found {0} installed programs.' -f ($InstalledPrograms | Measure-Object).Count)
-    return , $InstalledPrograms
+    return , $InstalledPrograms.ToArray()
 }
 
 Function Get-SymlinkTarget {
