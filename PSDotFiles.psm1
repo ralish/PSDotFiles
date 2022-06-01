@@ -150,7 +150,7 @@ Function Install-DotFiles {
         # availability returns no results then $ToInstall will be null and the
         # Count property cannot be referenced.
         if (!$ToInstall) {
-            continue
+            return
         }
 
         for ($Index = 0; $Index -lt $ToInstall.Count; $Index++) {
@@ -270,7 +270,7 @@ Function Remove-DotFiles {
         # returns no results then $ToRemove will be null and the Count property
         # cannot be referenced.
         if (!$ToRemove) {
-            continue
+            return
         }
 
         for ($Index = 0; $Index -lt $ToRemove.Count; $Index++) {
