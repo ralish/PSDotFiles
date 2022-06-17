@@ -1454,14 +1454,14 @@ Function Get-InstalledPrograms {
 
 Function Get-SymlinkTarget {
     [CmdletBinding()]
-    [OutputType([Boolean], [String])]
+    [OutputType([Void], [String])]
     Param(
         [Parameter(Mandatory)]
         [IO.FileSystemInfo]$Symlink
     )
 
     if ($Symlink.LinkType -ne 'SymbolicLink') {
-        return $false
+        return
     }
 
     # The type of the Target property differs by PowerShell version:
@@ -1585,7 +1585,7 @@ Function Test-DotFilesPath {
 
     if ($PathItem -is [IO.DirectoryInfo]) {
         $PathLink = Get-SymlinkTarget -Symlink $PathItem
-        if ($PathLink) {
+        if ($null -ne $PathLink) {
             return (Test-DotFilesPath -Path $PathLink)
         }
         return $PathItem
