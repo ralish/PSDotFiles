@@ -46,6 +46,7 @@ Function Get-DotFiles {
 
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding(ConfirmImpact = 'Low', SupportsShouldProcess)]
+    [OutputType([Void], [Object[]])]
     Param(
         [String]$Path,
         [Switch]$Autodetect,
@@ -103,6 +104,7 @@ Function Install-DotFiles {
 
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding(DefaultParameterSetName = 'Retrieve', ConfirmImpact = 'Low', SupportsShouldProcess)]
+    [OutputType([Void], [Object[]])]
     Param(
         [Parameter(ParameterSetName = 'Retrieve')]
         [String]$Path,
@@ -235,6 +237,7 @@ Function Remove-DotFiles {
 
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding(DefaultParameterSetName = 'Retrieve', ConfirmImpact = 'Low', SupportsShouldProcess)]
+    [OutputType([Void], [Object[]])]
     Param(
         [Parameter(ParameterSetName = 'Retrieve')]
         [String]$Path,
@@ -311,6 +314,7 @@ Function Remove-DotFiles {
 
 Function Get-DotFilesInternal {
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([Object[]])]
     Param(
         [String]$Path,
         [Switch]$Autodetect,
@@ -325,7 +329,7 @@ Function Get-DotFilesInternal {
 
     Write-Progress @WriteProgressParams -Status 'Enumerating components' -PercentComplete 0
     $Components = [Collections.Generic.List[Component]]::new()
-    $Directories = Get-ChildItem -Path $DotFilesPath -Directory
+    $Directories = @(Get-ChildItem -Path $DotFilesPath -Directory)
 
     for ($Index = 0; $Index -lt $Directories.Count; $Index++) {
         $Directory = $Directories[$Index]
@@ -360,6 +364,7 @@ Function Initialize-PSDotFiles {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([Void])]
     Param(
         [String]$Path,
         [Switch]$Autodetect,
@@ -439,6 +444,7 @@ Function Initialize-PSDotFiles {
 
 Function Initialize-DotFilesComponent {
     [CmdletBinding()]
+    [OutputType([Component])]
     Param(
         [Parameter(ParameterSetName = 'New', Mandatory)]
         [String]$Name,
@@ -633,6 +639,7 @@ Function Initialize-DotFilesComponent {
 
 Function Install-DotFilesComponentDirectory {
     [CmdletBinding(DefaultParameterSetName = 'Install')]
+    [OutputType([Object[]])]
     Param(
         [Parameter(Mandatory)]
         [Component]$Component,
@@ -814,6 +821,7 @@ Function Install-DotFilesComponentDirectory {
 
 Function Install-DotFilesComponentFile {
     [CmdletBinding(DefaultParameterSetName = 'Install')]
+    [OutputType([Object[]])]
     Param(
         [Parameter(Mandatory)]
         [Component]$Component,
@@ -955,6 +963,7 @@ Function Install-DotFilesComponentFile {
 Function Remove-DotFilesComponentDirectory {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
+    [OutputType([Object[]])]
     Param(
         [Parameter(Mandatory)]
         [Component]$Component,
@@ -1100,6 +1109,7 @@ Function Remove-DotFilesComponentDirectory {
 Function Remove-DotFilesComponentFile {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
+    [OutputType([Object[]])]
     Param(
         [Parameter(Mandatory)]
         [Component]$Component,
@@ -1220,6 +1230,7 @@ Function Remove-DotFilesComponentFile {
 
 Function Find-DotFilesComponent {
     [CmdletBinding()]
+    [OutputType([Object[]])]
     Param(
         [Parameter(Mandatory)]
         [String]$Name,
@@ -1277,6 +1288,7 @@ Function Find-DotFilesComponent {
 
 Function Get-ComponentInstallResult {
     [CmdletBinding()]
+    [OutputType([InstallState])]
     Param(
         [Parameter(Mandatory)]
         [AllowEmptyCollection()]
@@ -1313,6 +1325,7 @@ Function Get-ComponentInstallResult {
 Function Get-ComponentMetadata {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding()]
+    [OutputType([Xml])]
     Param(
         [Parameter(Mandatory)]
         [String]$Path
@@ -1340,6 +1353,7 @@ Function Get-ComponentMetadata {
 
 Function Get-DotFilesComponent {
     [CmdletBinding()]
+    [OutputType([Component])]
     Param(
         [Parameter(Mandatory)]
         [IO.DirectoryInfo]$Directory
@@ -1388,6 +1402,7 @@ Function Get-DotFilesComponent {
 Function Get-InstalledPrograms {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding()]
+    [OutputType([Object[]])]
     Param()
 
     $ComputerNativeRegPath = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
@@ -1439,6 +1454,7 @@ Function Get-InstalledPrograms {
 
 Function Get-SymlinkTarget {
     [CmdletBinding()]
+    [OutputType([Boolean], [String])]
     Param(
         [Parameter(Mandatory)]
         [IO.FileSystemInfo]$Symlink
@@ -1468,6 +1484,7 @@ Function Get-SymlinkTarget {
 Function New-Symlink {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
+    [OutputType([IO.FileSystemInfo])]
     Param(
         [Parameter(Mandatory)]
         [String]$Path,
@@ -1517,6 +1534,7 @@ Function Set-SymlinkAttributes {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding()]
+    [OutputType([Boolean])]
     Param(
         [Parameter(Mandatory)]
         [IO.FileSystemInfo]$Symlink,
@@ -1553,6 +1571,7 @@ Function Set-SymlinkAttributes {
 
 Function Test-DotFilesPath {
     [CmdletBinding()]
+    [OutputType([Boolean])]
     Param(
         [Parameter(Mandatory)]
         [String]$Path
@@ -1577,6 +1596,7 @@ Function Test-DotFilesPath {
 
 Function Test-IsAdministrator {
     [CmdletBinding()]
+    [OutputType([Boolean])]
     Param()
 
     $User = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
@@ -1589,6 +1609,7 @@ Function Test-IsAdministrator {
 
 Function Test-IsAppxCompatNeeded {
     [CmdletBinding()]
+    [OutputType([Boolean])]
     Param()
 
     # PowerShell 7.1 introduced a breaking change which results in the Appx
@@ -1609,6 +1630,7 @@ Function Test-IsAppxCompatNeeded {
 
 Function Test-IsMkLinkNeeded {
     [CmdletBinding()]
+    [OutputType([Boolean])]
     Param()
 
     # The support for creating symlinks without Administrator privileges
@@ -1635,6 +1657,7 @@ Function Test-IsMkLinkNeeded {
 
 Function Test-IsWin10DevMode {
     [CmdletBinding()]
+    [OutputType([Boolean])]
     Param()
 
     # Windows 10 Creators Update introduced support for creating symlinks
