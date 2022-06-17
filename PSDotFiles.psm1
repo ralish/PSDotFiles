@@ -1,5 +1,5 @@
-# See the help for Set-StrictMode for the full details on what this enables.
-Set-StrictMode -Version 2.0
+# See the help for Set-StrictMode for what this enables
+Set-StrictMode -Version 3.0
 
 $DefaultGlobalIgnorePaths = @(
     '.stow-local-ignore'
