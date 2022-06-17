@@ -371,7 +371,7 @@ Function Initialize-PSDotFiles {
         if (!$Script:DotFilesPath) {
             throw "The provided dotfiles path is either not a directory or it can't be accessed."
         }
-    } elseif (Get-Variable -Name DotFilesPath -Scope Global -ErrorAction Ignore) {
+    } elseif (Get-Variable -Name 'DotFilesPath' -Scope Global -ErrorAction Ignore) {
         $Script:DotFilesPath = Test-DotFilesPath -Path $Global:DotFilesPath
         if (!$Script:DotFilesPath) {
             throw "The default dotfiles path (`$DotFilesPath) is either not a directory or it can't be accessed."
@@ -381,7 +381,7 @@ Function Initialize-PSDotFiles {
     }
     Write-Verbose -Message ('dotfiles directory: {0}' -f $DotFilesPath)
 
-    if (Get-Variable -Name DotFilesSkipMetadataSchemaChecks -Scope Global -ErrorAction Ignore) {
+    if (Get-Variable -Name 'DotFilesSkipMetadataSchemaChecks' -Scope Global -ErrorAction Ignore) {
         $Script:SkipMetadataSchemaChecks = $Global:DotFilesSkipMetadataSchemaChecks
     } else {
         $Script:SkipMetadataSchemaChecks = $false
@@ -389,7 +389,7 @@ Function Initialize-PSDotFiles {
 
     if (!$SkipMetadataSchemaChecks) {
         $MetadataSchemaPath = Join-Path -Path $PSScriptRoot -ChildPath 'Metadata.xsd'
-        $Script:MetadataSchema = New-Object -TypeName Xml.Schema.XmlSchemaSet
+        $Script:MetadataSchema = New-Object -TypeName 'Xml.Schema.XmlSchemaSet'
         $null = $MetadataSchema.Add($null, (Get-Item -Path $MetadataSchemaPath))
         # Implied on the first validation but do so now to ensure it's sane
         $MetadataSchema.Compile()
@@ -406,7 +406,7 @@ Function Initialize-PSDotFiles {
 
     if ($PSBoundParameters.ContainsKey('Autodetect')) {
         $Script:DotFilesAutodetect = $Autodetect
-    } elseif (Get-Variable -Name DotFilesAutodetect -Scope Global -ErrorAction Ignore) {
+    } elseif (Get-Variable -Name 'DotFilesAutodetect' -Scope Global -ErrorAction Ignore) {
         $Script:DotFilesAutodetect = $Global:DotFilesAutodetect
     } else {
         $Script:DotFilesAutodetect = $false
@@ -415,14 +415,14 @@ Function Initialize-PSDotFiles {
 
     if ($PSBoundParameters.ContainsKey('AllowNestedSymlinks')) {
         $Script:NestedSymlinks = $AllowNestedSymlinks
-    } elseif (Get-Variable -Name DotFilesAllowNestedSymlinks -Scope Global -ErrorAction Ignore) {
+    } elseif (Get-Variable -Name 'DotFilesAllowNestedSymlinks' -Scope Global -ErrorAction Ignore) {
         $Script:NestedSymlinks = $Global:DotFilesAllowNestedSymlinks
     } else {
         $Script:NestedSymlinks = $false
     }
     Write-Verbose -Message ('Nested symlinks permitted: {0}' -f $NestedSymlinks)
 
-    if (Get-Variable -Name DotFilesGlobalIgnorePaths -Scope Global -ErrorAction Ignore) {
+    if (Get-Variable -Name 'DotFilesGlobalIgnorePaths' -Scope Global -ErrorAction Ignore) {
         $Script:GlobalIgnorePaths = $Global:DotFilesGlobalIgnorePaths
     } else {
         $Script:GlobalIgnorePaths = $DefaultGlobalIgnorePaths
@@ -453,7 +453,7 @@ Function Initialize-DotFilesComponent {
 
     # Ensures XML methods are always available
     if (!$Metadata) {
-        $Metadata = New-Object -TypeName Xml.XmlDocument
+        $Metadata = New-Object -TypeName 'Xml.XmlDocument'
     }
 
     # Create the component if we're not overriding
@@ -1233,10 +1233,10 @@ Function Find-DotFilesComponent {
         Write-Verbose -Message 'Refreshing installed programs ...'
         $Script:InstalledPrograms = Get-InstalledPrograms
 
-        if (Get-Module -Name Appx -ListAvailable -Verbose:$false) {
+        if (Get-Module -Name 'Appx' -ListAvailable -Verbose:$false) {
             if ($IsAppxCompatNeeded) {
                 Write-Verbose -Message 'Loading Appx module in Windows PowerShell session ...'
-                Import-Module -Name Appx -UseWindowsPowerShell -WarningAction Ignore -Verbose:$false
+                Import-Module -Name 'Appx' -UseWindowsPowerShell -WarningAction Ignore -Verbose:$false
             }
 
             Write-Verbose -Message 'Refreshing installed app packages ...'
@@ -1492,9 +1492,9 @@ Function New-Symlink {
         $QuotedTarget = '"{0}"' -f $Target
 
         if ($TargetItem -is [IO.FileInfo]) {
-            Start-Process -FilePath cmd.exe -ArgumentList @('/D', '/C', 'mklink', $QuotedPath, $QuotedTarget, '>nul') -NoNewWindow -Wait
+            Start-Process -FilePath 'cmd.exe' -ArgumentList @('/D', '/C', 'mklink', $QuotedPath, $QuotedTarget, '>nul') -NoNewWindow -Wait
         } elseif ($TargetItem -is [IO.DirectoryInfo]) {
-            Start-Process -FilePath cmd.exe -ArgumentList @('/D', '/C', 'mklink', '/D', $QuotedPath, $QuotedTarget, '>nul') -NoNewWindow -Wait
+            Start-Process -FilePath 'cmd.exe' -ArgumentList @('/D', '/C', 'mklink', '/D', $QuotedPath, $QuotedTarget, '>nul') -NoNewWindow -Wait
         } else {
             throw ('Symlink target is not a file or directory: {0}' -f $Target)
         }
@@ -1583,6 +1583,7 @@ Function Test-IsAdministrator {
     if ($User.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         return $true
     }
+
     return $false
 }
 
@@ -1639,7 +1640,7 @@ Function Test-IsWin10DevMode {
     # Windows 10 Creators Update introduced support for creating symlinks
     # without Administrator privileges. The underlying support was introduced
     # in Windows Insider Preview Build 14972.
-    $BuildNumber = [Int](Get-CimInstance -ClassName Win32_OperatingSystem -Verbose:$false).BuildNumber
+    $BuildNumber = [Int](Get-CimInstance -ClassName 'Win32_OperatingSystem' -Verbose:$false).BuildNumber
     if ($BuildNumber -lt 14972) {
         return $false
     }
