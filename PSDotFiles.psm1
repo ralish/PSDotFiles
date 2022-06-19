@@ -46,7 +46,7 @@ Function Get-DotFiles {
 
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding(ConfirmImpact = 'Low', SupportsShouldProcess)]
-    [OutputType([Void], [Object[]])]
+    [OutputType([Void], [Component[]])]
     Param(
         [String]$Path,
         [Switch]$Autodetect,
@@ -104,7 +104,7 @@ Function Install-DotFiles {
 
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding(DefaultParameterSetName = 'Retrieve', ConfirmImpact = 'Low', SupportsShouldProcess)]
-    [OutputType([Void], [Object[]])]
+    [OutputType([Void], [Component[]])]
     Param(
         [Parameter(ParameterSetName = 'Retrieve')]
         [String]$Path,
@@ -237,7 +237,7 @@ Function Remove-DotFiles {
 
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
     [CmdletBinding(DefaultParameterSetName = 'Retrieve', ConfirmImpact = 'Low', SupportsShouldProcess)]
-    [OutputType([Void], [Object[]])]
+    [OutputType([Void], [Component[]])]
     Param(
         [Parameter(ParameterSetName = 'Retrieve')]
         [String]$Path,
@@ -1523,7 +1523,7 @@ Function New-Symlink {
         } elseif ($TargetItem -is [IO.DirectoryInfo]) {
             Start-Process -FilePath 'cmd.exe' -ArgumentList @('/D', '/C', 'mklink', '/D', $QuotedPath, $QuotedTarget, '>nul') -NoNewWindow -Wait
         } else {
-            throw ('Symlink target is not a file or directory: {0}' -f $Target)
+            throw 'Symlink target is not a file or directory: {0}' -f $Target
         }
 
         if ($LASTEXITCODE -ne 0) {
@@ -1533,7 +1533,7 @@ Function New-Symlink {
         try {
             $Symlink = Get-Item -Path $Path -ErrorAction Stop
         } catch {
-            throw ('Expected symlink from mklink invocation not found: {0}' -f $Path)
+            throw 'Expected symlink from mklink invocation not found: {0}' -f $Path
         }
     }
 

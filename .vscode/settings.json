@@ -19,7 +19,7 @@
     "powershell.codeFormatting.whitespaceBetweenParameters": true,
 
     "[powershell]": {
-        "editor.rulers": [79],
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "editor.rulers": [79]
     }
 }
