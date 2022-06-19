@@ -15,3 +15,7 @@ insert_final_newline = true
 # Markdown
 [*.md]
 trim_trailing_whitespace = false
+
+# XML
+[*.{xml,xsd,ps1xml}]
+insert_final_newline = false
