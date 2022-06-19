@@ -1405,10 +1405,14 @@ Function Get-InstalledPrograms {
     [OutputType([Object[]])]
     Param()
 
+    # System-wide in native bitness
     $ComputerNativeRegPath = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
+    # System-wide under the 32-bit emulation layer (64-bit Windows only)
     $ComputerWow64RegPath = 'HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+    # Current-user only (no bitness constraint)
     $UserRegPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall'
 
+    # Retrieve all installed programs from available keys
     $UninstallKeys = Get-ChildItem -Path $ComputerNativeRegPath
     if (Test-Path -Path $ComputerWow64RegPath -PathType Container) {
         $UninstallKeys += Get-ChildItem -Path $ComputerWow64RegPath
@@ -1417,26 +1421,32 @@ Function Get-InstalledPrograms {
         $UninstallKeys += Get-ChildItem -Path $UserRegPath
     }
 
+    # Filter out all the uninteresting installations
     $InstalledPrograms = [Collections.Generic.List[PSCustomObject]]::new()
     foreach ($UninstallKey in $UninstallKeys) {
         $Program = Get-ItemProperty -Path $UninstallKey.PSPath
 
+        # Skip any program which doesn't define a display name
         if (!$Program.PSObject.Properties['DisplayName']) {
             continue
         }
 
+        # Skip any program without an uninstall command which is not marked non-removable
         if (!($Program.PSObject.Properties['UninstallString'] -or ($Program.PSObject.Properties['NoRemove'] -and $Program.NoRemove -eq 1))) {
             continue
         }
 
+        # Skip any program which defines a parent program
         if ($Program.PSObject.Properties['ParentKeyName'] -or $Program.PSObject.Properties['ParentDisplayName']) {
             continue
         }
 
+        # Skip any program marked as a system component
         if ($Program.PSObject.Properties['SystemComponent'] -and $Program.SystemComponent -eq 1) {
             continue
         }
 
+        # Skip any program which defines a release type
         if ($Program.PSObject.Properties['ReleaseType']) {
             continue
         }
