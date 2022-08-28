@@ -4,6 +4,6 @@
 
     <InstallPath>
         <SpecialFolder>LocalApplicationData</SpecialFolder>
-        <Destination>Clink</Destination>
+        <Destination>clink</Destination>
     </InstallPath>
 </Component>
