@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/ralish/PSDotFiles/main/Metadata.xsd">
+    <FriendlyName>Windows Terminal</FriendlyName>
+
+    <Detection>
+        <Method>Automatic</Method>
+        <MatchPattern>Microsoft.WindowsTerminal</MatchPattern>
+    </Detection>
+
+    <InstallPath>
+        <SpecialFolder>LocalApplicationData</SpecialFolder>
+        <Destination>Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState</Destination>
+    </InstallPath>
+</Component>
