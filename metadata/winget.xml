@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Component xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/ralish/PSDotFiles/main/Metadata.xsd">
+    <FriendlyName>Windows Package Manager</FriendlyName>
+
+    <Detection>
+        <Method>FindInPath</Method>
+    </Detection>
+
+    <InstallPath>
+        <SpecialFolder>LocalApplicationData</SpecialFolder>
+        <Destination>Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState</Destination>
+    </InstallPath>
+</Component>
