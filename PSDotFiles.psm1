@@ -582,11 +582,6 @@ Function Initialize-DotFilesComponent {
         $Component.Availability = [Availability]::$Availability
     }
 
-    # If the component isn't available we're done
-    if ($Component.Availability -notin ([Availability]::Available, [Availability]::AlwaysInstall)) {
-        return $Component
-    }
-
     # Set the default installation path initially
     if ($PSCmdlet.ParameterSetName -eq 'New') {
         $Component.InstallPath = [Environment]::GetFolderPath('UserProfile')
