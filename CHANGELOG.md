@@ -1,6 +1,15 @@
 Changelog
 =========
 
+v0.9.8
+------
+
+- Add metadata file for *Windows Terminal*
+- Add metadata file for *Windows Package Manager* (`winget`)
+- Always calculate the install path for components (even if unavailable)
+- Fix broken pipeline processing due to incorrect continuation
+- Minor code clean-up & developer tooling improvements
+
 v0.9.7
 ------
 
