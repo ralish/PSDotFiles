@@ -10,9 +10,9 @@ A simple *dotfiles* management framework for Windows built on PowerShell.
 - [Purpose](#purpose)
 - [Requirements](#requirements)
 - [Installing](#installing)
-- [Quickstart](#quickstart)
-- [Folder Structure](#folder-structure)
 - [Configuring](#configuring)
+- [Commands](#commands)
+- [Folder structure](#folder-structure)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
@@ -58,55 +58,6 @@ You can check that PowerShell is able to locate the module by running the follow
 Get-Module PSDotFiles -ListAvailable
 ```
 
-Quickstart
-----------
-
-The module exports three commands through which all dotfiles management occurs:
-
-```posh
-# Enumerates available dotfiles components
-Get-DotFiles
-
-# Installs one or more dotfiles components
-Install-DotFiles
-
-# Removes one or more dotfiles components
-Remove-DotFiles
-```
-
-All commands have built-in help and examples which can be accessed with `Get-Help <command>`.
-
-Only `Install-DotFiles` and `Remove-DotFiles`  will modify your system by creating or removing the appropriate symlinks.
-
-Both `Install-DotFiles` and `Remove-DotFiles` support PowerShell's standard `-WhatIf` and `-Confirm` parameters.
-
-Folder Structure
-----------------
-
-PSDotFiles expects a dotfiles folder to be structured as multiple folders each containing the files and folders comprising a particular application's configuration. These top-level folders are referred to by PSDotFiles as **components**. The files and folders in each component's folder should be relative to a well-known top-level folder (e.g. your profile folder, which is the default target in PSDotFiles). The actual list of well-known folders are those in the [`Environment.SpecialFolder`](https://docs.microsoft.com/en-us/dotnet/api/system.environment.specialfolder) enumeration.
-
-A simple dotfiles folder structure might look like this:
-
-```fundamental
-dotfiles
-| --- clink
-   | --- clink_inputrc
-   | --- settings
-| --- conemu
-   | --- ConEmu.xml
-| --- git
-   | --- .gitattributes
-   | --- .gitconfig
-   | --- .gitignore
-| --- posh
-   | --- Modules
-      | --- MyModule
-         | --- MyModule.psm1
-   | --- profile.ps1
-| --- vim
-   | --- .vimrc
-```
-
 Configuring
 -----------
 
@@ -133,6 +84,55 @@ There are some additional variables you can set in your profile which modify def
   Paths to ignore for all components in addition to any explicit `<IgnorePath>` elements in the metadata.
 - `$DotFilesSkipMetadataSchemaChecks` (default: `$false`)  
   Skip validating metadata files against the metadata schema. Generally only useful in development.
+
+Commands
+--------
+
+The module exports three commands through which all dotfiles management occurs:
+
+```posh
+# Enumerates available dotfiles components
+Get-DotFiles
+
+# Installs one or more dotfiles components
+Install-DotFiles
+
+# Removes one or more dotfiles components
+Remove-DotFiles
+```
+
+All commands have built-in help and examples which can be accessed with `Get-Help <command>`.
+
+Only `Install-DotFiles` and `Remove-DotFiles` will modify your system by creating or removing the appropriate symlinks.
+
+Both `Install-DotFiles` and `Remove-DotFiles` support PowerShell's standard `-WhatIf` and `-Confirm` parameters.
+
+Folder structure
+----------------
+
+PSDotFiles expects a dotfiles folder to be structured as multiple folders each containing the files and folders comprising a particular application's configuration. These top-level folders are referred to by PSDotFiles as **components**. The files and folders in each component's folder should be relative to a well-known top-level folder (e.g. your profile folder, which is the default target in PSDotFiles). The actual list of well-known folders are those in the [`Environment.SpecialFolder`](https://docs.microsoft.com/en-us/dotnet/api/system.environment.specialfolder) enumeration.
+
+A simple dotfiles folder structure might look like this:
+
+```fundamental
+dotfiles
+| --- clink
+   | --- clink_inputrc
+   | --- settings
+| --- conemu
+   | --- ConEmu.xml
+| --- git
+   | --- .gitattributes
+   | --- .gitconfig
+   | --- .gitignore
+| --- posh
+   | --- Modules
+      | --- MyModule
+         | --- MyModule.psm1
+   | --- profile.ps1
+| --- vim
+   | --- .vimrc
+```
 
 Troubleshooting
 ---------------
