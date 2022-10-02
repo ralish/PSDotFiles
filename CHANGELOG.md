@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.9.9
+------
+
+- Fix handling of `Appx` module under PowerShell Core
+
 v0.9.8
 ------
 
