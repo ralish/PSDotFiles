@@ -438,6 +438,7 @@ Function Initialize-PSDotFiles {
     $Script:IsAdministrator = Test-IsAdministrator
     $Script:IsAppxCompatNeeded = Test-IsAppxCompatNeeded
     $Script:IsMkLinkNeeded = Test-IsMkLinkNeeded
+    $Script:IsPowerShellCore = Test-IsPowerShellCore
     $Script:IsWin10DevMode = Test-IsWin10DevMode
     $Script:RefreshInstalledPrograms = $true
 }
@@ -764,7 +765,7 @@ Function Install-DotFilesComponentDirectory {
                 Write-Debug -Message ('[{0}] Valid directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
                 continue
             } elseif ($NestedSymlinks) {
-                Write-Verbose -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                Write-Debug -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
             } else {
                 $Results.Add($false)
                 if ($PSCmdlet.ParameterSetName -ne 'Install') {
@@ -1239,7 +1240,23 @@ Function Find-DotFilesComponent {
         Write-Verbose -Message 'Refreshing installed programs ...'
         $Script:InstalledPrograms = Get-InstalledPrograms
 
-        if (Get-Module -Name 'Appx' -ListAvailable -Verbose:$false) {
+        $GetModuleParams = @{
+            Name          = 'Appx'
+            ListAvailable = $true
+            Verbose       = $false
+        }
+
+        # The Appx module is not flagged as compatible with PowerShell Core
+        if ($Script:IsPowerShellCore) {
+            $GetModuleParams['SkipEditionCheck'] = $true
+        }
+
+        if (Get-Module @GetModuleParams) {
+            # The Appx module used to work natively in PowerShell Core until a
+            # breaking change in the PowerShell 7.1 release (see the comments
+            # in Test-IsAppxCompatNeeded). Recent PowerShell Core releases will
+            # automatically use Windows PowerShell on module import, but there
+            # are some older releases which don't, so we have to be explicit.
             if ($IsAppxCompatNeeded) {
                 Write-Verbose -Message 'Loading Appx module in Windows PowerShell session ...'
                 Import-Module -Name 'Appx' -UseWindowsPowerShell -WarningAction Ignore -Verbose:$false
@@ -1655,6 +1672,24 @@ Function Test-IsMkLinkNeeded {
         if ($PSVersionTable.PSVersion -lt $MinPoshVersion) {
             return $true
         }
+    }
+
+    return $false
+}
+
+Function Test-IsPowerShellCore {
+    [CmdletBinding()]
+    [OutputType([Boolean])]
+    Param()
+
+    # For PowerShell Core releases we have to change the parameters of some
+    # cmdlet invocations. Currently, this is limited to the logic around the
+    # checks for the presence of the Appx module. See the comments pertaining
+    # to these checks in the Find-DotFilesComponent function.
+    $FirstCoreVersion = [Version]::new(5, 1)
+    if ($PSVersionTable.PSVersion -ge $FirstCoreVersion -and
+        $PSVersionTable.PSEdition -eq 'Core') {
+        return $true
     }
 
     return $false
