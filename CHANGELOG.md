@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v0.9.10
+-------
+
+- Ensure `Appx` module is imported if invoked with `-WhatIf`
+
 v0.9.9
 ------
 
