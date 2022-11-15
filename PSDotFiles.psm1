@@ -1259,7 +1259,21 @@ Function Find-DotFilesComponent {
             # are some older releases which don't, so we have to be explicit.
             if ($IsAppxCompatNeeded) {
                 Write-Verbose -Message 'Loading Appx module in Windows PowerShell session ...'
+
+                # If we were invoked with -WhatIf the Appx module will not be
+                # imported, even though the cmdlet doesn't expose a -WhatIf
+                # parameter. That'll cause problems later, so we need to force
+                # the import by temporarily resetting $WhatIfPreference.
+                $OriginalWhatIfPreference = $WhatIfPreference
+                if ($OriginalWhatIfPreference) {
+                    $WhatIfPreference = $false
+                }
+
                 Import-Module -Name 'Appx' -UseWindowsPowerShell -WarningAction Ignore -Verbose:$false
+
+                if ($OriginalWhatIfPreference) {
+                    $WhatIfPreference = $OriginalWhatIfPreference
+                }
             }
 
             Write-Verbose -Message 'Refreshing installed app packages ...'
