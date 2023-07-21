@@ -1,14 +1,18 @@
+# PSScriptAnalyzer settings
+#
+# Last reviewed release: v1.21.0
+
 @{
     IncludeRules = @('*')
 
     ExcludeRules = @(
-        # Broken with child scopes pending fix (GH PR #1489)
+        # Broken with child scopes pending fix (GH #1472)
         'PSReviewUnusedParameter'
     )
 
-    Rules        = @{
+    Rules = @{
         # Compatibility rules
-        PSUseCompatibleSyntax      = @{
+        PSUseCompatibleSyntax = @{
             Enable         = $true
             # Only major versions from v3.0 are supported
             TargetVersions = @('5.0', '6.0', '7.0')
@@ -20,30 +24,26 @@
             CheckHashtable = $true
         }
 
-        PSAvoidLongLines           = @{
-            Enable            = $false
-            MaximumLineLength = 120
+        PSAvoidUsingPositionalParameters = @{
+            Enable           = $true
+            CommandAllowList = @()
         }
 
-        PSAvoidUsingCmdletAliases  = @{
-            allowlist = @()
-        }
-
-        PSPlaceCloseBrace          = @{
+        PSPlaceCloseBrace = @{
             Enable             = $true
             IgnoreOneLineBlock = $true
             NewLineAfter       = $false
             NoEmptyLineBefore  = $false
         }
 
-        PSPlaceOpenBrace           = @{
+        PSPlaceOpenBrace = @{
             Enable             = $true
             IgnoreOneLineBlock = $true
             NewLineAfter       = $true
             OnSameLine         = $true
         }
 
-        PSProvideCommentHelp       = @{
+        PSProvideCommentHelp = @{
             Enable                  = $true
             BlockComment            = $true
             ExportedOnly            = $true
@@ -58,7 +58,7 @@
             PipelineIndentation = 'IncreaseIndentationForFirstPipeline'
         }
 
-        PSUseConsistentWhitespace  = @{
+        PSUseConsistentWhitespace = @{
             Enable                                  = $true
             CheckInnerBrace                         = $true
             CheckOpenBrace                          = $true
