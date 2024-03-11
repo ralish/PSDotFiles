@@ -1,12 +1,11 @@
 # PSScriptAnalyzer settings
 #
-# Last reviewed release: v1.21.0
+# Last reviewed release: v1.22.0
 
 @{
     IncludeRules = @('*')
 
     ExcludeRules = @(
-        # Broken with child scopes pending fix (GH #1472)
         'PSReviewUnusedParameter'
     )
 
@@ -69,6 +68,12 @@
             CheckPipeForRedundantWhitespace         = $true
             CheckSeparator                          = $true
             IgnoreAssignmentOperatorInsideHashTable = $true
+        }
+
+        PSUseSingularNouns = @{
+            Enable        = $true
+            # If unset, defaults to: Data, Windows
+            NounAllowList = @()
         }
     }
 }
