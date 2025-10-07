@@ -1,6 +1,6 @@
 # PSScriptAnalyzer settings
 #
-# Last reviewed release: v1.22.0
+# Last reviewed release: v1.24.0
 
 @{
     IncludeRules = @('*')
@@ -21,11 +21,6 @@
         PSAlignAssignmentStatement = @{
             Enable         = $true
             CheckHashtable = $true
-        }
-
-        PSAvoidUsingPositionalParameters = @{
-            Enable           = $true
-            CommandAllowList = @()
         }
 
         PSPlaceCloseBrace = @{
@@ -70,10 +65,11 @@
             IgnoreAssignmentOperatorInsideHashTable = $true
         }
 
-        PSUseSingularNouns = @{
+        PSUseCorrectCasing = @{
             Enable        = $true
-            # If unset, defaults to: Data, Windows
-            NounAllowList = @()
+            CheckCommands = $true
+            CheckKeyword  = $false
+            CheckOperator = $true
         }
     }
 }

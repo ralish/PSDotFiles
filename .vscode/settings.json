@@ -7,19 +7,33 @@
     "markdown.extension.toc.levels": "2..2",
     "markdown.extension.toc.slugifyMode": "github",
 
+    // PowerShell code formatting
+    "powershell.codeFormatting.addWhitespaceAroundPipe": true,
+    "powershell.codeFormatting.alignPropertyValuePairs": true,
+    "powershell.codeFormatting.autoCorrectAliases": true,
+    "powershell.codeFormatting.avoidSemicolonsAsLineTerminators": true,
+    "powershell.codeFormatting.ignoreOneLineBlock": true,
+    "powershell.codeFormatting.newLineAfterCloseBrace": false, // Stylistic preference
+    "powershell.codeFormatting.newLineAfterOpenBrace": true,
+    "powershell.codeFormatting.openBraceOnSameLine": true,
+    "powershell.codeFormatting.pipelineIndentationStyle": "IncreaseIndentationForFirstPipeline",
+    "powershell.codeFormatting.trimWhitespaceAroundPipe": true,
+    "powershell.codeFormatting.useConstantStrings": true,
+    "powershell.codeFormatting.useCorrectCasing": false, // Extremely opinionated and often wrong
+    "powershell.codeFormatting.whitespaceAfterSeparator": true,
+    "powershell.codeFormatting.whitespaceAroundOperator": true,
+    "powershell.codeFormatting.whitespaceBeforeOpenBrace": true,
+    "powershell.codeFormatting.whitespaceBeforeOpenParen": true,
+    "powershell.codeFormatting.whitespaceBetweenParameters": true,
+    "powershell.codeFormatting.whitespaceInsideBrace": true,
+
     // PowerShell script analysis
     "powershell.scriptAnalysis.settingsPath": "PSScriptAnalyzerSettings.psd1",
 
-    // PowerShell code formatting
-    "powershell.codeFormatting.autoCorrectAliases": true,
-    "powershell.codeFormatting.newLineAfterCloseBrace": false,
-    "powershell.codeFormatting.pipelineIndentationStyle": "IncreaseIndentationForFirstPipeline",
-    "powershell.codeFormatting.trimWhitespaceAroundPipe": true,
-    "powershell.codeFormatting.useCorrectCasing": true,
-    "powershell.codeFormatting.whitespaceBetweenParameters": true,
-
     "[powershell]": {
-        "editor.formatOnSave": true,
-        "editor.rulers": [79]
+        "editor.rulers": [79],
+
+        "editor.defaultFormatter": "ms-vscode.powershell",
+        "editor.formatOnSave": true
     }
 }
