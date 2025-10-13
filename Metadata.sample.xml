@@ -126,6 +126,14 @@
         <Destination></Destination>
 
         <!--
+            Specifies whether to expand environment variables present in the <Destination> path
+
+            Expansion is performed by the Environment.ExpandEnvironmentVariables method. Consult
+            the Microsoft documentation for further details on the specific expansion behaviour.
+        -->
+        <ExpandEnvVars>false</ExpandEnvVars>
+
+        <!--
             Specifies whether component symlinks should be hidden by setting the "Hidden" and
             "System" file attributes. The default is not to hide newly created symbolic links.
         -->

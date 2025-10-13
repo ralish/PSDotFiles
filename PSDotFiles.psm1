@@ -501,6 +501,13 @@ Function Initialize-DotFilesComponent {
         }
     }
 
+    # Configure environment variable expansion
+    if ($Metadata.SelectSingleNode('//Component/InstallPath/ExpandEnvVars')) {
+        if ($Metadata.Component.InstallPath.ExpandEnvVars -eq 'true') {
+            $Component.ExpandEnvVars = $true
+        }
+    }
+
     # Configure symlink hiding
     if ($Metadata.SelectSingleNode('//Component/InstallPath/HideSymlinks')) {
         if ($Metadata.Component.InstallPath.HideSymlinks -eq 'true') {
@@ -601,6 +608,11 @@ Function Initialize-DotFilesComponent {
         # Are we installing to a custom destination?
         if ($Metadata.SelectSingleNode('//Component/InstallPath/Destination')) {
             $Destination = $Metadata.Component.InstallPath.Destination
+
+            # Do environment variables need to be expanded?
+            if ($Component.ExpandEnvVars) {
+                $Destination = [Environment]::ExpandEnvironmentVariables($Destination)
+            }
         }
 
         # Determine the installation path
@@ -1812,6 +1824,9 @@ Class Component {
     # Installation directory
     # Note: Influenced by the <SpecialFolder> and <Destination> elements
     [String]$InstallPath
+
+    # Expand environment variables per the <ExpandEnvVars> element
+    [Boolean]$ExpandEnvVars
 
     # Hides newly created symlinks per the <HideSymlinks> element
     [Boolean]$HideSymlinks
