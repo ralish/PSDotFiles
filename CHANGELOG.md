@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.0.0
+-------
+
+- Add `<ExpandEnvVars>` attribute to resolve environment variables in the `<Destination>` path
+- Minor documentation fixes & developer tooling improvements
+
 v0.9.10
 -------
 
