@@ -3,6 +3,7 @@
         "davidanson.vscode-markdownlint",
         "editorconfig.editorconfig",
         "ms-vscode.powershell",
+        "redhat.vscode-xml",
         "yzhang.markdown-all-in-one"
     ]
 }

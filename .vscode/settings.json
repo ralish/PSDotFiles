@@ -3,6 +3,9 @@
     // See: https://github.com/editorconfig/editorconfig-vscode/issues/153
     "files.trimTrailingWhitespace": false,
 
+    // JSON code formatting
+    "json.format.keepLines": true,
+
     // Markdown table of contents generation
     "markdown.extension.toc.levels": "2..2",
     "markdown.extension.toc.slugifyMode": "github",
@@ -30,10 +33,37 @@
     // PowerShell script analysis
     "powershell.scriptAnalysis.settingsPath": "PSScriptAnalyzerSettings.psd1",
 
+    // XML code formatting
+    "xml.format.maxLineWidth": 0,
+
+    "[json][jsonc]": {
+        "editor.rulers": [79],
+
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+
+    "[markdown]": {
+        "editor.defaultFormatter": "yzhang.markdown-all-in-one",
+        "editor.formatOnSave": true,
+
+        "editor.codeActionsOnSave": {
+            "source.fixAll.markdownlint": "explicit"
+        },
+
+        // Trailing whitespace has special meaning
+        "files.trimTrailingWhitespace": false
+    },
+
     "[powershell]": {
         "editor.rulers": [79],
 
         "editor.defaultFormatter": "ms-vscode.powershell",
         "editor.formatOnSave": true
+    },
+
+    "[xml]": {
+        "editor.rulers": [79],
+
+        "editor.defaultFormatter": "redhat.vscode-xml"
     }
 }
