@@ -4,5 +4,6 @@
 
     <InstallPath>
         <SpecialFolder>ApplicationData</SpecialFolder>
+        <NoFolding>false</NoFolding>
     </InstallPath>
 </Component>

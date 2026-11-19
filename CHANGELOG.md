@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.1.0
+-------
+
+- Add support for disabling directory folding via `<NoFolding>` metadata element and `-NoFolding` parameter
+  (mirrors GNU Stow's `--no-folding` behavior)
+- Add `$DotFilesNoFolding` global variable to set default folding behavior
+
 1.0.0
 -------
 

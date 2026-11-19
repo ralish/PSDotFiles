@@ -25,6 +25,11 @@ Function Get-DotFiles {
 
         This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled.
 
+        .PARAMETER NoFolding
+        Disables directory folding, creating real directories in the target and only symlinking files.
+
+        This mirrors the --no-folding behavior in GNU Stow. This overrides any default specified in $DotFilesNoFolding. If neither is specified the default is disabled (folding is enabled).
+
         .PARAMETER Path
         Use the specified directory as the dotfiles directory.
 
@@ -50,7 +55,8 @@ Function Get-DotFiles {
     Param(
         [String]$Path,
         [Switch]$Autodetect,
-        [Switch]$AllowNestedSymlinks
+        [Switch]$AllowNestedSymlinks,
+        [Switch]$NoFolding
     )
 
     Initialize-PSDotFiles @PSBoundParameters
@@ -77,6 +83,11 @@ Function Install-DotFiles {
         Toggles automatic detection of available components without any metadata.
 
         This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled.
+
+        .PARAMETER NoFolding
+        Disables directory folding, creating real directories in the target and only symlinking files.
+
+        This mirrors the --no-folding behavior in GNU Stow. This overrides any default specified in $DotFilesNoFolding. If neither is specified the default is disabled (folding is enabled).
 
         .PARAMETER Components
         A collection of Component objects to be installed as previously returned by Get-DotFiles.
@@ -116,7 +127,8 @@ Function Install-DotFiles {
         [AllowEmptyCollection()]
         [Component[]]$Components,
 
-        [Switch]$AllowNestedSymlinks
+        [Switch]$AllowNestedSymlinks,
+        [Switch]$NoFolding
     )
 
     Begin {
@@ -143,9 +155,21 @@ Function Install-DotFiles {
             Write-Progress @WriteProgressParams -Status 'Running Get-DotFiles'
             $Components = Get-DotFilesInternal @PSBoundParameters -ProgressId 1
         }
+
+        # Apply -NoFolding parameter override for Retrieve parameter set
+        if ($PSCmdlet.ParameterSetName -eq 'Retrieve' -and $PSBoundParameters.ContainsKey('NoFolding')) {
+            foreach ($Component in $Components) {
+                $Component.NoFolding = $NoFolding
+            }
+        }
     }
 
     Process {
+        # Apply -NoFolding parameter override for Pipeline parameter set
+        if ($PSCmdlet.ParameterSetName -eq 'Pipeline' -and $PSBoundParameters.ContainsKey('NoFolding')) {
+            $Components | ForEach-Object { $_.NoFolding = $NoFolding }
+        }
+
         [Component[]]$ToInstall = $Components | Where-Object Availability -In ([Availability]::Available, [Availability]::AlwaysInstall)
 
         # Required as we're in strict mode. If filtering on the component
@@ -211,6 +235,11 @@ Function Remove-DotFiles {
 
         This overrides any default specified in $DotFilesAutodetect. If neither is specified the default is disabled.
 
+        .PARAMETER NoFolding
+        Disables directory folding, creating real directories in the target and only symlinking files.
+
+        This mirrors the --no-folding behavior in GNU Stow. This overrides any default specified in $DotFilesNoFolding. If neither is specified the default is disabled (folding is enabled).
+
         .PARAMETER Components
         A collection of Component objects to be removed as previously returned by Get-DotFiles.
 
@@ -249,7 +278,8 @@ Function Remove-DotFiles {
         [AllowEmptyCollection()]
         [Component[]]$Components,
 
-        [Switch]$AllowNestedSymlinks
+        [Switch]$AllowNestedSymlinks,
+        [Switch]$NoFolding
     )
 
     Begin {
@@ -264,9 +294,21 @@ Function Remove-DotFiles {
             Write-Progress @WriteProgressParams -Status 'Running Get-DotFiles'
             $Components = Get-DotFilesInternal @PSBoundParameters -ProgressId 1
         }
+
+        # Apply -NoFolding parameter override for Retrieve parameter set
+        if ($PSCmdlet.ParameterSetName -eq 'Retrieve' -and $PSBoundParameters.ContainsKey('NoFolding')) {
+            foreach ($Component in $Components) {
+                $Component.NoFolding = $NoFolding
+            }
+        }
     }
 
     Process {
+        # Apply -NoFolding parameter override for Pipeline parameter set
+        if ($PSCmdlet.ParameterSetName -eq 'Pipeline' -and $PSBoundParameters.ContainsKey('NoFolding')) {
+            $Components | ForEach-Object { $_.NoFolding = $NoFolding }
+        }
+
         [Component[]]$ToRemove = $Components | Where-Object State -In ([InstallState]::Installed, [InstallState]::PartialInstall)
 
         # Required as we're in strict mode. If filtering on the component state
@@ -319,6 +361,7 @@ Function Get-DotFilesInternal {
         [String]$Path,
         [Switch]$Autodetect,
         [Switch]$AllowNestedSymlinks,
+        [Switch]$NoFolding,
         [Int]$ProgressId = 0
     )
 
@@ -352,6 +395,13 @@ Function Get-DotFilesInternal {
 
     Write-Progress @WriteProgressParams -Completed
 
+    # Apply -NoFolding parameter override if specified
+    if ($PSBoundParameters.ContainsKey('NoFolding')) {
+        foreach ($Component in $Components) {
+            $Component.NoFolding = $NoFolding
+        }
+    }
+
     if (!$Components) {
         Write-Warning -Message 'Get-DotFiles returned no results. Are you sure your $DotFilesPath is set correctly?'
     }
@@ -368,7 +418,8 @@ Function Initialize-PSDotFiles {
     Param(
         [String]$Path,
         [Switch]$Autodetect,
-        [Switch]$AllowNestedSymlinks
+        [Switch]$AllowNestedSymlinks,
+        [Switch]$NoFolding
     )
 
     if ($Path) {
@@ -433,6 +484,15 @@ Function Initialize-PSDotFiles {
         $Script:GlobalIgnorePaths = $DefaultGlobalIgnorePaths
     }
     Write-Verbose -Message ('Global ignore paths: {0}' -f [String]::Join(', ', $GlobalIgnorePaths))
+
+    if ($PSBoundParameters.ContainsKey('NoFolding')) {
+        $Script:NoFolding = $NoFolding
+    } elseif (Get-Variable -Name 'DotFilesNoFolding' -Scope Global -ErrorAction Ignore) {
+        $Script:NoFolding = $Global:DotFilesNoFolding
+    } else {
+        $Script:NoFolding = $false
+    }
+    Write-Verbose -Message ('Directory folding disabled: {0}' -f $NoFolding)
 
     # Cache these results for usage later
     $Script:IsAdministrator = Test-IsAdministrator
@@ -513,6 +573,16 @@ Function Initialize-DotFilesComponent {
         if ($Metadata.Component.InstallPath.HideSymlinks -eq 'true') {
             $Component.HideSymlinks = $true
         }
+    }
+
+    # Configure directory folding
+    if ($Metadata.SelectSingleNode('//Component/InstallPath/NoFolding')) {
+        if ($Metadata.Component.InstallPath.NoFolding -eq 'true') {
+            $Component.NoFolding = $true
+        }
+    } elseif ($Script:NoFolding) {
+        # Apply global default if metadata doesn't specify
+        $Component.NoFolding = $true
     }
 
     # Determine the detection method
@@ -718,9 +788,13 @@ Function Install-DotFilesComponentDirectory {
             }
 
             # Missing directory on a simulation means this directory will be
-            # symlinked on install.
+            # symlinked on install (unless NoFolding is enabled).
             if ($Simulate) {
-                Write-Verbose -Message ('[{0}] Will symlink directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
+                if ($Component.NoFolding) {
+                    Write-Verbose -Message ('[{0}] Will create directory: "{1}"' -f $Name, $TargetDirectory)
+                } else {
+                    Write-Verbose -Message ('[{0}] Will symlink directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
+                }
                 $Results.Add($true)
                 continue
             }
@@ -732,28 +806,37 @@ Function Install-DotFilesComponentDirectory {
                 $TargetParentDirectory = Split-Path -Path $TargetDirectory -Parent
 
                 if (!(Test-Path -Path $TargetParentDirectory -PathType Container)) {
-                    Write-Verbose -Message ('[{0}] Creating parent directory for target symlink: {1}' -f $Name, $TargetParentDirectory)
+                    Write-Verbose -Message ('[{0}] Creating parent directory for target: {1}' -f $Name, $TargetParentDirectory)
                     $null = New-Item -Path $TargetParentDirectory -ItemType Directory
                 }
             }
 
-            # Nothing exists at the target path so we can create the directory
-            # symlink.
-            Write-Verbose -Message ('[{0}] Symlinking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
-            $Symlink = New-Symlink -Path $TargetDirectory -Target $SourceDirectory.FullName
+            if ($Component.NoFolding) {
+                # NoFolding enabled: create a real directory instead of a symlink
+                Write-Verbose -Message ('[{0}] Creating directory: "{1}"' -f $Name, $TargetDirectory)
+                $null = New-Item -Path $TargetDirectory -ItemType Directory
+                $ExistingTarget = Get-Item -Path $TargetDirectory -Force
+                $Results.Add($true)
+                # Don't continue - fall through to process files and subdirectories
+            } else {
+                # Nothing exists at the target path so we can create the directory
+                # symlink.
+                Write-Verbose -Message ('[{0}] Symlinking directory: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
+                $Symlink = New-Symlink -Path $TargetDirectory -Target $SourceDirectory.FullName
 
-            # Set the hidden and system attributes if requested
-            if ($Component.HideSymlinks) {
-                $Attributes = Set-SymlinkAttributes -Symlink $Symlink
-                if (!$Attributes) {
-                    $Results.Add($false)
-                    Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
-                    continue
+                # Set the hidden and system attributes if requested
+                if ($Component.HideSymlinks) {
+                    $Attributes = Set-SymlinkAttributes -Symlink $Symlink
+                    if (!$Attributes) {
+                        $Results.Add($false)
+                        Write-Error -Message ('[{0}] Unable to set Hidden and System attributes on directory symlink: "{1}"' -f $Name, $TargetDirectory)
+                        continue
+                    }
                 }
-            }
 
-            $Results.Add($true)
-            continue
+                $Results.Add($true)
+                continue
+            }
         }
 
         # We found an item but it's not a directory! The user will need to fix
@@ -767,15 +850,19 @@ Function Install-DotFilesComponentDirectory {
         }
 
         # We found a symbolic link. Either:
-        # - It points where we expect -> nothing to do
+        # - It points where we expect -> if NoFolding, recurse into it; otherwise nothing to do
         # - It points somewhere else -> recurse into it (NestedSymlinks)
         # - It points somewhere unexpected -> unable to symlink this path
         if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
             $SymlinkTarget = Get-SymlinkTarget -Symlink $ExistingTarget
             if ($SourceDirectory.FullName -eq $SymlinkTarget) {
-                $Results.Add($true)
-                Write-Debug -Message ('[{0}] Valid directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
-                continue
+                if ($Component.NoFolding) {
+                    Write-Debug -Message ('[{0}] Directory symlink exists but NoFolding enabled, recursing: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                } else {
+                    $Results.Add($true)
+                    Write-Debug -Message ('[{0}] Valid directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
+                    continue
+                }
             } elseif ($NestedSymlinks) {
                 Write-Debug -Message ('[{0}] Recursing into existing symlink with target: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SymlinkTarget)
             } else {
@@ -1043,7 +1130,7 @@ Function Remove-DotFilesComponentDirectory {
         }
 
         # We found a symbolic link. Either:
-        # - It points where we expect -> remove it
+        # - It points where we expect -> if NoFolding, recurse into it; otherwise remove it
         # - It points somewhere else -> recurse into it (NestedSymlinks)
         # - It points somewhere unexpected -> unable to remove this path
         if ($ExistingTarget.LinkType -eq 'SymbolicLink') {
@@ -1065,22 +1152,34 @@ Function Remove-DotFilesComponentDirectory {
                     continue
                 }
             } else {
-                # The symlink points where we expect so we're good to proceed
-                # with its removal.
-                if ($Simulate) {
-                    Write-Verbose -Message ('[{0}] Will remove directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
+                # The symlink points where we expect.
+                if ($Component.NoFolding) {
+                    # With NoFolding, we don't remove directory symlinks (they're
+                    # treated as real directories). Recurse into it to remove
+                    # file symlinks.
+                    if ($Simulate) {
+                        Write-Verbose -Message ('[{0}] Will recurse into directory (NoFolding enabled): "{1}"' -f $Name, $TargetDirectory)
+                    } else {
+                        Write-Verbose -Message ('[{0}] Recursing into directory (NoFolding enabled): "{1}"' -f $Name, $TargetDirectory)
+                    }
                 } else {
-                    Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
+                    # The symlink points where we expect so we're good to proceed
+                    # with its removal.
+                    if ($Simulate) {
+                        Write-Verbose -Message ('[{0}] Will remove directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
+                    } else {
+                        Write-Verbose -Message ('[{0}] Removing directory symlink: "{1}" -> "{2}"' -f $Name, $TargetDirectory, $SourceDirectory.FullName)
 
-                    # Remove-Item doesn't correctly handle deleting directory
-                    # symbolic links.
-                    #
-                    # See: https://github.com/PowerShell/PowerShell/issues/621
-                    [IO.Directory]::Delete($TargetDirectory)
+                        # Remove-Item doesn't correctly handle deleting directory
+                        # symbolic links.
+                        #
+                        # See: https://github.com/PowerShell/PowerShell/issues/621
+                        [IO.Directory]::Delete($TargetDirectory)
+                    }
+
+                    $Results.Add($true)
+                    continue
                 }
-
-                $Results.Add($true)
-                continue
             }
         }
 
@@ -1557,15 +1656,15 @@ Function New-Symlink {
         $QuotedTarget = '"{0}"' -f $Target
 
         if ($TargetItem -is [IO.FileInfo]) {
-            Start-Process -FilePath 'cmd.exe' -ArgumentList @('/D', '/C', 'mklink', $QuotedPath, $QuotedTarget, '>nul') -NoNewWindow -Wait
+            $Process = Start-Process -FilePath 'cmd.exe' -ArgumentList @('/D', '/C', 'mklink', $QuotedPath, $QuotedTarget, '>nul') -NoNewWindow -Wait -PassThru
         } elseif ($TargetItem -is [IO.DirectoryInfo]) {
-            Start-Process -FilePath 'cmd.exe' -ArgumentList @('/D', '/C', 'mklink', '/D', $QuotedPath, $QuotedTarget, '>nul') -NoNewWindow -Wait
+            $Process = Start-Process -FilePath 'cmd.exe' -ArgumentList @('/D', '/C', 'mklink', '/D', $QuotedPath, $QuotedTarget, '>nul') -NoNewWindow -Wait -PassThru
         } else {
             throw 'Symlink target is not a file or directory: {0}' -f $Target
         }
 
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning -Message ('mklink returned unexpected exit code: {0}' -f $LASTEXITCODE)
+        if ($Process.ExitCode -ne 0) {
+            Write-Warning -Message ('mklink returned unexpected exit code: {0}' -f $Process.ExitCode)
         }
 
         try {
@@ -1830,6 +1929,9 @@ Class Component {
 
     # Hides newly created symlinks per the <HideSymlinks> element
     [Boolean]$HideSymlinks
+
+    # Disables directory folding per the <NoFolding> element
+    [Boolean]$NoFolding
 
     # Source paths to be ignored
     # Note: Set by <Path> elements under <IgnorePaths>

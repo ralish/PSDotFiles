@@ -10,5 +10,6 @@
     <InstallPath>
         <SpecialFolder>ApplicationData</SpecialFolder>
         <Destination>Code\User</Destination>
+        <NoFolding>false</NoFolding>
     </InstallPath>
 </Component>
