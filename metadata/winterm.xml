@@ -10,5 +10,6 @@
     <InstallPath>
         <SpecialFolder>LocalApplicationData</SpecialFolder>
         <Destination>Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState</Destination>
+        <NoFolding>false</NoFolding>
     </InstallPath>
 </Component>

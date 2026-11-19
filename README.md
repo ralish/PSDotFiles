@@ -82,6 +82,8 @@ There are some additional variables you can set in your profile which modify def
   Perform automatic detection for components with no metadata file.
 - `$DotFilesGlobalIgnorePaths` (default: `@('.stow-local-ignore')`)  
   Paths to ignore for all components in addition to any explicit `<IgnorePath>` elements in the metadata.
+- `$DotFilesNoFolding` (default: `$false`)  
+  Disable directory folding, creating real directories in the target and only symlinking files (mirrors GNU Stow's `--no-folding`).
 - `$DotFilesSkipMetadataSchemaChecks` (default: `$false`)  
   Skip validating metadata files against the metadata schema. Generally only useful in development.
 
@@ -106,6 +108,8 @@ All commands have built-in help and examples which can be accessed with `Get-Hel
 Only `Install-DotFiles` and `Remove-DotFiles` will modify your system by creating or removing the appropriate symlinks.
 
 Both `Install-DotFiles` and `Remove-DotFiles` support PowerShell's standard `-WhatIf` and `-Confirm` parameters.
+
+All three commands support the `-NoFolding` parameter to disable directory folding (creating real directories instead of symlinking them, mirroring GNU Stow's `--no-folding` behavior).
 
 Folder structure
 ----------------

@@ -138,6 +138,15 @@
             "System" file attributes. The default is not to hide newly created symbolic links.
         -->
         <HideSymlinks>false</HideSymlinks>
+
+        <!--
+            Specifies whether to disable directory folding (i.e. symlinking entire directories)
+
+            When enabled, real directories will be created in the target and only files will be
+            symlinked. This mirrors the --no-folding behavior in GNU Stow. The default is to allow
+            directory folding (i.e. symlink directories when possible).
+        -->
+        <NoFolding>false</NoFolding>
     </InstallPath>
 
     <!--

@@ -10,5 +10,6 @@
     <InstallPath>
         <SpecialFolder>Personal</SpecialFolder>
         <Destination>WindowsPowerShell</Destination>
+        <NoFolding>false</NoFolding>
     </InstallPath>
 </Component>
